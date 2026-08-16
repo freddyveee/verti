@@ -77,7 +77,8 @@ function saveState() {
 
 // Chrome-like UA so Google sign-in and WhatsApp Web accept the embedded browser
 function chromeUserAgent() {
-  return `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${process.versions.chrome.split('.')[0]}.0.0.0 Safari/537.36`;
+  const os = isMac ? 'Macintosh; Intel Mac OS X 10_15_7' : 'Windows NT 10.0; Win64; x64';
+  return `Mozilla/5.0 (${os}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${process.versions.chrome.split('.')[0]}.0.0.0 Safari/537.36`;
 }
 
 function layoutViews() {
@@ -315,12 +316,15 @@ function buildMenu() {
         { role: 'togglefullscreen' },
       ],
     },
-    { role: 'windowMenu' },
+    // Windows: kein 'close'-Role im Fenstermenü, sonst beendet Strg+W die komplette App
+    isMac ? { role: 'windowMenu' } : { label: 'Fenster', submenu: [{ role: 'minimize' }, { role: 'zoom' }] },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
 app.whenReady().then(() => {
+  // Windows: AppUserModelID muss der appId entsprechen, sonst funktionieren Benachrichtigungen nicht sauber
+  if (!isMac) app.setAppUserModelId('rocks.imperio.verti');
   if (app.isPackaged) {
     app.setLoginItemSettings({ openAtLogin: true });
   }

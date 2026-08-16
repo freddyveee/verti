@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('verti', {
+  platform: process.platform,
   getApps: () => ipcRenderer.invoke('get-apps'),
   getCatalog: () => ipcRenderer.invoke('get-catalog'),
   switchApp: (id) => ipcRenderer.send('switch-app', id),
