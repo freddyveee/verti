@@ -254,7 +254,7 @@
     <button class="close-btn" id="closeLib" title="Schließen">✕</button>
     <h1>App-Bibliothek</h1>
     <p class="sub">Apps hinzufügen oder entfernen. Alles wird automatisch gespeichert.</p>
-    <div class="grid" id="catalog"></div>
+    <div id="catalog"></div>
     <h2>Eigene App per URL</h2>
     <div class="custom">
       <input id="customUrl" type="text" placeholder="https://beispiel.de" spellcheck="false">
@@ -347,33 +347,48 @@
         }
       }
 
+      function makeCard(item, installedIds) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.appendChild(iconFor(item));
+        const info = document.createElement('div');
+        info.className = 'info';
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = item.name;
+        info.appendChild(name);
+        card.appendChild(info);
+        const btn = document.createElement('button');
+        if (installedIds.has(item.id)) {
+          btn.className = 'remove';
+          btn.textContent = 'Entfernen';
+          btn.addEventListener('click', () => window.verti.removeApp(item.id));
+        } else {
+          btn.className = 'add';
+          btn.textContent = 'Hinzufügen';
+          btn.addEventListener('click', () => window.verti.addApp(item));
+        }
+        card.appendChild(btn);
+        return card;
+      }
+
       function renderCatalog() {
         catalogEl.innerHTML = '';
         const installedIds = new Set(apps.map((a) => a.id));
         const extras = apps.filter((a) => !catalog.some((c) => c.id === a.id));
-        for (const item of [...catalog, ...extras]) {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.appendChild(iconFor(item));
-          const info = document.createElement('div');
-          info.className = 'info';
-          const name = document.createElement('div');
-          name.className = 'name';
-          name.textContent = item.name;
-          info.appendChild(name);
-          card.appendChild(info);
-          const btn = document.createElement('button');
-          if (installedIds.has(item.id)) {
-            btn.className = 'remove';
-            btn.textContent = 'Entfernen';
-            btn.addEventListener('click', () => window.verti.removeApp(item.id));
-          } else {
-            btn.className = 'add';
-            btn.textContent = 'Hinzufügen';
-            btn.addEventListener('click', () => window.verti.addApp(item));
-          }
-          card.appendChild(btn);
-          catalogEl.appendChild(card);
+        const sections = [
+          ['IMPERIO Apps', catalog.filter((c) => c.imperio)],
+          ['Weitere Apps', [...catalog.filter((c) => !c.imperio), ...extras]],
+        ];
+        for (const [title, items] of sections) {
+          if (!items.length) continue;
+          const h = document.createElement('h2');
+          h.textContent = title;
+          catalogEl.appendChild(h);
+          const grid = document.createElement('div');
+          grid.className = 'grid';
+          for (const item of items) grid.appendChild(makeCard(item, installedIds));
+          catalogEl.appendChild(grid);
         }
       }
 

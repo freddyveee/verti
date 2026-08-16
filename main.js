@@ -14,8 +14,13 @@ const DEFAULT_APPS = [
   { id: 'chatgpt', name: 'ChatGPT', url: 'https://chatgpt.com/' },
 ];
 
+// IMPERIO-Standard-Apps erscheinen in der Bibliothek in einem eigenen Bereich oben
+const IMPERIO_IDS = ['calendar', 'stackfield', 'claude', 'chatgpt', 'google', 'imperio-tools'];
+
 const CATALOG = [
   ...DEFAULT_APPS,
+  { id: 'google', name: 'Google', url: 'https://www.google.com/' },
+  { id: 'imperio-tools', name: 'IMPERIO Tools', url: 'https://imperio-tools.netlify.app/' },
   { id: 'gmail', name: 'Gmail', url: 'https://mail.google.com/' },
   { id: 'gdrive', name: 'Google Drive', url: 'https://drive.google.com/' },
   { id: 'stackfield', name: 'Stackfield', url: 'https://www.stackfield.com/', icon: 'icons/stackfield.png' },
@@ -197,7 +202,7 @@ ipcMain.on('nav-back', () => activeId && views[activeId] && views[activeId].webC
 ipcMain.on('nav-forward', () => activeId && views[activeId] && views[activeId].webContents.navigationHistory.goForward());
 ipcMain.on('nav-home', () => activeId && navHome(activeId));
 ipcMain.handle('get-apps', () => state.apps);
-ipcMain.handle('get-catalog', () => CATALOG);
+ipcMain.handle('get-catalog', () => CATALOG.map((c) => ({ ...c, imperio: IMPERIO_IDS.includes(c.id) })));
 ipcMain.on('open-library', () => setLibrary(true));
 ipcMain.on('close-library', () => {
   setLibrary(false);
