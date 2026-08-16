@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verti – Alle deine Web-Apps in einer App</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1b1d23;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  main {
+    max-width: 720px;
+    padding: 70px 24px 40px;
+    text-align: center;
+  }
+  .logo {
+    width: 84px;
+    height: 84px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #4a6fd4, #7aa2ff);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 44px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 24px;
+    box-shadow: 0 12px 40px rgba(74, 111, 212, 0.35);
+  }
+  h1 { font-size: 42px; font-weight: 700; letter-spacing: -0.5px; }
+  p.tagline {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 18px;
+    margin: 14px 0 40px;
+    line-height: 1.5;
+  }
+  .buttons {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  a.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 28px;
+    border-radius: 13px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    transition: all 0.15s;
+  }
+  a.btn:hover { background: rgba(255, 255, 255, 0.18); transform: translateY(-1px); }
+  a.btn.primary {
+    background: #4a6fd4;
+    border-color: transparent;
+  }
+  a.btn.primary:hover { background: #5a7fe4; }
+  .hint { color: rgba(255, 255, 255, 0.4); font-size: 13px; margin-bottom: 56px; }
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    text-align: left;
+    margin-bottom: 60px;
+  }
+  .feature {
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .feature .emoji { font-size: 22px; margin-bottom: 8px; }
+  .feature h3 { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+  .feature p { font-size: 13px; color: rgba(255, 255, 255, 0.55); line-height: 1.45; }
+  details {
+    text-align: left;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+  details p, details ol { font-size: 13.5px; color: rgba(255, 255, 255, 0.65); line-height: 1.6; margin-top: 10px; }
+  details ol { padding-left: 20px; }
+  code {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 12.5px;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    user-select: all;
+  }
+  footer { color: rgba(255, 255, 255, 0.3); font-size: 12.5px; padding: 24px; margin-top: auto; }
+</style>
+</head>
+<body>
+<main>
+  <div class="logo">V</div>
+  <h1>Verti</h1>
+  <p class="tagline">Google Kalender, WhatsApp, Todoist, ChatGPT, Stackfield und mehr –<br>alle deine Web-Apps nebeneinander in einer aufgeräumten Desktop-App.</p>
+
+  <div class="buttons">
+    <a class="btn" id="btnMac" href="https://github.com/freddyveee/verti/releases/latest/download/Verti-Mac.dmg">
+      Für macOS laden <span style="font-weight:400;opacity:.65">(Apple Silicon &amp; Intel)</span>
+    </a>
+    <a class="btn" id="btnWin" href="https://github.com/freddyveee/verti/releases/latest/download/Verti-Windows-Setup.exe">
+      Für Windows laden <span style="font-weight:400;opacity:.65">(64-Bit)</span>
+    </a>
+  </div>
+  <p class="hint">Kostenlos für alle im Team · Version 1.0.0</p>
+
+  <div class="features">
+    <div class="feature"><div class="emoji">🗂️</div><h3>Alles an einem Ort</h3><p>Kalender, Chats, Aufgaben und KI-Tools in einer Sidebar, mit einem Klick oder Cmd/Strg+1–9 wechseln.</p></div>
+    <div class="feature"><div class="emoji">🔐</div><h3>Eingeloggt bleiben</h3><p>Einmal anmelden, fertig. Alle Logins bleiben dauerhaft gespeichert.</p></div>
+    <div class="feature"><div class="emoji">➕</div><h3>App-Bibliothek</h3><p>Über das Plus unten links weitere Apps hinzufügen, auch jede eigene Web-App per URL.</p></div>
+    <div class="feature"><div class="emoji">🚀</div><h3>Startet automatisch</h3><p>Öffnet sich beim Hochfahren und merkt sich Fensterposition und zuletzt genutzte App.</p></div>
+  </div>
+
+  <details>
+    <summary>Installation auf dem Mac</summary>
+    <ol>
+      <li>DMG öffnen und Verti in den Programme-Ordner ziehen.</li>
+      <li>Beim ersten Start: <b>Rechtsklick auf Verti → Öffnen → Öffnen</b> (die App ist intern erstellt und nicht bei Apple registriert).</li>
+      <li>Falls macOS meldet, die App sei „beschädigt": Terminal öffnen und diesen Befehl einfügen:<br><code>xattr -cr /Applications/Verti.app</code><br>Danach startet Verti normal.</li>
+    </ol>
+  </details>
+  <details>
+    <summary>Installation unter Windows</summary>
+    <ol>
+      <li><b>Verti-Windows-Setup.exe</b> ausführen, die Installation läuft automatisch durch.</li>
+      <li>Falls der Windows-SmartScreen erscheint: <b>„Weitere Informationen" → „Trotzdem ausführen"</b> klicken.</li>
+    </ol>
+  </details>
+
+</main>
+<footer>Verti · intern erstelltes Tool von IMPERIO</footer>
+<script>
+  // Passenden Download fürs eigene System hervorheben
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  document.getElementById(mac ? 'btnMac' : 'btnWin').classList.add('primary');
+</script>
+</body>
+</html>

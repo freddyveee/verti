@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 100vw;
+    height: 100vh;
+    background: #1b1d23;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-user-select: none;
+    overflow: hidden;
+  }
+  .drag-region {
+    position: fixed;
+    top: 0; left: 0;
+    height: 44px;
+    width: 100vw;
+    -webkit-app-region: drag;
+    z-index: 10;
+  }
+  .nav {
+    position: fixed;
+    top: 7px;
+    left: 84px;
+    display: flex;
+    gap: 4px;
+    z-index: 11;
+    -webkit-app-region: no-drag;
+  }
+  .nav button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .nav button:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+  .nav button:disabled { color: rgba(255, 255, 255, 0.22); cursor: default; background: transparent; }
+  .nav button svg { pointer-events: none; }
+  .sidebar {
+    position: fixed;
+    top: 44px; left: 0; bottom: 0;
+    width: 68px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-bottom: 14px;
+  }
+  .app-btn {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s;
+  }
+  .app-btn:hover { background: rgba(255, 255, 255, 0.08); }
+  .app-btn.active { background: rgba(255, 255, 255, 0.14); }
+  .app-btn.active::before {
+    content: '';
+    position: absolute;
+    left: -11px;
+    top: 12px;
+    width: 3px;
+    height: 22px;
+    border-radius: 2px;
+    background: #7aa2ff;
+  }
+  .app-btn img {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    pointer-events: none;
+  }
+  .fallback {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #3a3f4b;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .plus-btn {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    border: 1.5px dashed rgba(255, 255, 255, 0.3);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 22px;
+    font-weight: 300;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+  .plus-btn:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  /* App-Bibliothek */
+  .library {
+    position: fixed;
+    inset: 0;
+    background: #1b1d23;
+    z-index: 5;
+    display: none;
+    flex-direction: column;
+    padding: 60px 40px 30px;
+    overflow-y: auto;
+  }
+  .library.open { display: flex; }
+  .library h1 {
+    color: #fff;
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .library p.sub {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  .close-btn {
+    position: absolute;
+    top: 54px;
+    right: 40px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .close-btn:hover { background: rgba(255, 255, 255, 0.16); }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+    margin-bottom: 30px;
+  }
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .card img, .card .fallback { width: 30px; height: 30px; }
+  .card .info { flex: 1; min-width: 0; }
+  .card .name {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card button {
+    border: none;
+    border-radius: 7px;
+    padding: 6px 11px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .card button.add { background: #4a6fd4; color: #fff; }
+  .card button.add:hover { background: #5a7fe4; }
+  .card button.remove { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.7); }
+  .card button.remove:hover { background: rgba(220, 80, 80, 0.35); color: #fff; }
+  .custom {
+    display: flex;
+    gap: 10px;
+    max-width: 560px;
+  }
+  .custom input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9px;
+    padding: 10px 14px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+  }
+  .custom input:focus { border-color: #4a6fd4; }
+  .custom button {
+    background: #4a6fd4;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .custom button:hover { background: #5a7fe4; }
+  h2 {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+  <div class="drag-region"></div>
+  <div class="nav">
+    <button id="navBack" title="Zurück (Cmd+[)">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 L4 7 L9 12"/></svg>
+    </button>
+    <button id="navForward" title="Vorwärts (Cmd+])">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2 L10 7 L5 12"/></svg>
+    </button>
+    <button id="navHome" title="Zur Startseite der App (Cmd+Shift+H)">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7 L7.5 2 L13 7 M3.5 6.5 V12.5 H6 V9 H9 V12.5 H11.5 V6.5"/></svg>
+    </button>
+  </div>
+  <div class="sidebar">
+    <div id="apps" style="display: contents;"></div>
+    <button class="plus-btn" id="plus" title="App-Bibliothek">+</button>
+  </div>
+
+  <div class="library" id="library">
+    <button class="close-btn" id="closeLib" title="Schließen">✕</button>
+    <h1>App-Bibliothek</h1>
+    <p class="sub">Apps hinzufügen oder entfernen. Alles wird automatisch gespeichert.</p>
+    <div class="grid" id="catalog"></div>
+    <h2>Eigene App per URL</h2>
+    <div class="custom">
+      <input id="customUrl" type="text" placeholder="https://beispiel.de" spellcheck="false">
+      <button id="customAdd">Hinzufügen</button>
+    </div>
+  </div>
+
+  <script>
+    (async () => {
+      let apps = await window.verti.getApps();
+      const catalog = await window.verti.getCatalog();
+      const appsEl = document.getElementById('apps');
+      const catalogEl = document.getElementById('catalog');
+      const library = document.getElementById('library');
+      let activeId = null;
+
+      // Icon-Kette: eigenes Icon → Favicon der Subdomain → Favicon der Hauptdomain → Buchstabe.
+      // Googles Favicon-Dienst liefert bei unbekannten Subdomains einen 16px-Globus,
+      // erkennbar an der geringen Auflösung — dann weiter zur nächsten Quelle.
+      function iconFor(app) {
+        const hostname = new URL(app.url).hostname;
+        const apex = hostname.split('.').slice(-2).join('.');
+        const sources = [];
+        // Cache-Buster: lokale Icons sonst nach Updates veraltet aus dem Bildcache
+        if (app.icon) sources.push(app.icon + '?v=' + Date.now());
+        sources.push('https://www.google.com/s2/favicons?domain=' + hostname + '&sz=64');
+        if (apex !== hostname) {
+          sources.push('https://www.google.com/s2/favicons?domain=' + apex + '&sz=64');
+        }
+
+        const img = document.createElement('img');
+        let i = 0;
+        const isGeneric = () => img.src.includes('s2/favicons') && img.naturalWidth < 32;
+        const next = () => {
+          i++;
+          if (i < sources.length) {
+            img.src = sources[i];
+          } else {
+            const fb = document.createElement('div');
+            fb.className = 'fallback';
+            fb.textContent = app.name[0].toUpperCase();
+            img.replaceWith(fb);
+          }
+        };
+        img.onload = () => { if (isGeneric()) next(); };
+        img.onerror = next;
+        img.src = sources[0];
+        return img;
+      }
+
+      let dragId = null;
+
+      function renderSidebar() {
+        appsEl.innerHTML = '';
+        for (const app of apps) {
+          const btn = document.createElement('button');
+          btn.className = 'app-btn' + (app.id === activeId ? ' active' : '');
+          btn.title = app.name;
+          btn.dataset.id = app.id;
+          btn.draggable = true;
+          btn.appendChild(iconFor(app));
+          btn.addEventListener('click', () => window.verti.switchApp(app.id));
+          btn.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            window.verti.showAppMenu(app.id);
+          });
+          btn.addEventListener('dragstart', (e) => {
+            dragId = app.id;
+            e.dataTransfer.effectAllowed = 'move';
+            btn.style.opacity = '0.4';
+          });
+          btn.addEventListener('dragend', () => {
+            btn.style.opacity = '';
+            dragId = null;
+            const ids = [...appsEl.querySelectorAll('.app-btn')].map((b) => b.dataset.id);
+            if (ids.join() !== apps.map((a) => a.id).join()) {
+              window.verti.reorderApps(ids);
+            }
+          });
+          btn.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (!dragId || dragId === app.id) return;
+            const dragged = appsEl.querySelector('[data-id="' + dragId + '"]');
+            if (!dragged) return;
+            const rect = btn.getBoundingClientRect();
+            const before = e.clientY < rect.top + rect.height / 2;
+            appsEl.insertBefore(dragged, before ? btn : btn.nextSibling);
+          });
+          appsEl.appendChild(btn);
+        }
+      }
+
+      function renderCatalog() {
+        catalogEl.innerHTML = '';
+        const installedIds = new Set(apps.map((a) => a.id));
+        const extras = apps.filter((a) => !catalog.some((c) => c.id === a.id));
+        for (const item of [...catalog, ...extras]) {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.appendChild(iconFor(item));
+          const info = document.createElement('div');
+          info.className = 'info';
+          const name = document.createElement('div');
+          name.className = 'name';
+          name.textContent = item.name;
+          info.appendChild(name);
+          card.appendChild(info);
+          const btn = document.createElement('button');
+          if (installedIds.has(item.id)) {
+            btn.className = 'remove';
+            btn.textContent = 'Entfernen';
+            btn.addEventListener('click', () => window.verti.removeApp(item.id));
+          } else {
+            btn.className = 'add';
+            btn.textContent = 'Hinzufügen';
+            btn.addEventListener('click', () => window.verti.addApp(item));
+          }
+          card.appendChild(btn);
+          catalogEl.appendChild(card);
+        }
+      }
+
+      function openLibrary() {
+        renderCatalog();
+        library.classList.add('open');
+        window.verti.openLibrary();
+      }
+      function closeLibrary(notify) {
+        library.classList.remove('open');
+        if (notify) window.verti.closeLibrary();
+      }
+
+      const navBack = document.getElementById('navBack');
+      const navForward = document.getElementById('navForward');
+      navBack.addEventListener('click', () => window.verti.navBack());
+      navForward.addEventListener('click', () => window.verti.navForward());
+      document.getElementById('navHome').addEventListener('click', () => window.verti.navHome());
+      window.verti.onNavState((s) => {
+        navBack.disabled = !s.canGoBack;
+        navForward.disabled = !s.canGoForward;
+      });
+
+      document.getElementById('plus').addEventListener('click', openLibrary);
+      document.getElementById('closeLib').addEventListener('click', () => closeLibrary(true));
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && library.classList.contains('open')) closeLibrary(true);
+      });
+
+      const customUrl = document.getElementById('customUrl');
+      function addCustom() {
+        let value = customUrl.value.trim();
+        if (!value) return;
+        if (!/^https?:\/\//i.test(value)) value = 'https://' + value;
+        try {
+          const url = new URL(value);
+          const id = 'custom-' + url.hostname.replace(/\W/g, '-');
+          const name = url.hostname.replace(/^www\./, '');
+          window.verti.addApp({ id, name, url: url.href });
+          customUrl.value = '';
+        } catch {}
+      }
+      document.getElementById('customAdd').addEventListener('click', addCustom);
+      customUrl.addEventListener('keydown', (e) => { if (e.key === 'Enter') addCustom(); });
+
+      window.verti.onActiveApp((id) => {
+        activeId = id;
+        closeLibrary(false);
+        renderSidebar();
+      });
+
+      window.verti.onAppsChanged((newApps) => {
+        apps = newApps;
+        renderSidebar();
+        if (library.classList.contains('open')) renderCatalog();
+      });
+
+      renderSidebar();
+    })();
+  </script>
+</body>
+</html>
