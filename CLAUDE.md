@@ -17,6 +17,7 @@ Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electr
 - Session-Partition `persist:apps` hält alle Logins lokal
 - Windows: eigener AppUserModelId, kein Strg+W-Close im Menü, titleBarOverlay statt Ampel-Buttons
 - App ist unsigniert/nicht notarisiert → Gatekeeper/SmartScreen-Hinweise, Anleitung steht auf der Landingpage
+- Auto-Update (ab 1.0.2): Windows vollautomatisch per electron-updater über GitHub Releases (braucht `latest.yml` im Release!); Mac nur Hinweis-Dialog + DMG-Download, weil unsigniert kein echtes Auto-Update kann
 
 ## Entwickeln
 
@@ -29,10 +30,20 @@ npm start
 
 1. Version in `package.json` erhöhen, auch den Versionstext in `docs/index.html` anpassen
 2. Bauen: `npx electron-builder --mac --universal` und danach `npx electron-builder --win --x64` (getrennt ausführen, `--universal` bricht sonst den Windows-Build)
-3. Veröffentlichen: `gh release create v1.0.x dist/Verti-Mac.dmg dist/Verti-Windows-Setup.exe --title "Verti 1.0.x" --notes "…"`
+3. Veröffentlichen (WICHTIG: `latest.yml` mit hochladen, sonst bekommen Windows-Nutzer keine Auto-Updates):
+
+   ```
+   gh release create v1.0.x dist/Verti-Mac.dmg dist/Verti-Windows-Setup.exe dist/latest.yml --title "Verti 1.0.x" --notes "…"
+   ```
+
 4. Landingpage-Änderungen: einfach `git push` (GitHub Pages baut aus `docs/`, dauert 1–3 Min, Browser-Cache 10 Min beachten)
 
-Die Download-Links der Landingpage zeigen immer auf `releases/latest`, müssen also nie angepasst werden.
+Die Download-Links der Landingpage zeigen immer auf `releases/latest`, müssen also nie angepasst werden. Der Release-Tag muss `v<version>` heißen (z.B. `v1.0.2`), der Mac-Update-Check liest ihn aus.
+
+Regeln für jedes Release (sonst brechen Windows-Auto-Updates still):
+
+- Nie ein Release ohne `Verti-Windows-Setup.exe` + `latest.yml` veröffentlichen, auch keinen Mac-only-Hotfix — der Windows-Updater schaut immer auf das neueste Release
+- `latest.yml` und `Verti-Windows-Setup.exe` müssen aus demselben Build-Lauf stammen (sha512-Prüfung)
 
 ## Geräte-Sync (wichtig, immer befolgen)
 

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -429,6 +429,7 @@ function buildMenu() {
       label: app.name,
       submenu: [
         { role: 'about' },
+        { label: 'Nach Updates suchen…', click: () => checkForUpdatesManually() },
         { type: 'separator' },
         { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' },
         { type: 'separator' },
@@ -471,6 +472,134 @@ function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
+// ---------- Auto-Update ----------
+// Windows: vollautomatisch über electron-updater (GitHub Releases).
+// Mac: App ist unsigniert, dort Hinweis-Dialog + Download der neuen DMG.
+const UPDATE_CHECK_INTERVAL = 4 * 60 * 60 * 1000;
+let macUpdateNotifiedFor = null;
+let winUpdateNotifiedFor = null;
+let updateDialogOpen = false;
+
+function isNewerVersion(a, b) {
+  const pa = String(a).split('.').map(Number);
+  const pb = String(b).split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d !== 0) return d > 0;
+  }
+  return false;
+}
+
+function getAutoUpdater() {
+  const { autoUpdater } = require('electron-updater');
+  return autoUpdater;
+}
+
+// Liefert 'update' | 'none' | 'error'. auto=true unterdrückt wiederholte
+// Hinweise für dieselbe Version (Check läuft alle 4 Stunden).
+async function checkMacUpdate(auto) {
+  let latest;
+  try {
+    const res = await fetch('https://api.github.com/repos/freddyveee/verti/releases/latest', {
+      headers: { 'User-Agent': 'Verti' },
+    });
+    if (!res.ok) return 'error';
+    latest = String((await res.json()).tag_name || '').replace(/^v/, '');
+  } catch {
+    return 'error';
+  }
+  if (!latest) return 'error';
+  if (!isNewerVersion(latest, app.getVersion())) return 'none';
+  if (auto && macUpdateNotifiedFor === latest) return 'update';
+  macUpdateNotifiedFor = latest;
+  const { response } = await dialog.showMessageBox(win, {
+    type: 'info',
+    title: 'Update verfügbar',
+    message: `Verti ${latest} ist verfügbar.`,
+    detail: 'Lade die neue Version herunter und ziehe sie einmal in den Programme-Ordner. Alle Logins und Apps bleiben erhalten.',
+    buttons: ['Herunterladen', 'Später'],
+    defaultId: 0,
+    cancelId: 1,
+  });
+  if (response === 0) shell.openExternal('https://github.com/freddyveee/verti/releases/latest/download/Verti-Mac.dmg');
+  return 'update';
+}
+
+function setupAutoUpdate() {
+  if (!app.isPackaged) return; // im Entwicklungsmodus (npm start) nichts tun
+  if (isMac) {
+    checkMacUpdate(true);
+    setInterval(() => checkMacUpdate(true), UPDATE_CHECK_INTERVAL);
+    return;
+  }
+  const autoUpdater = getAutoUpdater();
+  autoUpdater.autoDownload = true;
+  // Nie still beim App-Beenden installieren: wird der Installer vom
+  // Windows-Shutdown abgewürgt, bleibt eine kaputte Installation zurück
+  // (electron-builder #7807). Installiert wird nur über 'Jetzt updaten'.
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.on('error', () => {});
+  autoUpdater.on('update-downloaded', async (info) => {
+    // 'Später' respektieren: pro Version nur einmal je App-Lauf melden,
+    // sonst poppt der Dialog alle 4 Stunden erneut auf
+    if (updateDialogOpen || info.version === winUpdateNotifiedFor) return;
+    winUpdateNotifiedFor = info.version;
+    updateDialogOpen = true;
+    try {
+      const { response } = await dialog.showMessageBox(win, {
+        type: 'info',
+        title: 'Update verfügbar',
+        message: `Verti ${info.version} ist bereit.`,
+        detail: 'Das Update wurde bereits heruntergeladen. Beim Neustart wird es installiert; alle Logins und Apps bleiben erhalten.',
+        buttons: ['Jetzt updaten', 'Später'],
+        defaultId: 0,
+        cancelId: 1,
+      });
+      if (response === 0) autoUpdater.quitAndInstall();
+    } finally {
+      updateDialogOpen = false;
+    }
+  });
+  autoUpdater.checkForUpdates().catch(() => {});
+  setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), UPDATE_CHECK_INTERVAL);
+}
+
+async function checkForUpdatesManually() {
+  if (!app.isPackaged) {
+    dialog.showMessageBox(win, { message: 'Update-Suche gibt es nur in der installierten App.' });
+    return;
+  }
+  if (isMac) {
+    const result = await checkMacUpdate(false);
+    if (result === 'none') dialog.showMessageBox(win, { message: `Verti ${app.getVersion()} ist aktuell.` });
+    if (result === 'error') dialog.showMessageBox(win, { message: 'Update-Suche fehlgeschlagen. Bitte später erneut versuchen.' });
+    return;
+  }
+  const autoUpdater = getAutoUpdater();
+  try {
+    // Ergebnis-Dialog auch dann wieder zeigen, wenn er schon mal kam
+    winUpdateNotifiedFor = null;
+    const result = await autoUpdater.checkForUpdates();
+    const v = result?.updateInfo?.version;
+    if (!v || !isNewerVersion(v, app.getVersion())) {
+      dialog.showMessageBox(win, { message: `Verti ${app.getVersion()} ist aktuell.` });
+      return;
+    }
+    // Update gefunden: lädt im Hintergrund, der Update-Dialog kommt über
+    // 'update-downloaded'. Bis dahin dem Nutzer sagen, was passiert.
+    if (!updateDialogOpen) {
+      dialog.showMessageBox(win, {
+        message: `Verti ${v} wird im Hintergrund heruntergeladen. Du bekommst eine Meldung, sobald es bereit ist.`,
+      });
+    }
+    const onError = () => dialog.showMessageBox(win, { message: 'Update-Download fehlgeschlagen. Bitte später erneut versuchen.' });
+    autoUpdater.once('error', onError);
+    setTimeout(() => autoUpdater.removeListener('error', onError), 30 * 60 * 1000);
+  } catch {
+    dialog.showMessageBox(win, { message: 'Update-Suche fehlgeschlagen. Bitte später erneut versuchen.' });
+  }
+}
+
 app.whenReady().then(() => {
   // Fallback-UA für alle WebContents ohne eigenen Override (v.a. Login-Popups):
   // sonst meldet navigator.userAgent dort Electron und Google blockt den Login
@@ -482,6 +611,7 @@ app.whenReady().then(() => {
   }
   createWindow();
   buildMenu();
+  setupAutoUpdate();
 
   app.on('activate', () => {
     if (win === null || BrowserWindow.getAllWindows().length === 0) {

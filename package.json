@@ -1,7 +1,7 @@
 {
   "name": "verti",
   "productName": "Verti",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Vertikaler Browser: Google Kalender, WhatsApp, Todoist, ChatGPT in einer App",
   "author": "IMPERIO <freddy@imperio.rocks>",
   "main": "main.js",
@@ -12,6 +12,9 @@
   "build": {
     "appId": "rocks.imperio.verti",
     "productName": "Verti",
+    "publish": [
+      { "provider": "github", "owner": "freddyveee", "repo": "verti" }
+    ],
     "mac": {
       "category": "public.app-category.productivity",
       "identity": null,
@@ -43,6 +46,9 @@
       "sidebar.html",
       "icons/**"
     ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
   },
   "devDependencies": {
     "electron": "^43.4.0",
