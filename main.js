@@ -1,4 +1,4 @@
-const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -251,6 +251,46 @@ function switchApp(id) {
   saveState();
 }
 
+// ---------- Ungelesen-Badges ----------
+// Die meisten Messenger schreiben ihre ungelesenen Nachrichten in den
+// Seitentitel ("(3) WhatsApp"); daraus speisen sich die Sidebar-Badges.
+// Bei diesen Apps darf die Zahl überall im Titel stehen; bei allen anderen
+// nur ganz vorn, sonst machen Inhalts-Titel wie "Top 10 (2024)" falsche Badges.
+const TITLE_BADGE_APPS = new Set(['whatsapp', 'gmail', 'telegram', 'messenger', 'slack', 'linkedin', 'x']);
+const badges = {};
+
+function parseUnread(id, title) {
+  const t = String(title || '');
+  const m = TITLE_BADGE_APPS.has(id) ? /\((\d+)\)/.exec(t) : /^\((\d+)\)/.exec(t);
+  return m ? Math.min(999, parseInt(m[1], 10)) : 0;
+}
+
+function setBadge(id, count) {
+  if ((badges[id] || 0) === count) return;
+  if (count) badges[id] = count;
+  else delete badges[id];
+  broadcastBadges();
+}
+
+function broadcastBadges() {
+  if (!win || win.isDestroyed()) return;
+  win.webContents.send('badges', badges);
+  if (isMac) {
+    const total = Object.values(badges).reduce((a, b) => a + b, 0);
+    app.setBadgeCount(total);
+  }
+  // Windows: das Overlay-Icon malt die Sidebar per Canvas und schickt es
+  // über 'set-overlay' zurück
+}
+
+ipcMain.handle('get-badges', () => badges);
+
+ipcMain.on('set-overlay', (e, dataUrl, total) => {
+  if (isMac || !win || win.isDestroyed()) return;
+  if (dataUrl) win.setOverlayIcon(nativeImage.createFromDataURL(dataUrl), `${total} ungelesen`);
+  else win.setOverlayIcon(null, '');
+});
+
 function createView(appDef) {
   const view = new WebContentsView({
     webPreferences: {
@@ -276,6 +316,7 @@ function createView(appDef) {
   };
   view.webContents.on('did-navigate', sendNavState);
   view.webContents.on('did-navigate-in-page', sendNavState);
+  view.webContents.on('page-title-updated', (_e, title) => setBadge(appDef.id, parseUnread(appDef.id, title)));
   win.contentView.addChildView(view);
   views[appDef.id] = view;
 }
@@ -378,6 +419,7 @@ function removeApp(id) {
   win.contentView.removeChildView(view);
   view.webContents.close();
   delete views[id];
+  setBadge(id, 0);
   state.apps = state.apps.filter((a) => a.id !== id);
   buildMenu();
   saveState();

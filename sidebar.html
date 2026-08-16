@@ -91,6 +91,24 @@
     border-radius: 6px;
     pointer-events: none;
   }
+  .badge {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    box-shadow: 0 0 0 2px #1b1d23;
+  }
   .fallback {
     width: 28px;
     height: 28px;
@@ -266,6 +284,7 @@
     (async () => {
       let apps = await window.verti.getApps();
       const catalog = await window.verti.getCatalog();
+      let badgeCounts = await window.verti.getBadges();
       const appsEl = document.getElementById('apps');
       const catalogEl = document.getElementById('catalog');
       const library = document.getElementById('library');
@@ -316,6 +335,13 @@
           btn.dataset.id = app.id;
           btn.draggable = true;
           btn.appendChild(iconFor(app));
+          const count = badgeCounts[app.id] || 0;
+          if (count > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'badge';
+            badge.textContent = count > 99 ? '99+' : String(count);
+            btn.appendChild(badge);
+          }
           btn.addEventListener('click', () => window.verti.switchApp(app.id));
           btn.addEventListener('contextmenu', (e) => {
             e.preventDefault();
@@ -452,7 +478,39 @@
         if (library.classList.contains('open')) renderCatalog();
       });
 
+      // Windows hat kein Dock-Badge: Gesamtzahl als rotes Overlay
+      // aufs Taskleisten-Icon malen und an den Hauptprozess schicken
+      function updateOverlay() {
+        if (isMac) return;
+        const total = Object.values(badgeCounts).reduce((a, b) => a + b, 0);
+        if (!total) {
+          window.verti.setOverlay(null, 0);
+          return;
+        }
+        const c = document.createElement('canvas');
+        c.width = 32;
+        c.height = 32;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(16, 16, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold ' + (total > 99 ? 14 : 18) + 'px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(total > 99 ? '99+' : String(total), 16, 17);
+        window.verti.setOverlay(c.toDataURL(), total);
+      }
+
+      window.verti.onBadges((b) => {
+        badgeCounts = b;
+        renderSidebar();
+        updateOverlay();
+      });
+
       renderSidebar();
+      updateOverlay();
     })();
   </script>
 </body>

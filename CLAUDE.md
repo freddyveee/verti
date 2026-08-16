@@ -19,6 +19,7 @@ Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electr
 - App ist unsigniert/nicht notarisiert → Gatekeeper/SmartScreen-Hinweise, Anleitung steht auf der Landingpage
 - Auto-Update: beide Plattformen zeigen beim Öffnen einen Hinweis-Dialog mit den Release-Notes, der Nutzer bestätigt aktiv (Freddys Wunsch: nichts still im Hintergrund). Windows installiert danach per electron-updater über GitHub Releases (braucht `latest.yml` im Release!); Mac nur DMG-Download, weil unsigniert kein echtes Auto-Update kann
 - Die `--notes` beim `gh release create` erscheinen im Update-Dialog der Nutzer → verständlich und auf Deutsch formulieren, Stichpunkte mit `-` werden als `•` angezeigt
+- Ungelesen-Badges (ab 1.0.4): aus dem Seitentitel geparst ("(3) WhatsApp"). Bei Apps in `TITLE_BADGE_APPS` zählt die Zahl überall im Titel, bei allen anderen nur am Titelanfang (sonst falsche Badges durch Inhalts-Titel). Gesamtzahl am Dock-Icon (Mac) bzw. Taskleisten-Overlay (Windows). Stackfield meldet nichts im Titel → braucht ggf. später ein DOM-Skript
 
 ## Entwickeln
 
