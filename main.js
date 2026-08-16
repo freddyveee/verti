@@ -81,33 +81,31 @@ function saveState() {
 }
 
 // Login-Popups müssen in der App bleiben (gleiche Session), sonst landet die
-// Anmeldung im externen Browser, wo sie der App nichts bringt
-const AUTH_URL_PATTERNS = [
-  'accounts.google.com',
-  'accounts.youtube.com',
-  'appleid.apple.com',
-  'login.microsoftonline.com',
-  'login.live.com',
-  'login.yahoo.com',
-  'auth.openai.com',
-  'auth0.com',
-  'okta.com',
-  'id.atlassian.com',
-  'facebook.com/login',
-  'facebook.com/dialog',
-  'github.com/login',
-  'github.com/session',
-  'linkedin.com/oauth',
-  'linkedin.com/checkpoint',
-  'slack.com/signin',
-  'slack.com/sso',
-  'slack.com/openid',
-  'stackfield.com/login',
-  'claude.ai/login',
-  'claude.ai/oauth',
+// Anmeldung im externen Browser, wo sie der App nichts bringt.
+// host matcht exakt oder als Subdomain; path (falls gesetzt) den Pfadanfang.
+const AUTH_TARGETS = [
+  { host: 'accounts.google.com' },
+  { host: 'accounts.youtube.com' },
+  { host: 'appleid.apple.com' },
+  { host: 'login.microsoftonline.com' },
+  { host: 'login.live.com' },
+  { host: 'login.yahoo.com' },
+  { host: 'auth.openai.com' },
+  { host: 'auth0.com' },
+  { host: 'okta.com' },
+  { host: 'id.atlassian.com' },
+  // Facebook nutzt versionierte Dialog-Pfade: /v25.0/dialog/oauth
+  { host: 'facebook.com', path: /^\/(v\d+(\.\d+)?\/)?(dialog|login)([/.?]|$)/ },
+  { host: 'github.com', path: /^\/(login|session)([/?]|$)/ },
+  { host: 'linkedin.com', path: /^\/(oauth|checkpoint)([/?]|$)/ },
+  { host: 'slack.com', path: /^\/(signin|sso|openid|workspace-signin)([/?]|$)/ },
+  { host: 'stackfield.com', path: /^\/login/ },
+  { host: 'claude.ai', path: /^\/(login|oauth)([/?]|$)/ },
+  // Notion startet sein Google-Login-Popup auf einer eigenen notion.so-URL
+  { host: 'notion.so', path: /^\/(login|verifyNoPopupBlocker|googlepopupredirect)/i },
 ];
 
-function isAuthPopup(url) {
+function isAuthUrl(url) {
   // Leere/about:blank-Popups nutzen viele OAuth-Flows als Startpunkt
   if (!url || url === 'about:blank') return true;
   let u;
@@ -116,11 +114,110 @@ function isAuthPopup(url) {
   } catch {
     return false;
   }
-  const hostAndPath = u.host + u.pathname;
-  return AUTH_URL_PATTERNS.some((p) =>
-    p.includes('/') ? hostAndPath.startsWith(p) || hostAndPath.includes('.' + p) : u.host === p || u.host.endsWith('.' + p)
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+  return AUTH_TARGETS.some(
+    (t) => (u.host === t.host || u.host.endsWith('.' + t.host)) && (!t.path || t.path.test(u.pathname))
   );
 }
+
+// shell.openExternal ist ShellExecute: nur harmlose Protokolle rauslassen,
+// file://, UNC-Pfade und Custom-Protokolle aus Webinhalt verwerfen
+function openExternally(url) {
+  let u;
+  try {
+    u = new URL(url);
+  } catch {
+    return;
+  }
+  if (['http:', 'https:', 'mailto:'].includes(u.protocol)) shell.openExternal(url);
+}
+
+// Popouts einer installierten App (z.B. Gmail "In neuem Fenster verfassen")
+// gehören in die App-Session, nicht in den externen Browser
+function isInstalledAppUrl(url) {
+  let u;
+  try {
+    u = new URL(url);
+  } catch {
+    return false;
+  }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+  return (state?.apps || []).some((a) => {
+    try {
+      const appHost = new URL(a.url).host;
+      return u.host === appHost || u.host.endsWith('.' + appHost);
+    } catch {
+      return false;
+    }
+  });
+}
+
+function popupWindowOptions(width, height) {
+  return {
+    width,
+    height,
+    autoHideMenuBar: true,
+    webPreferences: { partition: 'persist:apps' },
+  };
+}
+
+// Eine gemeinsame Fenster-Policy für Views UND deren Popups: Auth bleibt in
+// der App, App-Popouts bleiben in der App, alles andere geht in den Browser
+function windowOpenPolicy(openerContents) {
+  return ({ url, disposition }) => {
+    if (isAuthUrl(url)) {
+      // Skript-Popups (window.open mit Fenstermaßen, disposition 'new-window')
+      // melden sich beim Opener zurück und schließen sich selbst → kleines Fenster.
+      // Normale Login-Links (target=_blank) dagegen in der Ansicht selbst laden,
+      // dort geht es nach dem Login im Dienst weiter.
+      if (disposition === 'new-window' || !url || url === 'about:blank') {
+        return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(520, 680) };
+      }
+      openerContents.loadURL(url);
+      return { action: 'deny' };
+    }
+    if (disposition === 'new-window' && isInstalledAppUrl(url)) {
+      return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(1100, 800) };
+    }
+    openExternally(url);
+    return { action: 'deny' };
+  };
+}
+
+// Von uns erlaubte Popup-Fenster bekommen dieselbe Policy und denselben
+// Chrome-UA, sonst wären sie unreguliert (und verraten sich als Electron)
+function adoptChildWindow(child) {
+  child.webContents.setUserAgent(chromeUserAgent());
+  child.webContents.setWindowOpenHandler(windowOpenPolicy(child.webContents));
+  child.webContents.on('did-create-window', (grandchild) => adoptChildWindow(grandchild));
+}
+
+// Pro App: CSS/JS gegen "Lade unsere Desktop-App"-Werbung der Web-Apps.
+// Der JS-Wächter fasst nur Bereiche außerhalb des Chat-Fensters (#main) an,
+// damit niemals echte Nachrichten ausgeblendet werden.
+const APP_TWEAKS = {
+  whatsapp: {
+    css: '[data-testid="intro_panel_v2_title_card"] { display: none !important; }',
+    js: `(() => {
+      const AD = /^(Hol dir WhatsApp für (Windows|Mac)|Get WhatsApp for (Windows|Mac)|Lade WhatsApp für (Windows|Mac) herunter|Download WhatsApp for (Windows|Mac))$/i;
+      const hide = (el) => { if (el && el.style) el.style.setProperty('display', 'none', 'important'); };
+      const sweep = () => {
+        for (const a of document.querySelectorAll('a[href*="whatsapp.com/download"], a[href*="ms-windows-store"], a[href*="apps.microsoft.com"]')) {
+          if (!a.closest('#main')) hide(a.closest('[role="listitem"]') || a);
+        }
+        for (const el of document.querySelectorAll('span, h1, h2')) {
+          if (el.childElementCount === 0 && AD.test((el.textContent || '').trim()) && !el.closest('#main')) {
+            hide(el.closest('[role="button"], a') || el.parentElement);
+          }
+        }
+      };
+      let timer = null;
+      const queueSweep = () => { clearTimeout(timer); timer = setTimeout(sweep, 400); };
+      sweep();
+      new MutationObserver(queueSweep).observe(document.body, { childList: true, subtree: true });
+    })();`,
+  },
+};
 
 // Chrome-like UA so Google sign-in and WhatsApp Web accept the embedded browser
 function chromeUserAgent() {
@@ -163,21 +260,15 @@ function createView(appDef) {
   });
   view.webContents.setUserAgent(chromeUserAgent());
   view.webContents.loadURL(appDef.url);
-  view.webContents.setWindowOpenHandler(({ url }) => {
-    if (isAuthPopup(url)) {
-      return {
-        action: 'allow',
-        overrideBrowserWindowOptions: {
-          width: 520,
-          height: 680,
-          autoHideMenuBar: true,
-          webPreferences: { partition: 'persist:apps' },
-        },
-      };
-    }
-    shell.openExternal(url);
-    return { action: 'deny' };
-  });
+  view.webContents.setWindowOpenHandler(windowOpenPolicy(view.webContents));
+  view.webContents.on('did-create-window', (child) => adoptChildWindow(child));
+  const tweaks = APP_TWEAKS[appDef.id];
+  if (tweaks) {
+    view.webContents.on('dom-ready', () => {
+      if (tweaks.css) view.webContents.insertCSS(tweaks.css).catch(() => {});
+      if (tweaks.js) view.webContents.executeJavaScript(tweaks.js).catch(() => {});
+    });
+  }
   view.setVisible(false);
   try { view.setBorderRadius(10); } catch {}
   const sendNavState = () => {
@@ -381,6 +472,9 @@ function buildMenu() {
 }
 
 app.whenReady().then(() => {
+  // Fallback-UA für alle WebContents ohne eigenen Override (v.a. Login-Popups):
+  // sonst meldet navigator.userAgent dort Electron und Google blockt den Login
+  app.userAgentFallback = chromeUserAgent();
   // Windows: AppUserModelID muss der appId entsprechen, sonst funktionieren Benachrichtigungen nicht sauber
   if (!isMac) app.setAppUserModelId('rocks.imperio.verti');
   if (app.isPackaged) {
