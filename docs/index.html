@@ -263,8 +263,11 @@
   .features-wrap { position: relative; padding-bottom: 90px; }
   .wave {
     position: absolute;
-    left: -12%; right: -12%; top: -60px; bottom: -30px;
-    width: 124%; height: calc(100% + 90px);
+    left: 50%;
+    transform: translateX(-50%);
+    top: -60px;
+    width: 100vw;
+    height: calc(100% + 90px);
     filter: blur(1px);
     z-index: 0;
     pointer-events: none;
