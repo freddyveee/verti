@@ -477,10 +477,91 @@ function buildMenu() {
 // Windows: nach Bestätigung Download + Installation über electron-updater (GitHub Releases).
 // Mac: App ist unsigniert, dort öffnet der Dialog den Download der neuen DMG.
 const UPDATE_CHECK_INTERVAL = 4 * 60 * 60 * 1000;
+const MAC_DMG_URL = 'https://github.com/freddyveee/verti/releases/latest/download/Verti-Mac.dmg';
 let macUpdateNotifiedFor = null;
 let winUpdateNotifiedFor = null;
-let winReadyNotifiedFor = null;
 let updateDialogOpen = false;
+let updateWin = null;
+
+// Lila Update-Popup (update.html). Ein Fenster für alle Zustände:
+// Update-Hinweis mit Release-Notes, Download-Fortschritt, Konfetti nach dem Update.
+function openUpdatePopup(payload) {
+  if (updateWin) {
+    updateWin.focus();
+    return;
+  }
+  updateDialogOpen = true;
+  const width = 440;
+  const height = 600;
+  const b = win && !win.isDestroyed() ? win.getBounds() : null;
+  updateWin = new BrowserWindow({
+    ...(b ? { x: Math.round(b.x + (b.width - width) / 2), y: Math.round(b.y + (b.height - height) / 2) } : {}),
+    width,
+    height,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    maximizable: false,
+    minimizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    show: false,
+    parent: win && !win.isDestroyed() ? win : undefined,
+    webPreferences: { preload: path.join(__dirname, 'update-preload.js') },
+  });
+  updateWin.loadFile('update.html');
+  updateWin.webContents.once('did-finish-load', () => {
+    if (!updateWin) return;
+    updateWin.webContents.send('verti-update:state', payload);
+    updateWin.show();
+  });
+  updateWin.on('closed', () => {
+    updateWin = null;
+    updateDialogOpen = false;
+  });
+}
+
+function sendUpdateState(payload) {
+  if (updateWin && !updateWin.isDestroyed()) updateWin.webContents.send('verti-update:state', payload);
+}
+
+ipcMain.on('verti-update:action', (_e, action) => {
+  if (action === 'update') {
+    if (isMac) {
+      shell.openExternal(MAC_DMG_URL);
+      sendUpdateState({ mode: 'mac-started' });
+      return;
+    }
+    sendUpdateState({ mode: 'downloading', percent: 0 });
+    getAutoUpdater().downloadUpdate().catch(() => {
+      // Beim nächsten 4-Stunden-Check wieder anbieten
+      winUpdateNotifiedFor = null;
+      sendUpdateState({ mode: 'error' });
+    });
+    return;
+  }
+  if (updateWin) updateWin.close();
+});
+
+// Erster Start nach einem Update? Dann gibt es Konfetti. Erkannt über eine
+// Marker-Datei mit der zuletzt gestarteten Version; beim allerersten Lauf der
+// Marker-Datei zählt eine bestehende Installation (vorhandene Session-Daten)
+// als frisches Update. Muss vor createWindow laufen, das legt die Session an.
+function detectUpdateJustHappened() {
+  if (!app.isPackaged) return false;
+  const file = path.join(app.getPath('userData'), 'last-version.json');
+  let prev = null;
+  try {
+    prev = JSON.parse(fs.readFileSync(file, 'utf8')).version;
+  } catch {}
+  const cur = app.getVersion();
+  if (prev === cur) return false;
+  try {
+    fs.writeFileSync(file, JSON.stringify({ version: cur }));
+  } catch {}
+  if (prev) return isNewerVersion(cur, prev);
+  return fs.existsSync(path.join(app.getPath('userData'), 'Partitions'));
+}
 
 function isNewerVersion(a, b) {
   const pa = String(a).split('.').map(Number);
@@ -516,11 +597,6 @@ function releaseNotesText(notes) {
     .trim();
 }
 
-function withReleaseNotes(notes, text) {
-  const clean = releaseNotesText(notes);
-  return clean ? `Was ist neu:\n${clean}\n\n${text}` : text;
-}
-
 // Liefert 'update' | 'none' | 'error'. auto=true unterdrückt wiederholte
 // Hinweise für dieselbe Version (Check läuft alle 4 Stunden).
 async function checkMacUpdate(auto) {
@@ -539,17 +615,9 @@ async function checkMacUpdate(auto) {
   if (!latest) return 'error';
   if (!isNewerVersion(latest, app.getVersion())) return 'none';
   if (auto && macUpdateNotifiedFor === latest) return 'update';
+  if (updateDialogOpen) return 'update';
   macUpdateNotifiedFor = latest;
-  const { response } = await dialog.showMessageBox(win, {
-    type: 'info',
-    title: 'Update verfügbar',
-    message: `Verti ${latest} ist verfügbar.`,
-    detail: withReleaseNotes(notes, 'Lade die neue Version herunter und ziehe sie einmal in den Programme-Ordner. Alle Logins und Apps bleiben erhalten.'),
-    buttons: ['Herunterladen', 'Später'],
-    defaultId: 0,
-    cancelId: 1,
-  });
-  if (response === 0) shell.openExternal('https://github.com/freddyveee/verti/releases/latest/download/Verti-Mac.dmg');
+  openUpdatePopup({ mode: 'available', platform: 'mac', version: latest, notes: releaseNotesText(notes) });
   return 'update';
 }
 
@@ -569,51 +637,21 @@ function setupAutoUpdate() {
   // (electron-builder #7807). Installiert wird nur über 'Jetzt neu starten'.
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.on('error', () => {});
-  autoUpdater.on('update-available', async (info) => {
+  autoUpdater.on('update-available', (info) => {
     // 'Später' respektieren: pro Version nur einmal je App-Lauf melden,
-    // sonst poppt der Dialog alle 4 Stunden erneut auf
+    // sonst poppt das Fenster alle 4 Stunden erneut auf
     if (updateDialogOpen || info.version === winUpdateNotifiedFor) return;
     winUpdateNotifiedFor = info.version;
-    updateDialogOpen = true;
-    try {
-      const { response } = await dialog.showMessageBox(win, {
-        type: 'info',
-        title: 'Update verfügbar',
-        message: `Verti ${info.version} ist verfügbar.`,
-        detail: withReleaseNotes(info.releaseNotes, 'Das Update wird heruntergeladen und nach einem kurzen Neustart installiert. Alle Logins und Apps bleiben erhalten.'),
-        buttons: ['Update installieren', 'Später'],
-        defaultId: 0,
-        cancelId: 1,
-      });
-      if (response === 0) {
-        autoUpdater.downloadUpdate().catch(() => {
-          // Beim nächsten 4-Stunden-Check wieder anbieten
-          winUpdateNotifiedFor = null;
-          dialog.showMessageBox(win, { message: 'Update-Download fehlgeschlagen. Bitte später erneut versuchen.' });
-        });
-      }
-    } finally {
-      updateDialogOpen = false;
-    }
+    openUpdatePopup({ mode: 'available', platform: 'win', version: info.version, notes: releaseNotesText(info.releaseNotes) });
   });
-  autoUpdater.on('update-downloaded', async (info) => {
-    if (updateDialogOpen || info.version === winReadyNotifiedFor) return;
-    winReadyNotifiedFor = info.version;
-    updateDialogOpen = true;
-    try {
-      const { response } = await dialog.showMessageBox(win, {
-        type: 'info',
-        title: 'Update bereit',
-        message: `Verti ${info.version} ist bereit.`,
-        detail: 'Zum Installieren startet Verti kurz neu. Alle Logins und Apps bleiben erhalten.',
-        buttons: ['Jetzt neu starten', 'Später'],
-        defaultId: 0,
-        cancelId: 1,
-      });
-      if (response === 0) autoUpdater.quitAndInstall();
-    } finally {
-      updateDialogOpen = false;
-    }
+  autoUpdater.on('download-progress', (p) => {
+    sendUpdateState({ mode: 'downloading', percent: p.percent });
+  });
+  autoUpdater.on('update-downloaded', () => {
+    // Download passiert nur nach Klick auf 'Jetzt aktualisieren',
+    // der Neustart ist also schon abgesegnet
+    sendUpdateState({ mode: 'installing' });
+    setTimeout(() => autoUpdater.quitAndInstall(), 1500);
   });
   autoUpdater.checkForUpdates().catch(() => {});
   setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), UPDATE_CHECK_INTERVAL);
@@ -632,16 +670,14 @@ async function checkForUpdatesManually() {
   }
   const autoUpdater = getAutoUpdater();
   try {
-    // Update-Dialoge auch dann wieder zeigen, wenn sie schon mal kamen
+    // Update-Popup auch dann wieder zeigen, wenn es schon mal kam
     winUpdateNotifiedFor = null;
-    winReadyNotifiedFor = null;
     const result = await autoUpdater.checkForUpdates();
     const v = result?.updateInfo?.version;
     if (!v || !isNewerVersion(v, app.getVersion())) {
       dialog.showMessageBox(win, { message: `Verti ${app.getVersion()} ist aktuell.` });
     }
-    // Update gefunden: der Hinweis-Dialog mit den Release-Notes kommt
-    // über 'update-available'
+    // Update gefunden: das Popup mit den Release-Notes kommt über 'update-available'
   } catch {
     dialog.showMessageBox(win, { message: 'Update-Suche fehlgeschlagen. Bitte später erneut versuchen.' });
   }
@@ -656,9 +692,14 @@ app.whenReady().then(() => {
   if (app.isPackaged) {
     app.setLoginItemSettings({ openAtLogin: true });
   }
+  const justUpdated = detectUpdateJustHappened();
   createWindow();
   buildMenu();
   setupAutoUpdate();
+  if (justUpdated) {
+    // Kurz warten, bis das Hauptfenster steht, dann Konfetti
+    setTimeout(() => openUpdatePopup({ mode: 'celebrate', version: app.getVersion() }), 900);
+  }
 
   app.on('activate', () => {
     if (win === null || BrowserWindow.getAllWindows().length === 0) {
