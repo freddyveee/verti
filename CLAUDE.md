@@ -34,6 +34,13 @@ npm start
 
 Die Download-Links der Landingpage zeigen immer auf `releases/latest`, müssen also nie angepasst werden.
 
+## Geräte-Sync (wichtig, immer befolgen)
+
+Freddy arbeitet abwechselnd am MacBook und am Windows-PC. Deshalb:
+
+- **Zu Beginn jeder Session:** ungefragt `git pull` ausführen, damit der Stand vom anderen Rechner da ist
+- **Nach jeder abgeschlossenen Änderung:** committen und pushen, damit der andere Rechner nichts verpasst
+
 ## Hinweise zur Zusammenarbeit mit Freddy
 
 - Kurze Antworten, keine langen Gedankenstriche im Fließtext
