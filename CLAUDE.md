@@ -1,0 +1,41 @@
+# Verti – Projektkontext
+
+Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electron-Desktop-App. Web-Apps (Google Kalender, WhatsApp, Todoist, ChatGPT, Stackfield …) laufen als dauerhaft eingeloggte Views neben einer schmalen Sidebar. Wird intern bei IMPERIO genutzt; Mitarbeiter laden es über die Landingpage.
+
+## Struktur
+
+- `main.js` – Electron-Hauptprozess: Fenster, WebContentsViews, App-Katalog (`CATALOG`, `IMPERIO_IDS`), Fensterposition/State in `userData/window-state.json`, natives Menü, IPC
+- `sidebar.html` – Renderer: Sidebar, App-Bibliothek (Bereiche "IMPERIO Apps" / "Weitere Apps"), Navigation, Drag-and-drop-Sortierung
+- `preload.js` – contextBridge-API (`window.verti`)
+- `icons/` – lokal eingebettete App-Logos (WhatsApp/Stackfield/Telegram, weil Favicon-Dienste dort versagen; Stackfield-Haken wurde manuell weiß gefüllt, war transparent ausgestanzt)
+- `build/` – App-Icon (icon.png) und DMG-Hintergrund
+- `docs/` – Landingpage (GitHub Pages): https://freddyveee.github.io/verti/
+
+## Wichtige Entscheidungen
+
+- User-Agent wird plattformabhängig auf Chrome gefälscht, sonst blockt Google-Login
+- Session-Partition `persist:apps` hält alle Logins lokal
+- Windows: eigener AppUserModelId, kein Strg+W-Close im Menü, titleBarOverlay statt Ampel-Buttons
+- App ist unsigniert/nicht notarisiert → Gatekeeper/SmartScreen-Hinweise, Anleitung steht auf der Landingpage
+
+## Entwickeln
+
+```bash
+npm install
+npm start
+```
+
+## Release (Ablauf)
+
+1. Version in `package.json` erhöhen, auch den Versionstext in `docs/index.html` anpassen
+2. Bauen: `npx electron-builder --mac --universal` und danach `npx electron-builder --win --x64` (getrennt ausführen, `--universal` bricht sonst den Windows-Build)
+3. Veröffentlichen: `gh release create v1.0.x dist/Verti-Mac.dmg dist/Verti-Windows-Setup.exe --title "Verti 1.0.x" --notes "…"`
+4. Landingpage-Änderungen: einfach `git push` (GitHub Pages baut aus `docs/`, dauert 1–3 Min, Browser-Cache 10 Min beachten)
+
+Die Download-Links der Landingpage zeigen immer auf `releases/latest`, müssen also nie angepasst werden.
+
+## Hinweise zur Zusammenarbeit mit Freddy
+
+- Kurze Antworten, keine langen Gedankenstriche im Fließtext
+- Vor Weichenstellungen (Hosting, öffentlich/privat, Verteilwege) erst Optionen nennen und Freddy entscheiden lassen
+- Auf Freddys Mac liegt gh unter /opt/homebrew/bin/gh (nicht im Terminal-PATH); Veröffentlichungs-Befehle führt Freddy selbst im Terminal aus
