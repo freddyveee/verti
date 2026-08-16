@@ -22,7 +22,8 @@
       "artifactName": "Verti-Mac.${ext}"
     },
     "dmg": {
-      "writeUpdateInfo": false
+      "writeUpdateInfo": false,
+      "background": "build/dmg-background.tiff"
     },
     "win": {
       "icon": "build/icon.png",
