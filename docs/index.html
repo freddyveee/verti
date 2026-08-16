@@ -466,8 +466,9 @@ ALT-DASHBOARD-ENDE -->
       <summary>Installation auf dem Mac</summary>
       <ol>
         <li>DMG öffnen und Verti in den Programme-Ordner ziehen.</li>
-        <li>Beim ersten Start: <b>Rechtsklick auf Verti → Öffnen → Öffnen</b> (die App ist intern erstellt und nicht bei Apple registriert).</li>
-        <li>Falls macOS meldet, die App sei „beschädigt": Terminal öffnen, diesen Befehl einfügen und Enter drücken:<br><code>xattr -cr /Applications/Verti.app</code></li>
+        <li>Verti starten. macOS zeigt eine Warnung („Apple konnte nicht überprüfen…"), weil die App intern erstellt und nicht bei Apple registriert ist – das ist normal. Auf <b>Fertig</b> klicken.</li>
+        <li>Dann <b>Systemeinstellungen → Datenschutz &amp; Sicherheit</b> öffnen, nach unten scrollen und bei „Verti wurde blockiert" auf <b>Dennoch öffnen</b> klicken. Das ist nur beim ersten Start nötig.</li>
+        <li>Alternative für Fortgeschrittene: im Terminal <code>xattr -cr /Applications/Verti.app</code> ausführen, dann entfällt Schritt 3.</li>
       </ol>
     </details>
     <details>
