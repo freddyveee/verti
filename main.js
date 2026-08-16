@@ -80,6 +80,48 @@ function saveState() {
   }, 300);
 }
 
+// Login-Popups müssen in der App bleiben (gleiche Session), sonst landet die
+// Anmeldung im externen Browser, wo sie der App nichts bringt
+const AUTH_URL_PATTERNS = [
+  'accounts.google.com',
+  'accounts.youtube.com',
+  'appleid.apple.com',
+  'login.microsoftonline.com',
+  'login.live.com',
+  'login.yahoo.com',
+  'auth.openai.com',
+  'auth0.com',
+  'okta.com',
+  'id.atlassian.com',
+  'facebook.com/login',
+  'facebook.com/dialog',
+  'github.com/login',
+  'github.com/session',
+  'linkedin.com/oauth',
+  'linkedin.com/checkpoint',
+  'slack.com/signin',
+  'slack.com/sso',
+  'slack.com/openid',
+  'stackfield.com/login',
+  'claude.ai/login',
+  'claude.ai/oauth',
+];
+
+function isAuthPopup(url) {
+  // Leere/about:blank-Popups nutzen viele OAuth-Flows als Startpunkt
+  if (!url || url === 'about:blank') return true;
+  let u;
+  try {
+    u = new URL(url);
+  } catch {
+    return false;
+  }
+  const hostAndPath = u.host + u.pathname;
+  return AUTH_URL_PATTERNS.some((p) =>
+    p.includes('/') ? hostAndPath.startsWith(p) || hostAndPath.includes('.' + p) : u.host === p || u.host.endsWith('.' + p)
+  );
+}
+
 // Chrome-like UA so Google sign-in and WhatsApp Web accept the embedded browser
 function chromeUserAgent() {
   const os = isMac ? 'Macintosh; Intel Mac OS X 10_15_7' : 'Windows NT 10.0; Win64; x64';
@@ -122,6 +164,17 @@ function createView(appDef) {
   view.webContents.setUserAgent(chromeUserAgent());
   view.webContents.loadURL(appDef.url);
   view.webContents.setWindowOpenHandler(({ url }) => {
+    if (isAuthPopup(url)) {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 520,
+          height: 680,
+          autoHideMenuBar: true,
+          webPreferences: { partition: 'persist:apps' },
+        },
+      };
+    }
     shell.openExternal(url);
     return { action: 'deny' };
   });
