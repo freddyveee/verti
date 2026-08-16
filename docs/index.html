@@ -233,7 +233,7 @@
     position: absolute;
     left: -12%; right: -12%; top: -60px; bottom: -30px;
     width: 124%; height: calc(100% + 90px);
-    filter: blur(3px);
+    filter: blur(1px);
     z-index: 0;
     pointer-events: none;
   }
@@ -403,19 +403,22 @@ ALT-DASHBOARD-ENDE -->
   <div class="features-wrap" id="features">
   <svg class="wave" viewBox="0 0 1400 520" preserveAspectRatio="none" aria-hidden="true">
     <defs>
-      <linearGradient id="wg1" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#9257ff" stop-opacity="0.5"/>
-        <stop offset="1" stop-color="#4f2a8f" stop-opacity="0.12"/>
+      <!-- Vertikal auslaufend: oben an der Kante kräftig, unten weich ins Dunkel -->
+      <linearGradient id="wg1" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#9257ff" stop-opacity="0.55"/>
+        <stop offset="0.45" stop-color="#6b3ad1" stop-opacity="0.22"/>
+        <stop offset="1" stop-color="#38206e" stop-opacity="0"/>
       </linearGradient>
-      <linearGradient id="wg2" x1="1" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#b07bff" stop-opacity="0.35"/>
-        <stop offset="1" stop-color="#38206e" stop-opacity="0.1"/>
+      <linearGradient id="wg2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#b07bff" stop-opacity="0.42"/>
+        <stop offset="0.5" stop-color="#7a48d9" stop-opacity="0.16"/>
+        <stop offset="1" stop-color="#38206e" stop-opacity="0"/>
       </linearGradient>
     </defs>
     <path d="M0,300 C220,160 430,420 700,290 C970,160 1150,400 1400,230 L1400,520 L0,520 Z" fill="url(#wg1)"/>
-    <path d="M0,300 C220,160 430,420 700,290 C970,160 1150,400 1400,230" fill="none" stroke="#b78aff" stroke-opacity="0.55" stroke-width="2.5"/>
+    <path d="M0,300 C220,160 430,420 700,290 C970,160 1150,400 1400,230" fill="none" stroke="#c9a6ff" stroke-opacity="0.75" stroke-width="2.5"/>
     <path d="M0,390 C260,250 500,470 780,350 C1060,230 1200,440 1400,330 L1400,520 L0,520 Z" fill="url(#wg2)"/>
-    <path d="M0,390 C260,250 500,470 780,350 C1060,230 1200,440 1400,330" fill="none" stroke="#cbadff" stroke-opacity="0.35" stroke-width="2"/>
+    <path d="M0,390 C260,250 500,470 780,350 C1060,230 1200,440 1400,330" fill="none" stroke="#cbadff" stroke-opacity="0.5" stroke-width="2"/>
   </svg>
   <div class="features">
     <div class="feature">
