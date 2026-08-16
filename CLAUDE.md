@@ -17,7 +17,8 @@ Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electr
 - Session-Partition `persist:apps` hält alle Logins lokal
 - Windows: eigener AppUserModelId, kein Strg+W-Close im Menü, titleBarOverlay statt Ampel-Buttons
 - App ist unsigniert/nicht notarisiert → Gatekeeper/SmartScreen-Hinweise, Anleitung steht auf der Landingpage
-- Auto-Update (ab 1.0.2): Windows vollautomatisch per electron-updater über GitHub Releases (braucht `latest.yml` im Release!); Mac nur Hinweis-Dialog + DMG-Download, weil unsigniert kein echtes Auto-Update kann
+- Auto-Update: beide Plattformen zeigen beim Öffnen einen Hinweis-Dialog mit den Release-Notes, der Nutzer bestätigt aktiv (Freddys Wunsch: nichts still im Hintergrund). Windows installiert danach per electron-updater über GitHub Releases (braucht `latest.yml` im Release!); Mac nur DMG-Download, weil unsigniert kein echtes Auto-Update kann
+- Die `--notes` beim `gh release create` erscheinen im Update-Dialog der Nutzer → verständlich und auf Deutsch formulieren, Stichpunkte mit `-` werden als `•` angezeigt
 
 ## Entwickeln
 

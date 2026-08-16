@@ -473,11 +473,13 @@ function buildMenu() {
 }
 
 // ---------- Auto-Update ----------
-// Windows: vollautomatisch über electron-updater (GitHub Releases).
-// Mac: App ist unsigniert, dort Hinweis-Dialog + Download der neuen DMG.
+// Beide Plattformen: Hinweis-Dialog mit den Release-Notes, Nutzer bestätigt aktiv.
+// Windows: nach Bestätigung Download + Installation über electron-updater (GitHub Releases).
+// Mac: App ist unsigniert, dort öffnet der Dialog den Download der neuen DMG.
 const UPDATE_CHECK_INTERVAL = 4 * 60 * 60 * 1000;
 let macUpdateNotifiedFor = null;
 let winUpdateNotifiedFor = null;
+let winReadyNotifiedFor = null;
 let updateDialogOpen = false;
 
 function isNewerVersion(a, b) {
@@ -495,16 +497,42 @@ function getAutoUpdater() {
   return autoUpdater;
 }
 
+// Release-Notes für den Dialog aufbereiten: electron-updater liefert HTML
+// (aus dem Markdown des GitHub-Release), die GitHub-API rohes Markdown
+function releaseNotesText(notes) {
+  const raw = typeof notes === 'string' ? notes : Array.isArray(notes) ? notes.map((n) => n && n.note).filter(Boolean).join('\n') : '';
+  return raw
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|ul|ol|h[1-6])>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/^[-*] /gm, '• ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function withReleaseNotes(notes, text) {
+  const clean = releaseNotesText(notes);
+  return clean ? `Was ist neu:\n${clean}\n\n${text}` : text;
+}
+
 // Liefert 'update' | 'none' | 'error'. auto=true unterdrückt wiederholte
 // Hinweise für dieselbe Version (Check läuft alle 4 Stunden).
 async function checkMacUpdate(auto) {
-  let latest;
+  let latest, notes;
   try {
     const res = await fetch('https://api.github.com/repos/freddyveee/verti/releases/latest', {
       headers: { 'User-Agent': 'Verti' },
     });
     if (!res.ok) return 'error';
-    latest = String((await res.json()).tag_name || '').replace(/^v/, '');
+    const data = await res.json();
+    latest = String(data.tag_name || '').replace(/^v/, '');
+    notes = data.body;
   } catch {
     return 'error';
   }
@@ -516,7 +544,7 @@ async function checkMacUpdate(auto) {
     type: 'info',
     title: 'Update verfügbar',
     message: `Verti ${latest} ist verfügbar.`,
-    detail: 'Lade die neue Version herunter und ziehe sie einmal in den Programme-Ordner. Alle Logins und Apps bleiben erhalten.',
+    detail: withReleaseNotes(notes, 'Lade die neue Version herunter und ziehe sie einmal in den Programme-Ordner. Alle Logins und Apps bleiben erhalten.'),
     buttons: ['Herunterladen', 'Später'],
     defaultId: 0,
     cancelId: 1,
@@ -533,13 +561,15 @@ function setupAutoUpdate() {
     return;
   }
   const autoUpdater = getAutoUpdater();
-  autoUpdater.autoDownload = true;
+  // Erst fragen, dann laden: der Nutzer soll sehen, was sich ändert,
+  // und das Update aktiv anstoßen statt es still im Hintergrund zu bekommen
+  autoUpdater.autoDownload = false;
   // Nie still beim App-Beenden installieren: wird der Installer vom
   // Windows-Shutdown abgewürgt, bleibt eine kaputte Installation zurück
-  // (electron-builder #7807). Installiert wird nur über 'Jetzt updaten'.
+  // (electron-builder #7807). Installiert wird nur über 'Jetzt neu starten'.
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.on('error', () => {});
-  autoUpdater.on('update-downloaded', async (info) => {
+  autoUpdater.on('update-available', async (info) => {
     // 'Später' respektieren: pro Version nur einmal je App-Lauf melden,
     // sonst poppt der Dialog alle 4 Stunden erneut auf
     if (updateDialogOpen || info.version === winUpdateNotifiedFor) return;
@@ -549,9 +579,34 @@ function setupAutoUpdate() {
       const { response } = await dialog.showMessageBox(win, {
         type: 'info',
         title: 'Update verfügbar',
+        message: `Verti ${info.version} ist verfügbar.`,
+        detail: withReleaseNotes(info.releaseNotes, 'Das Update wird heruntergeladen und nach einem kurzen Neustart installiert. Alle Logins und Apps bleiben erhalten.'),
+        buttons: ['Update installieren', 'Später'],
+        defaultId: 0,
+        cancelId: 1,
+      });
+      if (response === 0) {
+        autoUpdater.downloadUpdate().catch(() => {
+          // Beim nächsten 4-Stunden-Check wieder anbieten
+          winUpdateNotifiedFor = null;
+          dialog.showMessageBox(win, { message: 'Update-Download fehlgeschlagen. Bitte später erneut versuchen.' });
+        });
+      }
+    } finally {
+      updateDialogOpen = false;
+    }
+  });
+  autoUpdater.on('update-downloaded', async (info) => {
+    if (updateDialogOpen || info.version === winReadyNotifiedFor) return;
+    winReadyNotifiedFor = info.version;
+    updateDialogOpen = true;
+    try {
+      const { response } = await dialog.showMessageBox(win, {
+        type: 'info',
+        title: 'Update bereit',
         message: `Verti ${info.version} ist bereit.`,
-        detail: 'Das Update wurde bereits heruntergeladen. Beim Neustart wird es installiert; alle Logins und Apps bleiben erhalten.',
-        buttons: ['Jetzt updaten', 'Später'],
+        detail: 'Zum Installieren startet Verti kurz neu. Alle Logins und Apps bleiben erhalten.',
+        buttons: ['Jetzt neu starten', 'Später'],
         defaultId: 0,
         cancelId: 1,
       });
@@ -577,24 +632,16 @@ async function checkForUpdatesManually() {
   }
   const autoUpdater = getAutoUpdater();
   try {
-    // Ergebnis-Dialog auch dann wieder zeigen, wenn er schon mal kam
+    // Update-Dialoge auch dann wieder zeigen, wenn sie schon mal kamen
     winUpdateNotifiedFor = null;
+    winReadyNotifiedFor = null;
     const result = await autoUpdater.checkForUpdates();
     const v = result?.updateInfo?.version;
     if (!v || !isNewerVersion(v, app.getVersion())) {
       dialog.showMessageBox(win, { message: `Verti ${app.getVersion()} ist aktuell.` });
-      return;
     }
-    // Update gefunden: lädt im Hintergrund, der Update-Dialog kommt über
-    // 'update-downloaded'. Bis dahin dem Nutzer sagen, was passiert.
-    if (!updateDialogOpen) {
-      dialog.showMessageBox(win, {
-        message: `Verti ${v} wird im Hintergrund heruntergeladen. Du bekommst eine Meldung, sobald es bereit ist.`,
-      });
-    }
-    const onError = () => dialog.showMessageBox(win, { message: 'Update-Download fehlgeschlagen. Bitte später erneut versuchen.' });
-    autoUpdater.once('error', onError);
-    setTimeout(() => autoUpdater.removeListener('error', onError), 30 * 60 * 1000);
+    // Update gefunden: der Hinweis-Dialog mit den Release-Notes kommt
+    // über 'update-available'
   } catch {
     dialog.showMessageBox(win, { message: 'Update-Suche fehlgeschlagen. Bitte später erneut versuchen.' });
   }
