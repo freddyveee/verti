@@ -298,7 +298,7 @@
         const apex = hostname.split('.').slice(-2).join('.');
         const sources = [];
         // Cache-Buster: lokale Icons sonst nach Updates veraltet aus dem Bildcache
-        if (app.icon) sources.push(app.icon + '?v=' + Date.now());
+        if (app.icon) sources.push(app.icon + (app.icon.includes('?') ? '&v=' : '?v=') + Date.now());
         sources.push('https://www.google.com/s2/favicons?domain=' + hostname + '&sz=64');
         if (apex !== hostname) {
           sources.push('https://www.google.com/s2/favicons?domain=' + apex + '&sz=64');

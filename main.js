@@ -15,7 +15,7 @@ const DEFAULT_APPS = [
 ];
 
 // IMPERIO-Standard-Apps erscheinen in der Bibliothek in einem eigenen Bereich oben
-const IMPERIO_IDS = ['calendar', 'stackfield', 'claude', 'chatgpt', 'google', 'imperio-tools'];
+const IMPERIO_IDS = ['calendar', 'stackfield', 'claude', 'chatgpt', 'google', 'imperio-tools', 'gdrive'];
 
 const CATALOG = [
   ...DEFAULT_APPS,
@@ -36,6 +36,32 @@ const CATALOG = [
   { id: 'spotify', name: 'Spotify', url: 'https://open.spotify.com/' },
   { id: 'github', name: 'GitHub', url: 'https://github.com/' },
   { id: 'figma', name: 'Figma', url: 'https://www.figma.com/' },
+  // Kommunikation
+  { id: 'teams', name: 'Microsoft Teams', url: 'https://teams.microsoft.com/' },
+  { id: 'discord', name: 'Discord', url: 'https://discord.com/channels/@me' },
+  { id: 'zoom', name: 'Zoom', url: 'https://app.zoom.us/' },
+  { id: 'meet', name: 'Google Meet', url: 'https://meet.google.com/' },
+  // Zusammenarbeit
+  { id: 'trello', name: 'Trello', url: 'https://trello.com/' },
+  { id: 'asana', name: 'Asana', url: 'https://app.asana.com/' },
+  { id: 'miro', name: 'Miro', url: 'https://miro.com/app/dashboard/' },
+  { id: 'canva', name: 'Canva', url: 'https://www.canva.com/' },
+  { id: 'airtable', name: 'Airtable', url: 'https://airtable.com/' },
+  { id: 'dropbox', name: 'Dropbox', url: 'https://www.dropbox.com/home' },
+  { id: 'office', name: 'Microsoft 365', url: 'https://www.office.com/' },
+  // Google-Welt: Docs/Sheets/Maps teilen sich Domains, darum feste Icon-Adressen
+  { id: 'gdocs', name: 'Google Docs', url: 'https://docs.google.com/document/', icon: 'https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico' },
+  { id: 'gsheets', name: 'Google Sheets', url: 'https://docs.google.com/spreadsheets/', icon: 'https://ssl.gstatic.com/docs/spreadsheets/favicon3.ico' },
+  { id: 'gmaps', name: 'Google Maps', url: 'https://www.google.com/maps', icon: 'https://www.google.com/s2/favicons?domain=maps.google.com&sz=64' },
+  { id: 'gphotos', name: 'Google Fotos', url: 'https://photos.google.com/' },
+  // Werkzeuge
+  { id: 'deepl', name: 'DeepL', url: 'https://www.deepl.com/translator' },
+  { id: 'perplexity', name: 'Perplexity', url: 'https://www.perplexity.ai/' },
+  // Social
+  { id: 'instagram', name: 'Instagram', url: 'https://www.instagram.com/' },
+  { id: 'facebook', name: 'Facebook', url: 'https://www.facebook.com/' },
+  { id: 'reddit', name: 'Reddit', url: 'https://www.reddit.com/' },
+  { id: 'pinterest', name: 'Pinterest', url: 'https://www.pinterest.com/' },
 ];
 
 const stateFile = () => path.join(app.getPath('userData'), 'window-state.json');
@@ -256,7 +282,7 @@ function switchApp(id) {
 // Seitentitel ("(3) WhatsApp"); daraus speisen sich die Sidebar-Badges.
 // Bei diesen Apps darf die Zahl überall im Titel stehen; bei allen anderen
 // nur ganz vorn, sonst machen Inhalts-Titel wie "Top 10 (2024)" falsche Badges.
-const TITLE_BADGE_APPS = new Set(['whatsapp', 'gmail', 'telegram', 'messenger', 'slack', 'linkedin', 'x']);
+const TITLE_BADGE_APPS = new Set(['whatsapp', 'gmail', 'telegram', 'messenger', 'slack', 'linkedin', 'x', 'discord', 'teams', 'instagram', 'facebook']);
 const badges = {};
 
 function parseUnread(id, title) {
