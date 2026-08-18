@@ -35,14 +35,18 @@
     <!-- weicher Lichtschein oben wie auf der Landingpage -->
     <rect x="64" y="64" width="896" height="896" fill="url(#glow)"/>
     <!-- Welle der Landingpage, unten einlaufend -->
-    <g transform="translate(0,540) scale(0.7315,0.78)">
+    <!-- horizontal gespiegelt: der höhere Wellenkamm liegt links -->
+    <g transform="translate(0,415) scale(0.7315,0.9) translate(1400,0) scale(-1,1)">
+      <!-- Glas-Look: hauchdünne weiße Schicht über der oberen Welle, Linien bleiben sichtbar -->
       <path d="M0,300 C220,160 430,420 700,290 C970,160 1150,400 1400,230 L1400,620 L0,620 Z" fill="url(#wg1)"/>
-      <path d="M0,300 C220,160 430,420 700,290 C970,160 1150,400 1400,230" fill="none" stroke="#c9a6ff" stroke-opacity="0.9" stroke-width="7"/>
+      <path d="M0,300 C220,160 430,420 700,290 C970,160 1150,400 1400,230 L1400,620 L0,620 Z" fill="#ffffff" fill-opacity="0.05"/>
+      <path d="M0,300 C220,160 430,420 700,290 C970,160 1150,400 1400,230" fill="none" stroke="#d9c0ff" stroke-opacity="0.95" stroke-width="7"/>
       <path d="M0,390 C260,250 500,470 780,350 C1060,230 1200,440 1400,330 L1400,620 L0,620 Z" fill="url(#wg2)"/>
-      <path d="M0,390 C260,250 500,470 780,350 C1060,230 1200,440 1400,330" fill="none" stroke="#dcc5ff" stroke-opacity="0.5" stroke-width="5"/>
+      <path d="M0,390 C260,250 500,470 780,350 C1060,230 1200,440 1400,330" fill="none" stroke="#e6d6ff" stroke-opacity="0.6" stroke-width="5"/>
     </g>
     <!-- plastisches V: Schattenwurf, Tiefenkante, Verlaufskörper, Lichtkante -->
-    <g filter="url(#vshadow)">
+    <!-- leicht durchscheinend, damit die Welle hinter dem V zu erahnen ist -->
+    <g filter="url(#vshadow)" opacity="0.88">
       <path d="M336 326 L512 688 L688 326" fill="none" stroke="#8f68e0" stroke-width="148" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,12)"/>
       <path d="M336 326 L512 688 L688 326" fill="none" stroke="url(#vg)" stroke-width="148" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M336 322 L512 684 L688 322" fill="none" stroke="#ffffff" stroke-opacity="0.85" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,-40)"/>
