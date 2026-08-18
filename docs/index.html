@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Verti – Alle deine Apps. Alles vertikal.</title>
+<link rel="icon" href="icons/verti.svg" type="image/svg+xml">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -39,11 +40,10 @@
   }
   .brand { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 700; margin-right: auto; }
   .brand .mark {
-    width: 40px; height: 40px; border-radius: 11px;
-    background: linear-gradient(135deg, #8347ff, #a585ff);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; font-weight: 800; color: #fff;
-    box-shadow: 0 8px 24px rgba(131, 71, 255, 0.45);
+    /* Das SVG bringt Kastenform, Welle und V selbst mit; die Rundung im
+       SVG entspricht bei 46px Darstellungsgröße etwa 11px Radius */
+    width: 46px; height: 46px; display: block;
+    filter: drop-shadow(0 8px 24px rgba(131, 71, 255, 0.5));
   }
   .brand em { font-style: normal; color: var(--accent2); }
   nav a.link { color: var(--muted); text-decoration: none; font-size: 15px; font-weight: 500; }
@@ -344,7 +344,7 @@
 <div class="wrap">
 
   <nav>
-    <div class="brand"><div class="mark">V</div><span>Verti<em>.</em></span></div>
+    <div class="brand"><img class="mark" src="icons/verti.svg" alt="Verti"><span>Verti<em>.</em></span></div>
     <a class="link" href="#features">Features</a>
     <a class="link" href="#sicherheit">Sicherheit</a>
     <a class="link" href="#roadmap">Roadmap</a>
