@@ -251,6 +251,25 @@ function chromeUserAgent() {
   return `Mozilla/5.0 (${os}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${process.versions.chrome.split('.')[0]}.0.0.0 Safari/537.36`;
 }
 
+// Google prüft neben dem User-Agent auch die Client-Hint-Header (sec-ch-ua):
+// echtes Chrome schickt sie bei jeder HTTPS-Anfrage mit, Electron gar nicht.
+// Dieser Widerspruch zum Chrome-UA löst "Dieser Browser ist unter Umständen
+// nicht sicher" beim Google-Login aus → die drei Standard-Hints ergänzen.
+function applyChromeClientHints(ses) {
+  const major = process.versions.chrome.split('.')[0];
+  const brands = `"Chromium";v="${major}", "Google Chrome";v="${major}", "Not_A Brand";v="99"`;
+  const platform = isMac ? '"macOS"' : '"Windows"';
+  ses.webRequest.onBeforeSendHeaders((details, cb) => {
+    const headers = details.requestHeaders;
+    if (details.url.startsWith('https://')) {
+      headers['sec-ch-ua'] = brands;
+      headers['sec-ch-ua-mobile'] = '?0';
+      headers['sec-ch-ua-platform'] = platform;
+    }
+    cb({ requestHeaders: headers });
+  });
+}
+
 function layoutViews() {
   if (!win) return;
   const [w, h] = win.getContentSize();
@@ -370,6 +389,9 @@ function createWindow() {
 
   const ses = session.fromPartition('persist:apps');
   ses.setUserAgent(chromeUserAgent());
+  applyChromeClientHints(ses);
+  // Login-Popups laufen teils in der Default-Session, bevor sie adoptiert werden
+  applyChromeClientHints(session.defaultSession);
   ses.setPermissionRequestHandler((wc, permission, cb) => {
     cb(['notifications', 'media', 'clipboard-read', 'clipboard-sanitized-write', 'fullscreen'].includes(permission));
   });
