@@ -622,7 +622,10 @@ function buildMenu() {
 // Beide Plattformen identisch (seit die App signiert ist): Hinweis-Popup mit
 // Release-Notes, Nutzer bestätigt aktiv, dann Download + Installation über
 // electron-updater (GitHub Releases; Mac braucht Verti-Mac.zip + latest-mac.yml).
-const UPDATE_CHECK_INTERVAL = 4 * 60 * 60 * 1000;
+// Kurzer Takt, damit der lila Update-Knopf im laufenden Betrieb zügig
+// erscheint; zusätzlich wird bei Fenster-Fokus geprüft (gedrosselt)
+const UPDATE_CHECK_INTERVAL = 15 * 60 * 1000;
+const UPDATE_CHECK_MIN_GAP = 5 * 60 * 1000;
 const appStartedAt = Date.now();
 let updateNotifiedFor = null;
 // Gefundenes, noch nicht installiertes Update — speist den lila
@@ -773,8 +776,15 @@ function setupAutoUpdate() {
     sendUpdateState({ mode: 'installing' });
     setTimeout(() => autoUpdater.quitAndInstall(), 1500);
   });
-  autoUpdater.checkForUpdates().catch(() => {});
-  setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), UPDATE_CHECK_INTERVAL);
+  let lastCheck = 0;
+  const throttledCheck = () => {
+    if (Date.now() - lastCheck < UPDATE_CHECK_MIN_GAP) return;
+    lastCheck = Date.now();
+    autoUpdater.checkForUpdates().catch(() => {});
+  };
+  throttledCheck();
+  setInterval(throttledCheck, UPDATE_CHECK_INTERVAL);
+  if (win && !win.isDestroyed()) win.on('focus', throttledCheck);
 }
 
 async function checkForUpdatesManually() {
