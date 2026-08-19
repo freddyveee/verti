@@ -214,6 +214,7 @@ function windowOpenPolicy(openerContents) {
 // Chrome-UA, sonst wären sie unreguliert (und verraten sich als Electron)
 function adoptChildWindow(child) {
   child.webContents.setUserAgent(chromeUserAgent());
+  attachGoogleAuthUaSwitch(child.webContents);
   child.webContents.setWindowOpenHandler(windowOpenPolicy(child.webContents));
   child.webContents.on('did-create-window', (grandchild) => adoptChildWindow(grandchild));
 }
@@ -251,22 +252,43 @@ function chromeUserAgent() {
   return `Mozilla/5.0 (${os}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${process.versions.chrome.split('.')[0]}.0.0.0 Safari/537.36`;
 }
 
-// Google prüft neben dem User-Agent auch die Client-Hint-Header (sec-ch-ua):
-// echtes Chrome schickt sie bei jeder HTTPS-Anfrage mit, Electron gar nicht.
-// Dieser Widerspruch zum Chrome-UA löst "Dieser Browser ist unter Umständen
-// nicht sicher" beim Google-Login aus → die drei Standard-Hints ergänzen.
-function applyChromeClientHints(ses) {
-  const major = process.versions.chrome.split('.')[0];
-  const brands = `"Chromium";v="${major}", "Google Chrome";v="${major}", "Not_A Brand";v="99"`;
-  const platform = isMac ? '"macOS"' : '"Windows"';
+// Googles Login-Bot-Erkennung lehnt Electron ab, egal wie Chrome-ähnlich die
+// Header aussehen (sie prüft auch per JavaScript-Fingerabdruck). Ausweg wie
+// bei Ferdium & Co.: Auf den Google-Anmelde-Domains gibt sich Verti als
+// Firefox aus — der kennt weder Client-Hints noch userAgentData, es gibt
+// also nichts, was sich widersprechen könnte. Alle anderen Seiten bekommen
+// unverändert den Chrome-UA (bewährt seit 1.0.0, keine Extra-Header).
+const FIREFOX_UA = isMac
+  ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:144.0) Gecko/20100101 Firefox/144.0'
+  : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0';
+const GOOGLE_AUTH_HOSTS = new Set(['accounts.google.com', 'accounts.youtube.com']);
+
+function isGoogleAuthUrl(url) {
+  try {
+    return GOOGLE_AUTH_HOSTS.has(new URL(url).host);
+  } catch {
+    return false;
+  }
+}
+
+function applyGoogleAuthDisguise(ses) {
   ses.webRequest.onBeforeSendHeaders((details, cb) => {
     const headers = details.requestHeaders;
-    if (details.url.startsWith('https://')) {
-      headers['sec-ch-ua'] = brands;
-      headers['sec-ch-ua-mobile'] = '?0';
-      headers['sec-ch-ua-platform'] = platform;
+    if (isGoogleAuthUrl(details.url)) {
+      headers['User-Agent'] = FIREFOX_UA;
+      for (const key of Object.keys(headers)) {
+        if (key.toLowerCase().startsWith('sec-ch-ua')) delete headers[key];
+      }
     }
     cb({ requestHeaders: headers });
+  });
+}
+
+// navigator.userAgent soll auf der Anmeldeseite zum Firefox-Header passen
+function attachGoogleAuthUaSwitch(wc) {
+  wc.on('did-start-navigation', (_e, url, _inPlace, isMainFrame) => {
+    if (!isMainFrame) return;
+    wc.setUserAgent(isGoogleAuthUrl(url) ? FIREFOX_UA : chromeUserAgent());
   });
 }
 
@@ -348,6 +370,7 @@ function createView(appDef) {
     },
   });
   view.webContents.setUserAgent(chromeUserAgent());
+  attachGoogleAuthUaSwitch(view.webContents);
   view.webContents.loadURL(appDef.url);
   view.webContents.setWindowOpenHandler(windowOpenPolicy(view.webContents));
   view.webContents.on('did-create-window', (child) => adoptChildWindow(child));
@@ -389,9 +412,9 @@ function createWindow() {
 
   const ses = session.fromPartition('persist:apps');
   ses.setUserAgent(chromeUserAgent());
-  applyChromeClientHints(ses);
+  applyGoogleAuthDisguise(ses);
   // Login-Popups laufen teils in der Default-Session, bevor sie adoptiert werden
-  applyChromeClientHints(session.defaultSession);
+  applyGoogleAuthDisguise(session.defaultSession);
   ses.setPermissionRequestHandler((wc, permission, cb) => {
     cb(['notifications', 'media', 'clipboard-read', 'clipboard-sanitized-write', 'fullscreen'].includes(permission));
   });
