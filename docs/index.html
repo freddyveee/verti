@@ -411,6 +411,52 @@
   .cal-save { background: #1a73e8; color: #fff; font-size: 11px; font-weight: 600; padding: 6px 15px; border-radius: 5px; }
 
   /* Features mit Glas-Optik über lila Welle */
+  /* Zeitspar-Abschnitt mit Beispielrechner */
+  .save-line {
+    font-size: clamp(26px, 3vw, 38px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.2;
+    background: linear-gradient(90deg, #a577ff, #cbadff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 34px;
+  }
+  .save-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; max-width: 640px; margin-bottom: 30px; }
+  .save-stat {
+    background: rgba(146, 87, 255, 0.09);
+    border: 1px solid rgba(183, 138, 255, 0.25);
+    border-radius: 16px;
+    padding: 22px 16px;
+    text-align: center;
+  }
+  .save-stat .n { font-size: 32px; font-weight: 800; letter-spacing: -1px; color: #cbadff; }
+  .save-stat .l { color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+  .save-calc {
+    display: flex; align-items: center; gap: 26px; flex-wrap: wrap;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    padding: 22px 26px;
+    max-width: 640px;
+  }
+  .save-calc-input label { display: block; color: var(--muted); font-size: 13px; margin-bottom: 7px; }
+  .wage-field { display: flex; align-items: center; gap: 8px; }
+  .wage-field input {
+    width: 90px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(183, 138, 255, 0.4);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #fff; font-size: 18px; font-weight: 700;
+    outline: none;
+  }
+  .wage-field input:focus { border-color: var(--accent2); }
+  .wage-field span { color: var(--muted); font-size: 17px; font-weight: 600; }
+  .save-calc-result { flex: 1; min-width: 240px; color: var(--muted); font-size: 15.5px; line-height: 1.5; }
+  .save-calc-result b { display: block; font-size: 34px; font-weight: 800; letter-spacing: -1px; color: #fff; margin: 2px 0; }
+  .save-calc-result b.inline { display: inline; font-size: inherit; color: var(--accent2); letter-spacing: 0; }
   .features-wrap { position: relative; padding-bottom: 90px; }
   .wave {
     position: absolute;
@@ -706,6 +752,26 @@ ALT-DASHBOARD-ENDE -->
   </div>
   </div>
 
+  <section class="simple" id="zeitsparen">
+    <p class="save-line">Spare täglich durchschnittlich <b>12 Minuten</b>,<br>die sonst beim App- und Fenster-Schieben verloren gehen.</p>
+    <div class="save-grid">
+      <div class="save-stat"><div class="n">12 Min</div><div class="l">pro Tag</div></div>
+      <div class="save-stat"><div class="n">1 Std</div><div class="l">pro Woche</div></div>
+      <div class="save-stat"><div class="n">4 Std</div><div class="l">pro Monat</div></div>
+    </div>
+    <div class="save-calc">
+      <div class="save-calc-input">
+        <label for="wage">Dein Stundenlohn</label>
+        <div class="wage-field"><input id="wage" type="number" min="1" max="999" value="30" inputmode="numeric"><span>€</span></div>
+      </div>
+      <div class="save-calc-result">
+        <span>Mit Verti sparst du rund</span>
+        <b id="saveMonth">120 €</b>
+        <span>im Monat — <b class="inline" id="saveYear">1.440 €</b> im Jahr.</span>
+      </div>
+    </div>
+  </section>
+
   <section class="simple" id="sicherheit">
     <h2>Sicherheit</h2>
     <p>Verti ist ein reines Fenster zu den Web-Apps, die du sowieso nutzt. Alle Logins, Cookies und Daten bleiben ausschließlich lokal auf deinem Rechner, es gibt keinen Verti-Server, kein Konto und kein Tracking. Der komplette Quellcode ist offen einsehbar.</p>
@@ -865,6 +931,22 @@ ALT-DASHBOARD-ENDE -->
   }
   moveTo(panels.chatgpt, 0, 40);
   loop();
+})();
+
+// Zeitspar-Rechner: 4 gesparte Stunden pro Monat × Stundenlohn
+(function () {
+  var wage = document.getElementById('wage');
+  var month = document.getElementById('saveMonth');
+  var year = document.getElementById('saveYear');
+  if (!wage) return;
+  function fmt(n) { return n.toLocaleString('de-DE') + ' €'; }
+  function update() {
+    var w = Math.max(0, Math.min(999, parseFloat(wage.value) || 0));
+    month.textContent = fmt(Math.round(w * 4));
+    year.textContent = fmt(Math.round(w * 48));
+  }
+  wage.addEventListener('input', update);
+  update();
 })();
 </script>
 </body>
