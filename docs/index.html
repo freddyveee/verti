@@ -281,7 +281,13 @@
   .wa-meta b { display: block; font-size: 11.5px; font-weight: 600; }
   .wa-meta span { display: block; font-size: 10px; color: #8696a0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .wa-time { margin-left: auto; font-size: 9px; color: #8696a0; align-self: flex-start; }
-  .wa-conv { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #0b141a; }
+  .wa-conv {
+    flex: 1; display: flex; flex-direction: column; min-width: 0;
+    /* Standard-Wallpaper: dunkler Grund mit dezentem Kritzel-Muster wie im Original */
+    background-color: #0b141a;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='none' stroke='%23e9edef' stroke-opacity='0.035' stroke-width='1.4' stroke-linecap='round'%3E%3Ccircle cx='24' cy='26' r='7'/%3E%3Cpath d='M70 14l3.5 7 7.5 1-5.5 5.5 1.5 7.5-7-4-7 4 1.5-7.5L59 22l7.5-1z'/%3E%3Cpath d='M118 28q8-10 16 0'/%3E%3Cpath d='M28 86h12M34 80v12'/%3E%3Ccircle cx='86' cy='78' r='9'/%3E%3Cpath d='M130 92l5-12 5 12'/%3E%3Cpath d='M22 132q6-8 12 0t12 0'/%3E%3Cpath d='M84 124v14a4 4 0 1 1-3-4'/%3E%3Cpath d='M128 138c-6-6-6-10 0-12 6 2 6 6 0 12z'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 160px 160px;
+  }
   .wa-head { display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: #202c33; }
   .wa-head-name b { display: block; font-size: 12px; }
   .wa-head-name span { display: block; font-size: 9.5px; color: #8696a0; }
@@ -307,15 +313,29 @@
 
   .mock main.sp { padding: 0; display: none; background: #121212; color: #fff; flex-direction: column; }
   .mock main.sp.show { display: flex; }
-  .sp-top { flex: 1; padding: 16px 18px; }
-  .sp-top h3 { font-size: 14px; margin-bottom: 12px; }
-  .sp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .sp-card { display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.07); border-radius: 6px; overflow: hidden; font-size: 11.5px; font-weight: 600; }
-  .sp-card i { width: 34px; height: 34px; flex-shrink: 0; }
+  .sp-topbar { display: flex; align-items: center; gap: 8px; padding: 10px 16px 0; position: relative; z-index: 1; }
+  .sp-nav { width: 22px; height: 22px; border-radius: 50%; background: rgba(0, 0, 0, 0.45); color: #d0d0d0; display: flex; align-items: center; justify-content: center; font-size: 13px; padding-bottom: 2px; }
+  .sp-user { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; background: #7c3aed; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .sp-top { flex: 1; margin-top: -32px; padding: 40px 16px 10px; background: linear-gradient(180deg, rgba(92, 60, 146, 0.5), rgba(18, 18, 18, 0) 60%); overflow: hidden; }
+  .sp-top h3 { font-size: 15px; margin: 2px 0 10px; }
+  .sp-top h4 { font-size: 12px; margin: 13px 0 8px; }
+  .sp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .sp-card { display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.09); border-radius: 4px; overflow: hidden; font-size: 10.5px; font-weight: 700; }
+  .sp-card i { width: 30px; height: 30px; flex-shrink: 0; }
   .sp-card:nth-child(1) i { background: linear-gradient(135deg, #8347ff, #38206e); }
   .sp-card:nth-child(2) i { background: linear-gradient(135deg, #1db954, #0d5c2c); }
   .sp-card:nth-child(3) i { background: linear-gradient(135deg, #f2994a, #eb5757); }
   .sp-card:nth-child(4) i { background: linear-gradient(135deg, #2f80ed, #12355f); }
+  .sp-card:nth-child(5) i { background: linear-gradient(135deg, #f8b500, #a05a00); }
+  .sp-card:nth-child(6) i { background: linear-gradient(135deg, #e0479e, #4b0f3d); }
+  .sp-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .sp-pcard { background: #181818; border-radius: 6px; padding: 8px; }
+  .sp-pcard i { display: block; width: 100%; height: 50px; border-radius: 4px; margin-bottom: 6px; }
+  .sp-pcard:nth-child(1) i { background: linear-gradient(135deg, #8347ff, #1db954); }
+  .sp-pcard:nth-child(2) i { background: linear-gradient(135deg, #5bc0eb, #0b3954); }
+  .sp-pcard:nth-child(3) i { background: linear-gradient(135deg, #e0479e, #2a0e3a); }
+  .sp-pcard b { font-size: 10.5px; display: block; }
+  .sp-pcard span { font-size: 9px; color: #a7a7a7; display: block; margin-top: 2px; }
   .sp-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #181818; border-top: 1px solid #282828; }
   .sp-cover { width: 34px; height: 34px; border-radius: 4px; background: linear-gradient(135deg, #9257ff, #1db954); flex-shrink: 0; }
   .sp-info b { display: block; font-size: 11.5px; white-space: nowrap; }
@@ -326,6 +346,10 @@
   .sp-play .ic-pause { display: none; }
   main.sp.playing .sp-play .ic-pause { display: block; }
   main.sp.playing .sp-play .ic-play { display: none; }
+  .sp-like { color: #1db954; display: flex; flex-shrink: 0; }
+  .sp-vol { display: flex; align-items: center; gap: 5px; color: #b3b3b3; margin-left: 10px; flex-shrink: 0; }
+  .sp-vol .vtrack { width: 50px; height: 3px; border-radius: 2px; background: #4d4d4d; overflow: hidden; }
+  .sp-vol .vtrack i { display: block; width: 55%; height: 100%; background: #fff; }
   .sp-timeline { display: flex; align-items: center; gap: 6px; width: 100%; font-size: 8.5px; color: #a7a7a7; }
   .sp-track { flex: 1; height: 3px; border-radius: 2px; background: #4d4d4d; overflow: hidden; }
   .sp-track i { display: block; height: 100%; width: 30%; background: #b3b3b3; border-radius: 2px; }
@@ -514,6 +538,7 @@
           </div>
         </main>
         <main class="sp">
+          <div class="sp-topbar"><span class="sp-nav">‹</span><span class="sp-nav">›</span><span class="sp-user">F</span></div>
           <div class="sp-top">
             <h3>Guten Nachmittag</h3>
             <div class="sp-grid">
@@ -521,11 +546,20 @@
               <div class="sp-card"><i></i><span>Daily Mix 1</span></div>
               <div class="sp-card"><i></i><span>Chill Hits</span></div>
               <div class="sp-card"><i></i><span>IMPERIO Office</span></div>
+              <div class="sp-card"><i></i><span>Lo-Fi Beats</span></div>
+              <div class="sp-card"><i></i><span>Top 50 – Deutschland</span></div>
+            </div>
+            <h4>Für dich erstellt</h4>
+            <div class="sp-cards">
+              <div class="sp-pcard"><i></i><b>Dein Mix der Woche</b><span>Nova Waves, Kyano und mehr</span></div>
+              <div class="sp-pcard"><i></i><b>Discover Weekly</b><span>Jeden Montag neu für dich</span></div>
+              <div class="sp-pcard"><i></i><b>Release Radar</b><span>Neues von deinen Künstlern</span></div>
             </div>
           </div>
           <div class="sp-bar">
             <div class="sp-cover"></div>
             <div class="sp-info"><b>Midnight Drive</b><span>Nova Waves</span></div>
+            <span class="sp-like"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21C7 16.6 3 13.2 3 9.3 3 6.4 5.2 4 8 4c1.6 0 3.1.8 4 2 .9-1.2 2.4-2 4-2 2.8 0 5 2.4 5 5.3 0 3.9-4 7.3-9 11.7z"/></svg></span>
             <div class="sp-mid">
               <div class="sp-ctrls">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/><path d="M16 3h5v5M21 16v5h-5M4 20 21 3M15 15l6 6M4 4l5 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
@@ -538,6 +572,10 @@
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
               </div>
               <div class="sp-timeline"><span>1:07</span><div class="sp-track"><i></i></div><span>3:41</span></div>
+            </div>
+            <div class="sp-vol">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16 8a4.5 4.5 0 0 1 0 8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+              <div class="vtrack"><i></i></div>
             </div>
           </div>
         </main>
