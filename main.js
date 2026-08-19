@@ -310,6 +310,10 @@ function broadcastBadges() {
 }
 
 ipcMain.handle('get-badges', () => badges);
+ipcMain.handle('get-pending-update', () => (pendingUpdate ? pendingUpdate.version : null));
+ipcMain.on('open-update-popup', () => {
+  if (pendingUpdate && !updateDialogOpen) openUpdatePopup(pendingUpdate);
+});
 
 ipcMain.on('set-overlay', (e, dataUrl, total) => {
   if (isMac || !win || win.isDestroyed()) return;
@@ -545,7 +549,11 @@ function buildMenu() {
 // Release-Notes, Nutzer bestätigt aktiv, dann Download + Installation über
 // electron-updater (GitHub Releases; Mac braucht Verti-Mac.zip + latest-mac.yml).
 const UPDATE_CHECK_INTERVAL = 4 * 60 * 60 * 1000;
+const appStartedAt = Date.now();
 let updateNotifiedFor = null;
+// Gefundenes, noch nicht installiertes Update — speist den lila
+// "Update verfügbar"-Knopf in der Top-Bar (App läuft oft tagelang durch)
+let pendingUpdate = null;
 let updateDialogOpen = false;
 let updateWin = null;
 
@@ -566,6 +574,9 @@ function openUpdatePopup(payload) {
     height,
     frame: false,
     transparent: true,
+    // Kein System-Fensterschatten: der zeichnet sonst einen grauen Rahmen
+    // um das (unsichtbare) Fensterrechteck; die Karte hat ihren eigenen Schatten
+    hasShadow: false,
     resizable: false,
     maximizable: false,
     minimizable: false,
@@ -670,11 +681,14 @@ function setupAutoUpdate() {
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.on('error', () => {});
   autoUpdater.on('update-available', (info) => {
-    // 'Später' respektieren: pro Version nur einmal je App-Lauf melden,
-    // sonst poppt das Fenster alle 4 Stunden erneut auf
+    pendingUpdate = { mode: 'available', version: info.version, notes: releaseNotesText(info.releaseNotes) };
+    if (win && !win.isDestroyed()) win.webContents.send('update-pill', pendingUpdate.version);
+    // 'Später' respektieren: pro Version nur einmal je App-Lauf melden
     if (updateDialogOpen || info.version === updateNotifiedFor) return;
     updateNotifiedFor = info.version;
-    openUpdatePopup({ mode: 'available', version: info.version, notes: releaseNotesText(info.releaseNotes) });
+    // Popup nur kurz nach dem App-Start von selbst öffnen; findet der
+    // 4-Stunden-Check mitten in der Arbeit etwas, bleibt nur der Knopf oben
+    if (Date.now() - appStartedAt < 90 * 1000) openUpdatePopup(pendingUpdate);
   });
   autoUpdater.on('download-progress', (p) => {
     sendUpdateState({ mode: 'downloading', percent: p.percent });
@@ -702,8 +716,11 @@ async function checkForUpdatesManually() {
     const v = result?.updateInfo?.version;
     if (!v || !isNewerVersion(v, app.getVersion())) {
       dialog.showMessageBox(win, { message: `Verti ${app.getVersion()} ist aktuell.` });
+      return;
     }
-    // Update gefunden: das Popup mit den Release-Notes kommt über 'update-available'
+    // Manuell gesucht → Popup direkt öffnen ('update-available' hat
+    // pendingUpdate gerade befüllt)
+    if (pendingUpdate && !updateDialogOpen) openUpdatePopup(pendingUpdate);
   } catch {
     dialog.showMessageBox(win, { message: 'Update-Suche fehlgeschlagen. Bitte später erneut versuchen.' });
   }

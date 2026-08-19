@@ -33,6 +33,32 @@
     pointer-events: none;
   }
   .brandmark em { font-style: normal; color: #b78aff; }
+  /* Lila Update-Hinweis oben rechts, wenn während des Betriebs ein Update kommt */
+  .update-pill {
+    position: fixed;
+    top: 8px; right: 14px;
+    z-index: 12;
+    -webkit-app-region: no-drag;
+    display: none;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, #8b5cf6, #6b2fe0);
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 6px 13px;
+    border-radius: 999px;
+    animation: pillPulse 2.6s ease-in-out infinite;
+  }
+  .update-pill.show { display: block; }
+  .update-pill:hover { background: linear-gradient(135deg, #9d73f8, #7c3aed); }
+  @keyframes pillPulse {
+    0%, 100% { box-shadow: 0 3px 12px rgba(131, 71, 255, 0.35); }
+    50% { box-shadow: 0 3px 20px rgba(131, 71, 255, 0.8); }
+  }
+  /* Windows: Platz für Minimieren/Maximieren/Schließen rechts */
+  body.win .update-pill { right: 150px; }
   .nav {
     position: fixed;
     top: 7px;
@@ -269,6 +295,7 @@
 <body>
   <div class="drag-region"></div>
   <div class="brandmark">Verti<em>.</em></div>
+  <button class="update-pill" id="updatePill" title="Neue Version bereit – klicken für Details">Update verfügbar</button>
   <div class="nav">
     <button id="navBack" title="Zurück (Cmd+[)">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 L4 7 L9 12"/></svg>
@@ -525,6 +552,11 @@
         renderSidebar();
         updateOverlay();
       });
+
+      const updatePill = document.getElementById('updatePill');
+      updatePill.addEventListener('click', () => window.verti.openUpdatePopup());
+      window.verti.onUpdatePill(() => updatePill.classList.add('show'));
+      if (await window.verti.getPendingUpdate()) updatePill.classList.add('show');
 
       renderSidebar();
       updateOverlay();
