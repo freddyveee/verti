@@ -284,6 +284,35 @@ function applyGoogleAuthDisguise(ses) {
   });
 }
 
+// Einmalige Selbstheilung (v1.0.11): Bis v1.0.10 hat Googles Blockade die
+// Anmelde-Cookies "verseucht" — die Sperre klebte am Profil, selbst nachdem
+// die App sauber auftrat. Beim ersten Start räumt jedes Gerät die Google-
+// Anmeldedaten einmal selbst weg (Preis: einmalig neu bei Google anmelden).
+async function cleanupGoogleAuthOnce() {
+  const marker = path.join(app.getPath('userData'), 'google-auth-cleanup-v1.json');
+  if (fs.existsSync(marker)) return;
+  try {
+    const ses = session.fromPartition('persist:apps');
+    const cookies = await ses.cookies.get({});
+    for (const c of cookies) {
+      const d = (c.domain || '').replace(/^\./, '');
+      if (d.endsWith('google.com') || d.endsWith('google.de') || d.endsWith('youtube.com') || d.endsWith('gstatic.com')) {
+        try {
+          await ses.cookies.remove('https://' + d + (c.path || '/'), c.name);
+        } catch {}
+      }
+    }
+    const origins = ['https://accounts.google.com', 'https://www.google.com', 'https://google.com', 'https://calendar.google.com', 'https://accounts.youtube.com'];
+    for (const origin of origins) {
+      await ses.clearStorageData({ origin, storages: ['localstorage', 'indexdb', 'serviceworkers', 'cachestorage'] });
+    }
+    await ses.flushStorageData();
+  } catch {}
+  try {
+    fs.writeFileSync(marker, JSON.stringify({ done: new Date().toISOString() }));
+  } catch {}
+}
+
 // navigator.userAgent soll auf der Anmeldeseite zum Firefox-Header passen
 function attachGoogleAuthUaSwitch(wc) {
   wc.on('did-start-navigation', (_e, url, _inPlace, isMainFrame) => {
@@ -771,7 +800,7 @@ async function checkForUpdatesManually() {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Fallback-UA für alle WebContents ohne eigenen Override (v.a. Login-Popups):
   // sonst meldet navigator.userAgent dort Electron und Google blockt den Login
   app.userAgentFallback = chromeUserAgent();
@@ -781,6 +810,7 @@ app.whenReady().then(() => {
     app.setLoginItemSettings({ openAtLogin: true });
   }
   const justUpdated = detectUpdateJustHappened();
+  await cleanupGoogleAuthOnce();
   createWindow();
   buildMenu();
   setupAutoUpdate();
