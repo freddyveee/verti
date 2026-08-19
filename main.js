@@ -20,7 +20,7 @@ const IMPERIO_IDS = ['calendar', 'stackfield', 'claude', 'chatgpt', 'google', 'i
 const CATALOG = [
   ...DEFAULT_APPS,
   { id: 'google', name: 'Google', url: 'https://www.google.com/' },
-  { id: 'imperio-tools', name: 'IMPERIO Tools', url: 'https://imperio-tools.netlify.app/' },
+  { id: 'imperio-tools', name: 'IMPERIO Tools', url: 'https://imperio-tools.netlify.app/', icon: 'icons/imperio-tools.png' },
   { id: 'gmail', name: 'Gmail', url: 'https://mail.google.com/' },
   { id: 'gdrive', name: 'Google Drive', url: 'https://drive.google.com/' },
   { id: 'stackfield', name: 'Stackfield', url: 'https://www.stackfield.com/', icon: 'icons/stackfield.png' },
@@ -378,8 +378,8 @@ function createWindow() {
     titleBarStyle: 'hidden',
     ...(isMac
       ? { trafficLightPosition: { x: 18, y: 16 } }
-      : { titleBarOverlay: { color: '#1b1d23', symbolColor: '#ffffff', height: TOP_BAR - 1 } }),
-    backgroundColor: '#1b1d23',
+      : { titleBarOverlay: { color: '#22242c', symbolColor: '#ffffff', height: TOP_BAR - 1 } }),
+    backgroundColor: '#22242c',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },

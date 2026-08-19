@@ -8,7 +8,7 @@
   body {
     width: 100vw;
     height: 100vh;
-    background: #1b1d23;
+    background: #22242c;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-user-select: none;
     overflow: hidden;
@@ -21,6 +21,18 @@
     -webkit-app-region: drag;
     z-index: 10;
   }
+  /* Verti-Schriftzug mittig in der Fensterleiste, wie auf der Landingpage */
+  .brandmark {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15.5px; font-weight: 700; color: #fff;
+    letter-spacing: 0.2px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .brandmark em { font-style: normal; color: #b78aff; }
   .nav {
     position: fixed;
     top: 7px;
@@ -107,7 +119,7 @@
     align-items: center;
     justify-content: center;
     pointer-events: none;
-    box-shadow: 0 0 0 2px #1b1d23;
+    box-shadow: 0 0 0 2px #22242c;
   }
   .fallback {
     width: 28px;
@@ -145,7 +157,7 @@
   .library {
     position: fixed;
     inset: 0;
-    background: #1b1d23;
+    background: #22242c;
     z-index: 5;
     display: none;
     flex-direction: column;
@@ -180,33 +192,37 @@
   .close-btn:hover { background: rgba(255, 255, 255, 0.16); }
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 12px;
     margin-bottom: 30px;
   }
   .card {
+    /* Icon und voller Name oben, Knopf in ganzer Breite darunter —
+       damit lange App-Namen nicht abgeschnitten werden */
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 12px;
-    padding: 12px 14px;
+    padding: 14px 12px 12px;
+    text-align: center;
   }
   .card img, .card .fallback { width: 30px; height: 30px; }
-  .card .info { flex: 1; min-width: 0; }
+  .card .info { width: 100%; }
   .card .name {
     color: #fff;
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.3;
+    overflow-wrap: break-word;
   }
   .card button {
     border: none;
     border-radius: 7px;
-    padding: 6px 11px;
+    width: 100%;
+    padding: 7px 11px;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -252,6 +268,7 @@
 </head>
 <body>
   <div class="drag-region"></div>
+  <div class="brandmark">Verti<em>.</em></div>
   <div class="nav">
     <button id="navBack" title="Zurück (Cmd+[)">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 L4 7 L9 12"/></svg>
