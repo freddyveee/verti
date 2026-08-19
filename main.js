@@ -541,13 +541,11 @@ function buildMenu() {
 }
 
 // ---------- Auto-Update ----------
-// Beide Plattformen: Hinweis-Dialog mit den Release-Notes, Nutzer bestätigt aktiv.
-// Windows: nach Bestätigung Download + Installation über electron-updater (GitHub Releases).
-// Mac: App ist unsigniert, dort öffnet der Dialog den Download der neuen DMG.
+// Beide Plattformen identisch (seit die App signiert ist): Hinweis-Popup mit
+// Release-Notes, Nutzer bestätigt aktiv, dann Download + Installation über
+// electron-updater (GitHub Releases; Mac braucht Verti-Mac.zip + latest-mac.yml).
 const UPDATE_CHECK_INTERVAL = 4 * 60 * 60 * 1000;
-const MAC_DMG_URL = 'https://github.com/freddyveee/verti/releases/latest/download/Verti-Mac.dmg';
-let macUpdateNotifiedFor = null;
-let winUpdateNotifiedFor = null;
+let updateNotifiedFor = null;
 let updateDialogOpen = false;
 let updateWin = null;
 
@@ -595,15 +593,10 @@ function sendUpdateState(payload) {
 
 ipcMain.on('verti-update:action', (_e, action) => {
   if (action === 'update') {
-    if (isMac) {
-      shell.openExternal(MAC_DMG_URL);
-      sendUpdateState({ mode: 'mac-started' });
-      return;
-    }
     sendUpdateState({ mode: 'downloading', percent: 0 });
     getAutoUpdater().downloadUpdate().catch(() => {
       // Beim nächsten 4-Stunden-Check wieder anbieten
-      winUpdateNotifiedFor = null;
+      updateNotifiedFor = null;
       sendUpdateState({ mode: 'error' });
     });
     return;
@@ -665,37 +658,8 @@ function releaseNotesText(notes) {
     .trim();
 }
 
-// Liefert 'update' | 'none' | 'error'. auto=true unterdrückt wiederholte
-// Hinweise für dieselbe Version (Check läuft alle 4 Stunden).
-async function checkMacUpdate(auto) {
-  let latest, notes;
-  try {
-    const res = await fetch('https://api.github.com/repos/freddyveee/verti/releases/latest', {
-      headers: { 'User-Agent': 'Verti' },
-    });
-    if (!res.ok) return 'error';
-    const data = await res.json();
-    latest = String(data.tag_name || '').replace(/^v/, '');
-    notes = data.body;
-  } catch {
-    return 'error';
-  }
-  if (!latest) return 'error';
-  if (!isNewerVersion(latest, app.getVersion())) return 'none';
-  if (auto && macUpdateNotifiedFor === latest) return 'update';
-  if (updateDialogOpen) return 'update';
-  macUpdateNotifiedFor = latest;
-  openUpdatePopup({ mode: 'available', platform: 'mac', version: latest, notes: releaseNotesText(notes) });
-  return 'update';
-}
-
 function setupAutoUpdate() {
   if (!app.isPackaged) return; // im Entwicklungsmodus (npm start) nichts tun
-  if (isMac) {
-    checkMacUpdate(true);
-    setInterval(() => checkMacUpdate(true), UPDATE_CHECK_INTERVAL);
-    return;
-  }
   const autoUpdater = getAutoUpdater();
   // Erst fragen, dann laden: der Nutzer soll sehen, was sich ändert,
   // und das Update aktiv anstoßen statt es still im Hintergrund zu bekommen
@@ -708,9 +672,9 @@ function setupAutoUpdate() {
   autoUpdater.on('update-available', (info) => {
     // 'Später' respektieren: pro Version nur einmal je App-Lauf melden,
     // sonst poppt das Fenster alle 4 Stunden erneut auf
-    if (updateDialogOpen || info.version === winUpdateNotifiedFor) return;
-    winUpdateNotifiedFor = info.version;
-    openUpdatePopup({ mode: 'available', platform: 'win', version: info.version, notes: releaseNotesText(info.releaseNotes) });
+    if (updateDialogOpen || info.version === updateNotifiedFor) return;
+    updateNotifiedFor = info.version;
+    openUpdatePopup({ mode: 'available', version: info.version, notes: releaseNotesText(info.releaseNotes) });
   });
   autoUpdater.on('download-progress', (p) => {
     sendUpdateState({ mode: 'downloading', percent: p.percent });
@@ -730,16 +694,10 @@ async function checkForUpdatesManually() {
     dialog.showMessageBox(win, { message: 'Update-Suche gibt es nur in der installierten App.' });
     return;
   }
-  if (isMac) {
-    const result = await checkMacUpdate(false);
-    if (result === 'none') dialog.showMessageBox(win, { message: `Verti ${app.getVersion()} ist aktuell.` });
-    if (result === 'error') dialog.showMessageBox(win, { message: 'Update-Suche fehlgeschlagen. Bitte später erneut versuchen.' });
-    return;
-  }
   const autoUpdater = getAutoUpdater();
   try {
     // Update-Popup auch dann wieder zeigen, wenn es schon mal kam
-    winUpdateNotifiedFor = null;
+    updateNotifiedFor = null;
     const result = await autoUpdater.checkForUpdates();
     const v = result?.updateInfo?.version;
     if (!v || !isNewerVersion(v, app.getVersion())) {

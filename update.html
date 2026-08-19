@@ -124,17 +124,16 @@
 
   function render(s) {
     mode = s.mode;
-    closable = ['available', 'mac-started', 'celebrate', 'error'].includes(mode);
+    closable = ['available', 'celebrate', 'error'].includes(mode);
 
     if (mode === 'available') {
-      const isMac = s.platform === 'mac';
       content.innerHTML = `
         <div class="emoji">🚀</div>
         <h1>Update verfügbar</h1>
         <div class="sub">Verti ${esc(s.version)} ist bereit für dich.</div>
         ${notesHtml(s.notes)}
         <div class="buttons">
-          <button class="btn btn-primary" id="go">${isMac ? 'Jetzt herunterladen' : 'Jetzt aktualisieren'}</button>
+          <button class="btn btn-primary" id="go">Jetzt aktualisieren</button>
           <button class="btn btn-ghost" id="later">Später</button>
         </div>
         <div class="footnote">Alle Logins und Apps bleiben erhalten.</div>`;
@@ -162,19 +161,6 @@
         <div class="emoji">✨</div>
         <h1>Wird installiert…</h1>
         <div class="sub">Verti startet gleich neu – bis gleich! 👋</div>`;
-    }
-
-    if (mode === 'mac-started') {
-      content.innerHTML = `
-        <div class="emoji">📦</div>
-        <h1>Download gestartet</h1>
-        <div class="sub">Die neue Version wird im Browser heruntergeladen.<br>
-        Öffne danach die DMG-Datei und ziehe Verti einmal in den Programme-Ordner.</div>
-        <div class="buttons">
-          <button class="btn btn-primary" id="ok">Alles klar</button>
-        </div>
-        <div class="footnote">Alle Logins und Apps bleiben erhalten.</div>`;
-      document.getElementById('ok').onclick = () => window.vertiUpdate.action('close');
     }
 
     if (mode === 'celebrate') {

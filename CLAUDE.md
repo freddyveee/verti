@@ -16,8 +16,8 @@ Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electr
 - User-Agent wird plattformabhängig auf Chrome gefälscht, sonst blockt Google-Login
 - Session-Partition `persist:apps` hält alle Logins lokal
 - Windows: eigener AppUserModelId, kein Strg+W-Close im Menü, titleBarOverlay statt Ampel-Buttons
-- App ist unsigniert/nicht notarisiert → Gatekeeper/SmartScreen-Hinweise, Anleitung steht auf der Landingpage
-- Auto-Update: beide Plattformen zeigen beim Öffnen einen Hinweis-Dialog mit den Release-Notes, der Nutzer bestätigt aktiv (Freddys Wunsch: nichts still im Hintergrund). Windows installiert danach per electron-updater über GitHub Releases (braucht `latest.yml` im Release!); Mac nur DMG-Download, weil unsigniert kein echtes Auto-Update kann
+- Mac: signiert & notarisiert (ab 1.0.6, „Developer ID Application: Freddy Henrich-Held", Team CHS9G483R4). Zertifikat + privater Schlüssel liegen NUR in Freddys MacBook-Schlüsselbund (Backup in `~/Verti-Signing/`), Notar-Zugang als Keychain-Profil `verti-notary` → Mac-Builds gehen nur auf dem MacBook. Windows bleibt unsigniert → SmartScreen-Hinweis, Anleitung auf der Landingpage
+- Auto-Update: beide Plattformen zeigen beim Öffnen ein lila Update-Popup (update.html) mit den Release-Notes, der Nutzer bestätigt aktiv (Freddys Wunsch: nichts still im Hintergrund). Danach installiert electron-updater über GitHub Releases — Windows braucht `latest.yml` + Setup.exe, Mac braucht `latest-mac.yml` + `Verti-Mac.zip` im Release. Hardened-Runtime-Entitlements + Mikrofon/Kamera-Texte stehen in `build/entitlements.mac.plist` bzw. `extendInfo` (behebt auch das ewige Mikrofon-Nachfragen der unsignierten Zeit)
 - Die `--notes` beim `gh release create` erscheinen im Update-Dialog der Nutzer → verständlich und auf Deutsch formulieren, Stichpunkte mit `-` werden als `•` angezeigt
 - Ungelesen-Badges (ab 1.0.4): aus dem Seitentitel geparst ("(3) WhatsApp"). Bei Apps in `TITLE_BADGE_APPS` zählt die Zahl überall im Titel, bei allen anderen nur am Titelanfang (sonst falsche Badges durch Inhalts-Titel). Gesamtzahl am Dock-Icon (Mac) bzw. Taskleisten-Overlay (Windows). Stackfield meldet nichts im Titel → braucht ggf. später ein DOM-Skript
 
@@ -31,21 +31,28 @@ npm start
 ## Release (Ablauf)
 
 1. Version in `package.json` erhöhen, auch den Versionstext in `docs/index.html` anpassen
-2. Bauen: `npx electron-builder --mac --universal` und danach `npx electron-builder --win --x64` (getrennt ausführen, `--universal` bricht sonst den Windows-Build)
-3. Veröffentlichen (WICHTIG: `latest.yml` mit hochladen, sonst bekommen Windows-Nutzer keine Auto-Updates):
+2. Bauen (getrennt ausführen, `--universal` bricht sonst den Windows-Build; der Mac-Build signiert + notarisiert automatisch, die Notarisierung bei Apple dauert oft 5–15 Minuten):
 
    ```
-   gh release create v1.0.x dist/Verti-Mac.dmg dist/Verti-Windows-Setup.exe dist/latest.yml --title "Verti 1.0.x" --notes "…"
+   APPLE_KEYCHAIN_PROFILE=verti-notary npx electron-builder --mac --universal
+   npx electron-builder --win --x64
+   ```
+
+3. Veröffentlichen (WICHTIG: alle FÜNF Dateien, sonst brechen Auto-Updates):
+
+   ```
+   gh release create v1.0.x dist/Verti-Mac.dmg dist/Verti-Mac.zip dist/latest-mac.yml dist/Verti-Windows-Setup.exe dist/latest.yml --title "Verti 1.0.x" --notes "…"
    ```
 
 4. Landingpage-Änderungen: einfach `git push` (GitHub Pages baut aus `docs/`, dauert 1–3 Min, Browser-Cache 10 Min beachten)
 
 Die Download-Links der Landingpage zeigen immer auf `releases/latest`, müssen also nie angepasst werden. Der Release-Tag muss `v<version>` heißen (z.B. `v1.0.2`), der Mac-Update-Check liest ihn aus.
 
-Regeln für jedes Release (sonst brechen Windows-Auto-Updates still):
+Regeln für jedes Release (sonst brechen Auto-Updates still):
 
-- Nie ein Release ohne `Verti-Windows-Setup.exe` + `latest.yml` veröffentlichen, auch keinen Mac-only-Hotfix — der Windows-Updater schaut immer auf das neueste Release
-- `latest.yml` und `Verti-Windows-Setup.exe` müssen aus demselben Build-Lauf stammen (sha512-Prüfung)
+- Nie ein Release ohne die kompletten Plattform-Paare veröffentlichen: `Verti-Windows-Setup.exe` + `latest.yml` UND `Verti-Mac.zip` + `latest-mac.yml` — die Updater beider Plattformen schauen immer auf das neueste Release
+- yml und zugehörige Binärdatei müssen aus demselben Build-Lauf stammen (sha512-Prüfung)
+- Mac-Release nur vom MacBook aus bauen (Signatur-Zertifikat liegt nur dort)
 
 ## Geräte-Sync (wichtig, immer befolgen)
 

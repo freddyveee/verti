@@ -1,7 +1,7 @@
 {
   "name": "verti",
   "productName": "Verti",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Vertikaler Browser: Google Kalender, WhatsApp, Todoist, ChatGPT in einer App",
   "author": "IMPERIO <freddy@imperio.rocks>",
   "main": "main.js",
@@ -17,10 +17,19 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "identity": null,
       "icon": "build/icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": true,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Verti braucht Zugriff auf das Mikrofon, damit deine Apps Sprachnachrichten und Anrufe ermöglichen können.",
+        "NSCameraUsageDescription": "Verti braucht Zugriff auf die Kamera für Videoanrufe in deinen Apps."
+      },
       "target": [
-        { "target": "dmg", "arch": ["universal"] }
+        { "target": "dmg", "arch": ["universal"] },
+        { "target": "zip", "arch": ["universal"] }
       ],
       "artifactName": "Verti-Mac.${ext}"
     },
