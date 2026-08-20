@@ -161,7 +161,37 @@
   }
   .mock aside .item.active { background: rgba(146, 87, 255, 0.18); color: #fff; }
   .mock aside .item img, .mock aside .item .ico { width: 17px; height: 17px; border-radius: 4px; }
+  .mock aside .item { position: relative; }
   .mock aside .settings { margin-top: auto; }
+  /* Ungelesen-Badge auf dem WhatsApp-Icon + Feuerwerk beim Auftauchen */
+  .wa-badge {
+    position: absolute; left: 20px; top: 3px;
+    min-width: 15px; height: 15px; padding: 0 4px;
+    border-radius: 999px; background: #ef4444; color: #fff;
+    font-size: 10px; font-weight: 800; line-height: 15px; text-align: center;
+    box-shadow: 0 0 0 2px #16121f, 0 2px 6px rgba(239, 68, 68, 0.6);
+    transform: scale(0); pointer-events: none; z-index: 3;
+  }
+  .wa-badge.pop { animation: badgePop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) forwards; }
+  @keyframes badgePop {
+    0% { transform: scale(0); }
+    60% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
+  .spark-wrap { position: absolute; left: 27px; top: 10px; width: 0; height: 0; z-index: 2; pointer-events: none; }
+  .spark {
+    position: absolute; left: 0; top: 0;
+    width: 2px; height: 8px; border-radius: 2px;
+    background: linear-gradient(#fff, rgba(255,255,255,0));
+    transform-origin: center bottom;
+    opacity: 0;
+  }
+  .spark-wrap.go .spark { animation: sparkFly 0.6s ease-out forwards; }
+  @keyframes sparkFly {
+    0% { opacity: 0; transform: rotate(var(--a)) translateY(0) scale(0.6); }
+    25% { opacity: 1; }
+    100% { opacity: 0; transform: rotate(var(--a)) translateY(-16px) scale(1); }
+  }
   .mock main { flex: 1; padding: 24px 26px; min-width: 0; }
   .mock main h2 { font-size: 19px; font-weight: 700; }
   .mock main .hint { color: var(--muted); font-size: 12.5px; margin: 3px 0 18px; }
@@ -883,6 +913,32 @@ ALT-DASHBOARD-ENDE -->
     calEvent.classList.remove('on');
     calPop.classList.remove('on');
     calTyped.textContent = '';
+    clearWaBadge();
+  }
+
+  function showWaBadge() {
+    var item = items.whatsapp;
+    if (!item) return;
+    var badge = item.querySelector('.wa-badge');
+    if (!badge) { badge = document.createElement('div'); badge.className = 'wa-badge'; badge.textContent = '1'; item.appendChild(badge); }
+    badge.classList.remove('pop'); void badge.offsetWidth; badge.classList.add('pop');
+    var wrap = item.querySelector('.spark-wrap');
+    if (!wrap) {
+      wrap = document.createElement('div'); wrap.className = 'spark-wrap';
+      for (var i = 0; i < 10; i++) {
+        var sp = document.createElement('div'); sp.className = 'spark';
+        sp.style.setProperty('--a', (i * 36) + 'deg');
+        wrap.appendChild(sp);
+      }
+      item.appendChild(wrap);
+    }
+    wrap.classList.remove('go'); void wrap.offsetWidth; wrap.classList.add('go');
+  }
+  function clearWaBadge() {
+    var item = items.whatsapp;
+    if (!item) return;
+    var b = item.querySelector('.wa-badge'); if (b) b.remove();
+    var w = item.querySelector('.spark-wrap'); if (w) w.remove();
   }
 
   async function loop() {
@@ -892,9 +948,11 @@ ALT-DASHBOARD-ENDE -->
       // solange deren Panel nicht mehr zu sehen ist)
       moveTo(items.spotify); await sleep(650); await click(); reset(); setActive('spotify'); await sleep(450);
       moveTo(spPlay); await sleep(600); await click(); panels.spotify.classList.add('playing');
-      await sleep(1400);
-      // 2) In WhatsApp den Termin ausmachen
-      moveTo(items.whatsapp); await sleep(650); await click(); setActive('whatsapp'); await sleep(500);
+      await sleep(1300);
+      // Neue Nachricht trifft ein: rote 1 mit Mini-Feuerwerk auf dem WhatsApp-Icon
+      showWaBadge(); await sleep(1200);
+      // 2) Auf die Nachricht reagieren und in WhatsApp den Termin ausmachen
+      moveTo(items.whatsapp); await sleep(650); await click(); clearWaBadge(); setActive('whatsapp'); await sleep(500);
       moveTo(waInput, -30, 0); await sleep(550);
       await typeText(typed, 'Hast du um 14:00 Uhr Zeit für den Termin?');
       await sleep(250);
