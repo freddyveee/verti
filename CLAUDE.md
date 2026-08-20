@@ -53,6 +53,7 @@ Regeln für jedes Release (sonst brechen Auto-Updates still):
 - Nie ein Release ohne die kompletten Plattform-Paare veröffentlichen: `Verti-Windows-Setup.exe` + `latest.yml` UND `Verti-Mac.zip` + `latest-mac.yml` — die Updater beider Plattformen schauen immer auf das neueste Release
 - yml und zugehörige Binärdatei müssen aus demselben Build-Lauf stammen (sha512-Prüfung)
 - Mac-Release nur vom MacBook aus bauen (Signatur-Zertifikat liegt nur dort)
+- Mac-Build nur bei entsperrtem Mac starten: ist der Bildschirm gesperrt/im Ruhezustand, findet notarytool das Keychain-Profil nicht („No Keychain password item found") und die Notarisierung schlägt fehl
 
 ## Geräte-Sync (wichtig, immer befolgen)
 
