@@ -288,7 +288,9 @@ function applyGoogleAuthDisguise(ses) {
 // die App sauber auftrat. Beim ersten Start räumt jedes Gerät die Google-
 // Anmeldedaten einmal selbst weg (Preis: einmalig neu bei Google anmelden).
 async function cleanupGoogleAuthOnce() {
-  const marker = path.join(app.getPath('userData'), 'google-auth-cleanup-v1.json');
+  // v2: läuft einmal erneut, weil die Blockade-Versuche auf 1.0.11–1.0.13
+  // die Cookies wieder verseucht haben (Weiterleitungs-Loch, erst ab 1.0.14 dicht)
+  const marker = path.join(app.getPath('userData'), 'google-auth-cleanup-v2.json');
   if (fs.existsSync(marker)) return;
   try {
     const ses = session.fromPartition('persist:apps');
@@ -312,12 +314,21 @@ async function cleanupGoogleAuthOnce() {
   } catch {}
 }
 
-// navigator.userAgent soll auf der Anmeldeseite zum Firefox-Header passen
+// navigator.userAgent soll auf der Anmeldeseite zum Firefox-Header passen.
+// WICHTIG: Server-Weiterleitungen (calendar.google.com → accounts.google.com)
+// starten keine neue Navigation — ohne did-redirect-navigation bliebe die
+// JS-Kennung auf Chrome stehen, während die Header Firefox melden, und genau
+// dieser Widerspruch löst Googles "nicht sicher"-Blockade aus.
 function attachGoogleAuthUaSwitch(wc) {
-  wc.on('did-start-navigation', (_e, url, _inPlace, isMainFrame) => {
-    if (!isMainFrame) return;
+  const apply = (url, isMainFrame) => {
+    if (isMainFrame === false) return;
+    if (!url) return;
     wc.setUserAgent(isGoogleAuthUrl(url) ? FIREFOX_UA : chromeUserAgent());
-  });
+  };
+  wc.on('did-start-navigation', (_e, url, _inPlace, isMainFrame) => apply(url, isMainFrame));
+  wc.on('did-redirect-navigation', (_e, url, _inPlace, isMainFrame) => apply(url, isMainFrame));
+  wc.on('will-navigate', (_e, url) => apply(url, true));
+  apply(wc.getURL(), true);
 }
 
 function layoutViews() {
@@ -337,6 +348,7 @@ function switchApp(id) {
   if (!views[id]) return;
   libraryOpen = false;
   activeId = id;
+  clearBadge(id); // Öffnen = gelesen; Titel-Apps setzen sich per Titel gleich neu
   for (const [vid, view] of Object.entries(views)) {
     view.setVisible(vid === id);
   }
@@ -352,6 +364,11 @@ function switchApp(id) {
 // Bei diesen Apps darf die Zahl überall im Titel stehen; bei allen anderen
 // nur ganz vorn, sonst machen Inhalts-Titel wie "Top 10 (2024)" falsche Badges.
 const TITLE_BADGE_APPS = new Set(['whatsapp', 'gmail', 'telegram', 'messenger', 'slack', 'linkedin', 'x', 'discord', 'teams', 'instagram', 'facebook']);
+// Zwei Quellen: Titel-Zahl (exakt, für die Apps oben) und gezählte Web-
+// Benachrichtigungen (für alle anderen, z.B. Stackfield). titleCounts ist
+// absolut, notifCounts wird pro Meldung hochgezählt und beim Öffnen genullt.
+const titleCounts = {};
+const notifCounts = {};
 const badges = {};
 
 function parseUnread(id, title) {
@@ -360,11 +377,36 @@ function parseUnread(id, title) {
   return m ? Math.min(999, parseInt(m[1], 10)) : 0;
 }
 
-function setBadge(id, count) {
+function effectiveBadge(id) {
+  // Titel-fähige Apps zählen NUR über den Titel (sonst Doppelzählung),
+  // alle anderen über eingegangene Benachrichtigungen
+  return TITLE_BADGE_APPS.has(id) ? (titleCounts[id] || 0) : (notifCounts[id] || 0);
+}
+
+function recomputeBadge(id) {
+  const count = effectiveBadge(id);
   if ((badges[id] || 0) === count) return;
   if (count) badges[id] = count;
   else delete badges[id];
   broadcastBadges();
+}
+
+function setTitleBadge(id, count) {
+  titleCounts[id] = count;
+  recomputeBadge(id);
+}
+
+function addNotif(id) {
+  if (TITLE_BADGE_APPS.has(id)) return; // die zählen über den Titel
+  if (id === activeId) return; // gerade offen → kein Badge nötig
+  notifCounts[id] = Math.min(999, (notifCounts[id] || 0) + 1);
+  recomputeBadge(id);
+}
+
+function clearBadge(id) {
+  titleCounts[id] = 0;
+  notifCounts[id] = 0;
+  recomputeBadge(id);
 }
 
 function broadcastBadges() {
@@ -379,6 +421,15 @@ function broadcastBadges() {
 }
 
 ipcMain.handle('get-badges', () => badges);
+// Eine App hat eine Web-Benachrichtigung gefeuert (view-preload.js) → welche?
+ipcMain.on('verti-app-notify', (e) => {
+  for (const [id, view] of Object.entries(views)) {
+    if (view.webContents === e.sender) {
+      addNotif(id);
+      break;
+    }
+  }
+});
 ipcMain.handle('get-pending-update', () => (pendingUpdate ? pendingUpdate.version : null));
 ipcMain.on('open-update-popup', () => {
   if (pendingUpdate && !updateDialogOpen) openUpdatePopup(pendingUpdate);
@@ -395,6 +446,7 @@ function createView(appDef) {
     webPreferences: {
       partition: 'persist:apps',
       spellcheck: true,
+      preload: path.join(__dirname, 'view-preload.js'),
     },
   });
   view.webContents.setUserAgent(chromeUserAgent());
@@ -416,7 +468,7 @@ function createView(appDef) {
   };
   view.webContents.on('did-navigate', sendNavState);
   view.webContents.on('did-navigate-in-page', sendNavState);
-  view.webContents.on('page-title-updated', (_e, title) => setBadge(appDef.id, parseUnread(appDef.id, title)));
+  view.webContents.on('page-title-updated', (_e, title) => setTitleBadge(appDef.id, parseUnread(appDef.id, title)));
   win.contentView.addChildView(view);
   views[appDef.id] = view;
 }
@@ -522,7 +574,7 @@ function removeApp(id) {
   win.contentView.removeChildView(view);
   view.webContents.close();
   delete views[id];
-  setBadge(id, 0);
+  clearBadge(id);
   state.apps = state.apps.filter((a) => a.id !== id);
   buildMenu();
   saveState();
