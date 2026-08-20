@@ -15,14 +15,13 @@ const DEFAULT_APPS = [
 ];
 
 // IMPERIO-Standard-Apps erscheinen in der Bibliothek in einem eigenen Bereich oben
-const IMPERIO_IDS = ['calendar', 'stackfield', 'claude', 'chatgpt', 'google', 'imperio-tools', 'gdrive'];
+const IMPERIO_IDS = ['calendar', 'stackfield', 'claude', 'chatgpt', 'imperio-tools', 'gdrive'];
 
 const CATALOG = [
   ...DEFAULT_APPS,
-  { id: 'google', name: 'Google', url: 'https://www.google.com/' },
   { id: 'imperio-tools', name: 'IMPERIO Tools', url: 'https://imperio-tools.netlify.app/', icon: 'icons/imperio-tools.png' },
   { id: 'gmail', name: 'Gmail', url: 'https://mail.google.com/' },
-  { id: 'gdrive', name: 'Google Drive', url: 'https://drive.google.com/' },
+  { id: 'gdrive', name: 'Google Drive', url: 'https://drive.google.com/', icon: 'https://ssl.gstatic.com/images/branding/product/2x/drive_2020q4_48dp.png' },
   { id: 'stackfield', name: 'Stackfield', url: 'https://www.stackfield.com/', icon: 'icons/stackfield.png' },
   { id: 'notion', name: 'Notion', url: 'https://www.notion.so/' },
   { id: 'slack', name: 'Slack', url: 'https://app.slack.com/client' },
