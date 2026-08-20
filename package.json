@@ -1,7 +1,7 @@
 {
   "name": "verti",
   "productName": "Verti",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Vertikaler Browser: Google Kalender, WhatsApp, Todoist, ChatGPT in einer App",
   "author": "IMPERIO <freddy@imperio.rocks>",
   "main": "main.js",
