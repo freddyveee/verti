@@ -57,6 +57,8 @@
       "update.html",
       "update-preload.js",
       "view-preload.js",
+      "screen-picker.html",
+      "screen-picker-preload.js",
       "icons/**"
     ]
   },

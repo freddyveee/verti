@@ -1,4 +1,4 @@
-const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog, nativeImage, desktopCapturer } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -487,6 +487,64 @@ function navHome(id) {
   if (appDef && views[id]) views[id].webContents.loadURL(appDef.url);
 }
 
+let screenPickerWin = null;
+// Öffnet den Bildschirm-Auswahldialog und liefert das gewählte
+// desktopCapturer-Quellobjekt (oder null bei Abbruch)
+function pickScreenSource() {
+  return new Promise(async (resolve) => {
+    if (screenPickerWin && !screenPickerWin.isDestroyed()) {
+      try { screenPickerWin.close(); } catch {}
+    }
+    let sources = [];
+    try {
+      sources = await desktopCapturer.getSources({
+        types: ['screen', 'window'],
+        thumbnailSize: { width: 320, height: 200 },
+      });
+    } catch {
+      return resolve(null);
+    }
+    if (!sources.length) return resolve(null);
+    const list = sources.map((s) => ({
+      id: s.id,
+      name: s.name || (s.id.startsWith('screen') ? 'Bildschirm' : 'Fenster'),
+      kind: s.id.startsWith('screen') ? 'screen' : 'window',
+      thumb: s.thumbnail ? s.thumbnail.toDataURL() : '',
+    }));
+    const pw = new BrowserWindow({
+      width: 640, height: 520,
+      resizable: false, minimizable: false, maximizable: false, fullscreenable: false,
+      frame: false, transparent: true, skipTaskbar: true, show: false,
+      parent: win && !win.isDestroyed() ? win : undefined, modal: true,
+      webPreferences: { preload: path.join(__dirname, 'screen-picker-preload.js') },
+    });
+    screenPickerWin = pw;
+    let done = false;
+    const finish = (id) => {
+      if (done) return;
+      done = true;
+      const chosen = id ? sources.find((s) => s.id === id) : null;
+      if (!pw.isDestroyed()) pw.close();
+      resolve(chosen || null);
+    };
+    const onChoose = (e, id) => {
+      if (BrowserWindow.fromWebContents(e.sender) === pw) finish(id);
+    };
+    ipcMain.on('screen-picker:choose', onChoose);
+    pw.on('closed', () => {
+      ipcMain.removeListener('screen-picker:choose', onChoose);
+      screenPickerWin = null;
+      if (!done) { done = true; resolve(null); }
+    });
+    pw.loadFile('screen-picker.html');
+    pw.webContents.once('did-finish-load', () => {
+      if (pw.isDestroyed()) return;
+      pw.webContents.send('screen-picker:sources', list);
+      pw.show();
+    });
+  });
+}
+
 function createWindow() {
   state = loadState();
 
@@ -498,6 +556,14 @@ function createWindow() {
   ses.setPermissionRequestHandler((wc, permission, cb) => {
     cb(['notifications', 'media', 'clipboard-read', 'clipboard-sanitized-write', 'fullscreen'].includes(permission));
   });
+  // Bildschirmfreigabe (Zoom/Meet/Teams): eigener Auswahldialog, damit der
+  // Nutzer Bildschirm oder Fenster wählen kann
+  ses.setDisplayMediaRequestHandler((request, callback) => {
+    pickScreenSource().then((source) => {
+      // Kein Audio mitteilen; nur das gewählte Video-Quellobjekt oder Abbruch
+      callback(source ? { video: source } : {});
+    }).catch(() => callback({}));
+  }, { useSystemPicker: false });
 
   win = new BrowserWindow({
     ...state.bounds,
