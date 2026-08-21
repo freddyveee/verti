@@ -1,7 +1,7 @@
 {
   "name": "verti",
   "productName": "Verti",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "Vertikaler Browser: Google Kalender, WhatsApp, Todoist, ChatGPT in einer App",
   "author": "IMPERIO <freddy@imperio.rocks>",
   "main": "main.js",
@@ -13,7 +13,11 @@
     "appId": "rocks.imperio.verti",
     "productName": "Verti",
     "publish": [
-      { "provider": "github", "owner": "freddyveee", "repo": "verti" }
+      {
+        "provider": "github",
+        "owner": "freddyveee",
+        "repo": "verti"
+      }
     ],
     "mac": {
       "category": "public.app-category.productivity",
@@ -28,8 +32,18 @@
         "NSCameraUsageDescription": "Verti braucht Zugriff auf die Kamera für Videoanrufe in deinen Apps."
       },
       "target": [
-        { "target": "dmg", "arch": ["universal"] },
-        { "target": "zip", "arch": ["universal"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
       ],
       "artifactName": "Verti-Mac.${ext}"
     },
@@ -41,7 +55,12 @@
     "win": {
       "icon": "build/icon.png",
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "artifactName": "Verti-Windows-Setup.${ext}"
     },
@@ -66,7 +85,7 @@
     "electron-updater": "^6.6.2"
   },
   "devDependencies": {
-    "electron": "^43.4.0",
+    "electron": "^43.4.1",
     "electron-builder": "^26.7.0"
   }
 }

@@ -326,6 +326,7 @@ function layoutViews() {
 
 function switchApp(id) {
   if (!views[id]) return;
+  ensureLoaded(id); // beim Anklicken laden, falls die Staffel noch nicht dran war
   libraryOpen = false;
   activeId = id;
   clearBadge(id); // Öffnen = gelesen; Titel-Apps setzen sich per Titel gleich neu
@@ -431,7 +432,9 @@ function createView(appDef) {
   });
   view.webContents.setUserAgent(chromeUserAgent());
   attachGoogleAuthUaSwitch(view.webContents);
-  view.webContents.loadURL(appDef.url);
+  // Seite NICHT sofort laden: würde beim Start alle Apps gleichzeitig laden
+  // (Lade-Sturm → sporadischer V8-Startabsturz). ensureLoaded() lädt die
+  // aktive App sofort, die übrigen staffelt staggerLoadRest() mit Abstand.
   view.webContents.setWindowOpenHandler(windowOpenPolicy(view.webContents));
   view.webContents.on('did-create-window', (child) => adoptChildWindow(child));
   const tweaks = APP_TWEAKS[appDef.id];
@@ -465,6 +468,33 @@ function sendNavStateFor(id) {
 function navHome(id) {
   const appDef = state.apps.find((a) => a.id === id);
   if (appDef && views[id]) views[id].webContents.loadURL(appDef.url);
+}
+
+// Lädt die Seite einer View beim ersten Bedarf (aktiv werden oder Staffel-Lauf).
+// Verhindert, dass beim Start alle Apps gleichzeitig laden.
+function ensureLoaded(id) {
+  const view = views[id];
+  if (!view || view.__loaded) return;
+  const appDef = state.apps.find((a) => a.id === id);
+  if (!appDef) return;
+  view.__loaded = true;
+  view.webContents.loadURL(appDef.url);
+}
+
+// Lädt die nicht-aktiven Apps nach dem Start nacheinander mit Abstand, damit
+// Badges/Benachrichtigungen überall funktionieren, ohne den Start zu überlasten.
+let staggerTimer = null;
+function staggerLoadRest(activeIdArg) {
+  const rest = state.apps.map((a) => a.id).filter((id) => id !== activeIdArg);
+  let i = 0;
+  const step = () => {
+    if (!win || win.isDestroyed()) return;
+    const id = rest[i++];
+    if (id === undefined) return;
+    ensureLoaded(id);
+    staggerTimer = setTimeout(step, 1200); // 1,2 s Abstand zwischen den Apps
+  };
+  staggerTimer = setTimeout(step, 1500); // der aktiven App zuerst Luft geben
 }
 
 let screenPickerWin = null;
@@ -571,7 +601,9 @@ function createWindow() {
   win.on('closed', () => { win = null; });
 
   win.webContents.once('did-finish-load', () => {
-    switchApp(views[state.activeApp] ? state.activeApp : state.apps[0].id);
+    const first = views[state.activeApp] ? state.activeApp : state.apps[0].id;
+    switchApp(first);          // aktive App sofort laden und zeigen
+    staggerLoadRest(first);    // die übrigen gestaffelt im Hintergrund nachladen
   });
 }
 
