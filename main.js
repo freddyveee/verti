@@ -209,11 +209,12 @@ function windowOpenPolicy(openerContents) {
   };
 }
 
-// Von uns erlaubte Popup-Fenster bekommen dieselbe Policy und denselben
-// Chrome-UA, sonst wären sie unreguliert (und verraten sich als Electron)
+// Von uns erlaubte Popup-Fenster bekommen dieselbe Policy. Den Chrome-UA
+// erben sie über die Session (ses.setUserAgent) — KEIN wc.setUserAgent hier:
+// das Popup navigiert beim Adoptieren oft schon, und setUserAgent mit
+// laufender Navigation zerstört deren NavigationRequest (Chromium-CHECK,
+// Absturz — die Ursache des 1.0.15–1.0.17-Startabsturzes).
 function adoptChildWindow(child) {
-  child.webContents.setUserAgent(chromeUserAgent());
-  attachGoogleAuthUaSwitch(child.webContents);
   child.webContents.setWindowOpenHandler(windowOpenPolicy(child.webContents));
   child.webContents.on('did-create-window', (grandchild) => adoptChildWindow(grandchild));
 }
@@ -294,22 +295,20 @@ function applyGoogleAuthDisguise(ses) {
 // Der Google-Login funktioniert über die Firefox-Tarnung unten auch ohne dieses
 // Aufräumen; ein hartes Storage-Löschen am Start ist zu riskant und fliegt raus.
 
-// navigator.userAgent soll auf der Anmeldeseite zum Firefox-Header passen.
-// WICHTIG: Server-Weiterleitungen (calendar.google.com → accounts.google.com)
-// starten keine neue Navigation — ohne did-redirect-navigation bliebe die
-// JS-Kennung auf Chrome stehen, während die Header Firefox melden, und genau
-// dieser Widerspruch löst Googles "nicht sicher"-Blockade aus.
-function attachGoogleAuthUaSwitch(wc) {
-  const apply = (url, isMainFrame) => {
-    if (isMainFrame === false) return;
-    if (!url) return;
-    wc.setUserAgent(isGoogleAuthUrl(url) ? FIREFOX_UA : chromeUserAgent());
-  };
-  wc.on('did-start-navigation', (_e, url, _inPlace, isMainFrame) => apply(url, isMainFrame));
-  wc.on('did-redirect-navigation', (_e, url, _inPlace, isMainFrame) => apply(url, isMainFrame));
-  wc.on('will-navigate', (_e, url) => apply(url, true));
-  apply(wc.getURL(), true);
-}
+// ENTFERNT in 1.0.18 — URSACHE DES STARTABSTURZES von 1.0.15–1.0.17:
+// Hier stand attachGoogleAuthUaSwitch(), das wc.setUserAgent synchron in
+// did-start-navigation/did-redirect-navigation aufrief, damit
+// navigator.userAgent auf der Google-Anmeldeseite zum Firefox-Header passt.
+// setUserAgent mit laufender (pending) Navigation löst in Chromium aber
+// SetUserAgentOverride → Reload → Zerstörung des laufenden NavigationRequest
+// aus dessen eigenem Event heraus aus → CHECK-Abbruch (EXC_BREAKPOINT in
+// ~NavigationRequest, Hauptprozess tot ~1s nach Start). Der Crash traf nur
+// Profile, die auf die Anmeldeseite UMGELEITET wurden — auf eingeloggten
+// Profilen blieb er unsichtbar, deshalb wurde er tagelang überall anders
+// gesucht. NIE wieder setUserAgent aus Navigations-Events aufrufen!
+// Die JS-Kennung stellt jetzt view-preload.js per Property-Override um
+// (rein lesend, kein Navigations-Eingriff); die Header macht weiterhin
+// applyGoogleAuthDisguise oben.
 
 function layoutViews() {
   if (!win) return;
@@ -430,7 +429,6 @@ function createView(appDef) {
     },
   });
   view.webContents.setUserAgent(chromeUserAgent());
-  attachGoogleAuthUaSwitch(view.webContents);
   view.webContents.loadURL(appDef.url);
   view.webContents.setWindowOpenHandler(windowOpenPolicy(view.webContents));
   view.webContents.on('did-create-window', (child) => adoptChildWindow(child));
