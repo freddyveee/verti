@@ -285,34 +285,14 @@ function applyGoogleAuthDisguise(ses) {
 
 // Einmalige Selbstheilung (v1.0.11): Bis v1.0.10 hat Googles Blockade die
 // Anmelde-Cookies "verseucht" — die Sperre klebte am Profil, selbst nachdem
-// die App sauber auftrat. Beim ersten Start räumt jedes Gerät die Google-
-// Anmeldedaten einmal selbst weg (Preis: einmalig neu bei Google anmelden).
-async function cleanupGoogleAuthOnce() {
-  // v2: läuft einmal erneut, weil die Blockade-Versuche auf 1.0.11–1.0.13
-  // die Cookies wieder verseucht haben (Weiterleitungs-Loch, erst ab 1.0.14 dicht)
-  const marker = path.join(app.getPath('userData'), 'google-auth-cleanup-v2.json');
-  if (fs.existsSync(marker)) return;
-  try {
-    const ses = session.fromPartition('persist:apps');
-    const cookies = await ses.cookies.get({});
-    for (const c of cookies) {
-      const d = (c.domain || '').replace(/^\./, '');
-      if (d.endsWith('google.com') || d.endsWith('google.de') || d.endsWith('youtube.com') || d.endsWith('gstatic.com')) {
-        try {
-          await ses.cookies.remove('https://' + d + (c.path || '/'), c.name);
-        } catch {}
-      }
-    }
-    const origins = ['https://accounts.google.com', 'https://www.google.com', 'https://google.com', 'https://calendar.google.com', 'https://accounts.youtube.com'];
-    for (const origin of origins) {
-      await ses.clearStorageData({ origin, storages: ['localstorage', 'indexdb', 'serviceworkers', 'cachestorage'] });
-    }
-    await ses.flushStorageData();
-  } catch {}
-  try {
-    fs.writeFileSync(marker, JSON.stringify({ done: new Date().toISOString() }));
-  } catch {}
-}
+// die App sauber auftrat.
+//
+// ENTFERNT in 1.0.15: Die frühere Selbstheilung (cleanupGoogleAuthOnce) rief
+// beim Start ses.clearStorageData für Google-Dienste auf. Auf Profilen mit viel
+// Google-Speicher (Kalender/Gmail/Drive – Service-Worker + Cache) stürzte genau
+// dieses Leeren den Hauptprozess beim Start ab (macOS 26 / Electron 43, V8/JIT).
+// Der Google-Login funktioniert über die Firefox-Tarnung unten auch ohne dieses
+// Aufräumen; ein hartes Storage-Löschen am Start ist zu riskant und fliegt raus.
 
 // navigator.userAgent soll auf der Anmeldeseite zum Firefox-Header passen.
 // WICHTIG: Server-Weiterleitungen (calendar.google.com → accounts.google.com)
@@ -937,7 +917,6 @@ app.whenReady().then(async () => {
     app.setLoginItemSettings({ openAtLogin: true });
   }
   const justUpdated = detectUpdateJustHappened();
-  await cleanupGoogleAuthOnce();
   createWindow();
   buildMenu();
   setupAutoUpdate();
