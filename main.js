@@ -121,6 +121,8 @@ let win = null;
 const views = {};
 let activeId = null;
 let libraryOpen = false;
+let quitting = false; // Cmd+Q/Update-Installation: echtes Beenden statt Verstecken (Mac)
+app.on('before-quit', () => { quitting = true; });
 let saveTimer = null;
 
 function saveState() {
@@ -444,7 +446,9 @@ function setTitleBadge(id, count) {
 
 function addNotif(id) {
   if (TITLE_BADGE_APPS.has(id)) return; // die zählen über den Titel
-  if (id === activeId) return; // gerade offen → kein Badge nötig
+  // Gerade sichtbar offen → kein Badge nötig (bei verstecktem oder
+  // minimiertem Fenster sieht der Nutzer die App nicht → zählen)
+  if (id === activeId && win && !win.isDestroyed() && win.isVisible() && !win.isMinimized()) return;
   notifCounts[id] = Math.min(999, (notifCounts[id] || 0) + 1);
   recomputeBadge(id);
 }
@@ -741,6 +745,25 @@ function createWindow() {
   win.on('resize', () => { layoutViews(); saveState(); });
   win.on('move', saveState);
   win.on('closed', () => { win = null; });
+  // Mac: Schließen versteckt das Fenster nur. Die App-Views laufen weiter,
+  // also kommen Dock-Badge und Benachrichtigungen auch bei geschlossenem
+  // Fenster weiter an (Freddys Wunsch 22.08.2026); vorher starben die Views
+  // mit dem Fenster und das Dock-Icon blieb stumm. Dock-Klick holt das
+  // Fenster zurück (app 'activate'), Cmd+Q beendet wirklich (before-quit).
+  // Windows: Schließen bleibt Beenden (window-all-closed).
+  win.on('close', (e) => {
+    if (!isMac || quitting) return;
+    e.preventDefault();
+    if (win.isFullScreen()) {
+      win.once('leave-full-screen', () => { if (win && !win.isDestroyed()) win.hide(); });
+      win.setFullScreen(false);
+    } else {
+      win.hide();
+    }
+  });
+  // Fenster kommt zurück → die aktive App gilt als geöffnet (wie beim
+  // App-Wechsel: Öffnen = gelesen)
+  win.on('show', () => { if (activeId) clearBadge(activeId); });
 
   win.webContents.once('did-finish-load', () => {
     switchApp(views[state.activeApp] ? state.activeApp : state.apps[0].id);
@@ -908,6 +931,9 @@ function openUpdatePopup(payload) {
     return;
   }
   updateDialogOpen = true;
+  // Das Popup ist ein Kindfenster des Hauptfensters: ist das nur versteckt
+  // (Mac, Schließen = Verstecken), erst wieder zeigen, sonst bleibt es unsichtbar
+  if (win && !win.isDestroyed() && !win.isVisible()) win.show();
   const width = 440;
   const height = 600;
   const b = win && !win.isDestroyed() ? win.getBounds() : null;
@@ -1040,7 +1066,7 @@ function setupAutoUpdate() {
     // Download passiert nur nach Klick auf 'Jetzt aktualisieren',
     // der Neustart ist also schon abgesegnet
     sendUpdateState({ mode: 'installing' });
-    setTimeout(() => autoUpdater.quitAndInstall(), 1500);
+    setTimeout(() => { quitting = true; autoUpdater.quitAndInstall(); }, 1500);
   });
   let lastCheck = 0;
   const throttledCheck = () => {
@@ -1105,6 +1131,7 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  // Mac-üblich: App läuft im Dock weiter; unter Windows/Linux beendet Fenster-Schließen die App
+  // Mac: kommt praktisch nicht vor (Schließen versteckt nur, s. createWindow);
+  // unter Windows/Linux beendet Fenster-Schließen die App
   if (!isMac) app.quit();
 });

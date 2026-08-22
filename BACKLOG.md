@@ -8,6 +8,7 @@ Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm s
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- Mac: Fenster schließen versteckt es nur noch, die Apps laufen weiter. Dock-Badge (Ungelesen-Zahl) und Benachrichtigungen kommen auch bei geschlossenem Fenster; Klick aufs Dock-Icon holt es zurück, Cmd+Q beendet. (22.08.2026)
 - App-Bibliothek: Pfeil zurück und Home-Taste oben schließen die Bibliothek (bisher nur das ✕); auch Maus-Zurück, Cmd+[ und Cmd+Shift+H. Vorwärts ist in der Bibliothek aus. (22.08.2026)
 
 ## Blockiert
