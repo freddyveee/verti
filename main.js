@@ -1113,6 +1113,14 @@ async function checkForUpdatesManually() {
 }
 
 app.whenReady().then(async () => {
+  // castLabs ECS (Electron for Content Security, seit 1.0.21 für Spotify/DRM):
+  // Widevine-CDM installieren bzw. aktualisieren, bevor Views entstehen.
+  // components gibt es nur im castLabs-Build; mit normalem Electron wird
+  // der Block übersprungen.
+  const { components } = require('electron');
+  if (components) {
+    try { await components.whenReady(); } catch (e) { console.error('Widevine-CDM:', e); }
+  }
   // Fallback-UA für alle WebContents ohne eigenen Override (v.a. Login-Popups):
   // sonst meldet navigator.userAgent dort Electron und Google blockt den Login
   app.userAgentFallback = chromeUserAgent();

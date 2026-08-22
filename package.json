@@ -79,13 +79,17 @@
       "screen-picker.html",
       "screen-picker-preload.js",
       "icons/**"
-    ]
+    ],
+    "electronDownload": {
+      "mirror": "https://github.com/castlabs/electron-releases/releases/download/"
+    },
+    "afterPack": "scripts/ecs-afterpack.js"
   },
   "dependencies": {
     "electron-updater": "^6.6.2"
   },
   "devDependencies": {
-    "electron": "^43.4.1",
+    "electron": "github:castlabs/electron-releases#v43.2.0+wvcus",
     "electron-builder": "^26.7.0"
   }
 }

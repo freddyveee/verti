@@ -21,6 +21,7 @@ Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electr
 - User-Agent wird plattformabhängig auf Chrome gefälscht (`chromeUserAgent()`); Electron schickt dabei keine Client-Hint-Header (`sec-ch-ua`)
 - Google-Login (Stand 22.08.2026, mit `scripts/google-login-probe.js` gemessen): Google lehnt jeden Chrome-UA aus Electron ab („Dieser Browser oder diese App ist unter Umständen nicht sicher", URL `…/signin/rejected?…rrk=46`), auch mit voller Versionsnummer wie bei Ferdium. Durch kommt nur die Firefox-Tarnung auf `accounts.google.com`/`accounts.youtube.com`: Header per `webRequest` (`applyGoogleAuthDisguise`) + JS-Kennung per `view-preload.js`. Das Preload muss `webFrame.executeJavaScript` benutzen (ein eingefügtes `<script>` verwirft Googles CSP still) und auch Login-Popups mitgegeben werden (`popupWindowOptions` → `viewWebPreferences()`, Popups erben kein Preload). Nie `setUserAgent` aus Navigations-Events aufrufen (Startabsturz 1.0.15–1.0.17)
 - Session-Partition `persist:apps` hält alle Logins lokal
+- Electron ist seit 1.0.21 die castLabs-Variante „Electron for Content Security" (ECS, `github:castlabs/electron-releases#v43.2.0+wvcus`), damit Spotify (Widevine-DRM) läuft. Folgen: (1) `main.js` wartet beim Start auf `components.whenReady()` (Widevine-CDM, ~10 MB einmalig pro Profil); (2) `build/entitlements.mac.plist` braucht `com.apple.security.cs.disable-library-validation`, sonst lädt der CDM in der gepackten App nicht (dlopen-Fehler, Spotify schwarz/stumm); (3) `scripts/ecs-afterpack.js` entfernt beim Universal-Build die mitgelieferten `.sig`-Dateien der x64/arm64-Zwischenbauten und holt danach die VMP-Produktionssignatur bei castLabs EVS, auf dem Mac VOR dem Codesign, unter Windows nach dem Packen; (4) `electronDownload.mirror` zeigt auf die castLabs-Releases (ohne „v" am Ende). Entwicklungs-Signatur der castLabs-Builds reicht für Spotify NICHT, nur EVS-signierte Builds spielen. castLabs hinkt Electron ein paar Patch-Versionen hinterher; Updates über `npm install "https://github.com/castlabs/electron-releases#vX.Y.Z+wvcus" --save-dev` (Tags unter github.com/castlabs/electron-releases/releases). Keine Electron-Fuses konfigurieren, die brechen die VMP-Signatur
 - Mac: Fenster schließen = verstecken (`win.on('close')` → `hide()`), damit die App-Views weiterlaufen und Dock-Badge/Benachrichtigungen auch bei geschlossenem Fenster ankommen; `quitting`-Flag (`before-quit`, vor `quitAndInstall`) lässt echtes Beenden durch. Windows: Schließen beendet weiterhin
 - Windows: eigener AppUserModelId, kein Strg+W-Close im Menü, titleBarOverlay statt Ampel-Buttons
 - Mac: signiert & notarisiert (ab 1.0.6, „Developer ID Application: Freddy Henrich-Held", Team CHS9G483R4). Zertifikat + privater Schlüssel liegen NUR in Freddys MacBook-Schlüsselbund (Backup in `~/Verti-Signing/`), Notar-Zugang als Keychain-Profil `verti-notary` → Mac-Builds gehen nur auf dem MacBook. Windows bleibt unsigniert → SmartScreen-Hinweis, Anleitung auf der Landingpage
@@ -35,8 +36,11 @@ Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electr
 
 ```bash
 npm install
+node node_modules/electron/install.js   # nur falls node_modules/electron/dist fehlt (npm führt Install-Skripte von GitHub-Paketen nicht automatisch aus)
 npm start
 ```
+
+EVS (castLabs-Signierdienst, nur zum Bauen nötig): Client einmalig `python3.11 -m pip install --user castlabs-evs` (Freddys Mac: Python 3.11 unter /opt/homebrew/opt/python@3.11/bin), Account `imperio` (Passwort in LastPass „castLabs EVS"). Das Zugangs-Token hält etwa einen Monat; meldet der Build „EVS_NO_ASK"/Token-Fehler, führt Freddy einmal `python3.11 -m castlabs_evs.account reauth` aus. Die Signatur der App selbst gilt ~4 Jahre und wird gecacht (unveränderte Binärdatei → kein neuer Upload). Nutzer merken von alldem nichts.
 
 Testen mit eigenem Profil, ohne das echte Profil oder eine laufende Verti-Instanz zu stören (dev und installierte App teilen sich sonst `~/Library/Application Support/Verti`):
 
@@ -53,7 +57,7 @@ npx electron scripts/google-login-probe.js
 ## Release (Ablauf)
 
 1. Version in `package.json` erhöhen, auch den Versionstext in `docs/index.html` anpassen; in `BACKLOG.md` die Punkte aus „Umgesetzt, noch nicht veröffentlicht" unter die neue Version verschieben
-2. Bauen (getrennt ausführen, `--universal` bricht sonst den Windows-Build; der Mac-Build signiert + notarisiert automatisch, die Notarisierung bei Apple dauert oft 5–15 Minuten):
+2. Bauen (getrennt ausführen, `--universal` bricht sonst den Windows-Build; der Mac-Build holt die VMP-Signatur bei EVS (erster Upload ~380 MB), signiert + notarisiert automatisch, die Notarisierung bei Apple dauert oft 5–15 Minuten; im Log muss „Signature is valid: streaming" stehen):
 
    ```
    APPLE_KEYCHAIN_PROFILE=verti-notary npx electron-builder --mac --universal
