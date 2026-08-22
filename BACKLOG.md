@@ -4,7 +4,10 @@ Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm s
 
 ## Offen
 
-- (noch nichts – neue Ideen hier eintragen)
+- Rechtsklick-Menü in den Apps: Kopieren/Einfügen/Ausschneiden, Rechtschreibvorschläge, „Link kopieren", „Bild sichern", „Im Browser öffnen". Heute passiert bei Rechtsklick nichts. (22.08.2026)
+- Letzte Seite pro App merken: Nach einem Neustart dort weitermachen, wo man war (z. B. der Stackfield-Raum), statt auf der Startseite. (22.08.2026)
+- Zoom pro App: Cmd +, Cmd −, Cmd 0, wird je App gemerkt. (22.08.2026)
+- Downloads ohne Nachfrage in den Downloads-Ordner speichern, danach kurze Meldung mit „Im Finder zeigen". (22.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
@@ -17,6 +20,14 @@ Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm s
 ## Blockiert
 
 - Spotify (Widevine-DRM): braucht einen castLabs-EVS-Account (evs.castlabs.com), dann Fork mit VMP-Signierung und erneuter Test. Wartet auf Freddy.
+
+## Ideen, noch nicht entschieden
+
+- Symbol in der Mac-Menüleiste mit Ungelesen-Zahl und Schnellzugriff auf die Apps.
+- Globales Tastenkürzel (z. B. Ctrl+Leertaste), das Verti aus jeder App heraus nach vorn holt und wieder wegschaltet.
+- Pro App stumm schalten (keine Badges, keine Benachrichtigungen), per Rechtsklick aufs Icon.
+- Windows: Schließen minimiert in die Taskleiste statt zu beenden.
+- Mehrere Konten derselben App (zwei WhatsApp, zwei Google-Konten).
 
 ## Verschoben / verworfen
 

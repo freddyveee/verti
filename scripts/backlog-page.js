@@ -30,6 +30,7 @@ const STATES = [
   ['offen', /^offen/i, 'open'],
   ['umgesetzt', /^umgesetzt/i, 'ready'],
   ['blockiert', /^blockiert/i, 'blocked'],
+  ['ideen', /^ideen/i, 'idea'],
   ['verschoben', /^verschoben/i, 'parked'],
   ['veröffentlicht', /^veröffentlicht/i, 'shipped'],
 ];
@@ -79,8 +80,9 @@ const GLYPH = {
   shipped: '<span class="box done" aria-hidden="true"></span>',
   blocked: '<span class="box blocked" aria-hidden="true"></span>',
   parked: '<span class="box parked" aria-hidden="true"></span>',
+  idea: '<span class="box idea" aria-hidden="true"></span>',
 };
-const LABEL = { open: 'offen', ready: 'umgesetzt, wartet auf das nächste Release', shipped: 'veröffentlicht', blocked: 'blockiert', parked: 'verschoben oder verworfen' };
+const LABEL = { open: 'offen', ready: 'umgesetzt, wartet auf das nächste Release', shipped: 'veröffentlicht', blocked: 'blockiert', parked: 'verschoben oder verworfen', idea: 'Idee, noch nicht entschieden' };
 const item = (it, state) => `<li class="item ${state}">${GLYPH[state]}<span class="text">${inline(it.text)}</span>${it.date ? `<span class="date">${esc(it.date)}</span>` : ''}</li>`;
 const empty = (state) => `<li class="item empty"><span class="text">${state === 'open' ? 'Nichts offen. Neue Ideen landen hier.' : 'Nichts.'}</span></li>`;
 
@@ -160,6 +162,8 @@ const html = `<title>Verti Backlog</title>
   .box.blocked { border-color: var(--blocked); background: var(--blocked-soft); }
   .box.blocked::after { content: ''; position: absolute; left: 4px; top: 7px; width: 8px; height: 2.5px; background: var(--blocked); border-radius: 2px; }
   .box.parked { border-color: var(--parked); border-style: dashed; }
+  .box.idea { border-color: var(--accent); border-style: dashed; border-radius: 50%; }
+  .item.idea .text { color: var(--muted); }
   .item.parked .text { color: var(--muted); }
   .text { min-width: 0; overflow-wrap: anywhere; }
   .date, .version { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -186,7 +190,7 @@ const html = `<title>Verti Backlog</title>
   </header>
   <main class="blocks">${sections.map(sectionHtml).join('')}
   </main>
-  <p class="foot">Quelle: <code>BACKLOG.md</code> im Verti-Repo, Stand ${stand}. Kästchen: leer = offen, Haken = umgesetzt, Strich = blockiert, gestrichelt = verschoben.</p>
+  <p class="foot">Quelle: <code>BACKLOG.md</code> im Verti-Repo, Stand ${stand}. Kästchen: leer = offen, Haken = umgesetzt, Strich = blockiert, lila Kreis = Idee ohne Entscheidung, gestrichelt = verschoben.</p>
 </div>
 `;
 const doc = full ? `<!doctype html>\n<html lang="de">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n</head>\n<body>\n${html}</body>\n</html>\n` : html;
