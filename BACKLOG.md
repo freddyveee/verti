@@ -6,7 +6,7 @@ Nächstes Release: 1.1.1
 
 ## Offen
 
-- Wispr Flow als App in den Katalog: Recherche 23.08. ergab, dass es keine Web-Oberfläche für Verlauf/Wörterbuch gibt (das lebt in der Desktop-App, synchronisiert über Geräte); im Browser gibt es nur die Kontoverwaltung (wisprflow.ai/login), das Admin-Portal (admin.wisprflow.ai) und das API-Dashboard (platform.wisprflow.ai). Entscheidung offen: Admin-Portal als App aufnehmen oder Punkt streichen. (23.08.2026)
+- (noch nichts – neue Ideen hier eintragen)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
@@ -35,6 +35,7 @@ Nächstes Release: 1.1.1
 
 ## Verschoben / verworfen
 
+- Wispr Flow als App: verworfen (23.08.2026). Es gibt keine Web-Oberfläche für Verlauf/Wörterbuch, nur Konto-, Admin- und API-Portale; das Diktieren funktioniert in Verti ohnehin systemweit.
 - Account-System für App-Sync zwischen Geräten (wäre Supabase): verschoben, das Team nutzt je ein Gerät.
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
