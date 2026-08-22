@@ -466,10 +466,12 @@
       function openLibrary() {
         renderCatalog();
         library.classList.add('open');
+        applyNavState();
         window.verti.openLibrary();
       }
       function closeLibrary(notify) {
         library.classList.remove('open');
+        applyNavState();
         if (notify) window.verti.closeLibrary();
       }
 
@@ -478,15 +480,32 @@
       if (!isMac) document.body.classList.add('win');
       const navBack = document.getElementById('navBack');
       const navForward = document.getElementById('navForward');
+      const navHomeBtn = document.getElementById('navHome');
       navBack.title = `Zurück (${mod}+[)`;
       navForward.title = `Vorwärts (${mod}+])`;
-      document.getElementById('navHome').title = `Zur Startseite der App (${mod}+Shift+H)`;
-      navBack.addEventListener('click', () => window.verti.navBack());
+      navHomeBtn.title = `Zur Startseite der App (${mod}+Shift+H)`;
+      // In der offenen Bibliothek heißen „Zurück" und „Startseite": Bibliothek
+      // schließen, zurück zur App (man drückt intuitiv den Pfeil, nicht das ✕).
+      // Der Pfeil bleibt dort klickbar, auch wenn die App keinen Verlauf hat;
+      // Vorwärts gibt es in der Bibliothek nicht.
+      let navState = { canGoBack: false, canGoForward: false };
+      function applyNavState() {
+        const inLibrary = library.classList.contains('open');
+        navBack.disabled = inLibrary ? false : !navState.canGoBack;
+        navForward.disabled = inLibrary ? true : !navState.canGoForward;
+      }
+      navBack.addEventListener('click', () => {
+        if (library.classList.contains('open')) closeLibrary(true);
+        else window.verti.navBack();
+      });
       navForward.addEventListener('click', () => window.verti.navForward());
-      document.getElementById('navHome').addEventListener('click', () => window.verti.navHome());
+      navHomeBtn.addEventListener('click', () => {
+        if (library.classList.contains('open')) closeLibrary(true);
+        else window.verti.navHome();
+      });
       window.verti.onNavState((s) => {
-        navBack.disabled = !s.canGoBack;
-        navForward.disabled = !s.canGoForward;
+        navState = s;
+        applyNavState();
       });
 
       document.getElementById('plus').addEventListener('click', openLibrary);

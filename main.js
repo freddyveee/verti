@@ -535,6 +535,11 @@ function mouseNav(wc, dir) {
   if (lastMouseNav.dir === dir && now - lastMouseNav.at < 250) return;
   lastMouseNav = { dir, at: now };
   if (!wc || wc.isDestroyed()) return;
+  if (libraryOpen && wc === activeWebContents()) {
+    // Bibliothek offen: Maus-Zurück schließt sie, Vorwärts tut nichts
+    if (dir === 'back') closeLibrary();
+    return;
+  }
   const nh = wc.navigationHistory;
   if (dir === 'back' && nh.canGoBack()) nh.goBack();
   else if (dir === 'forward' && nh.canGoForward()) nh.goForward();
@@ -589,6 +594,29 @@ function sendNavStateFor(id) {
 function navHome(id) {
   const appDef = state.apps.find((a) => a.id === id);
   if (appDef && views[id]) views[id].webContents.loadURL(appDef.url);
+}
+
+// Zurück/Vorwärts/Startseite für die aktive App (Menü, Top-Leiste, Maus).
+// Ist die App-Bibliothek offen, heißt „Zurück" bzw. „Startseite": Bibliothek
+// schließen und zur App zurück (Freddys Wunsch 22.08.2026: der Pfeil oben soll
+// aus der Bibliothek rausführen, nicht nur das ✕); Vorwärts tut dort nichts.
+function closeLibrary() {
+  setLibrary(false);
+  switchApp(activeId && views[activeId] ? activeId : state.apps[0].id);
+}
+function navBackActive() {
+  if (libraryOpen) return closeLibrary();
+  const wc = activeWebContents();
+  if (wc && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
+}
+function navForwardActive() {
+  if (libraryOpen) return;
+  const wc = activeWebContents();
+  if (wc && wc.navigationHistory.canGoForward()) wc.navigationHistory.goForward();
+}
+function navHomeActive() {
+  if (libraryOpen) return closeLibrary();
+  if (activeId) navHome(activeId);
 }
 
 let screenPickerWin = null;
@@ -728,16 +756,13 @@ function setLibrary(open) {
 
 ipcMain.on('switch-app', (e, id) => switchApp(id));
 ipcMain.on('reload-app', (e, id) => views[id] && views[id].webContents.reload());
-ipcMain.on('nav-back', () => activeId && views[activeId] && views[activeId].webContents.navigationHistory.goBack());
-ipcMain.on('nav-forward', () => activeId && views[activeId] && views[activeId].webContents.navigationHistory.goForward());
-ipcMain.on('nav-home', () => activeId && navHome(activeId));
+ipcMain.on('nav-back', navBackActive);
+ipcMain.on('nav-forward', navForwardActive);
+ipcMain.on('nav-home', navHomeActive);
 ipcMain.handle('get-apps', () => state.apps);
 ipcMain.handle('get-catalog', () => CATALOG.map((c) => ({ ...c, imperio: IMPERIO_IDS.includes(c.id) })));
 ipcMain.on('open-library', () => setLibrary(true));
-ipcMain.on('close-library', () => {
-  setLibrary(false);
-  switchApp(activeId && views[activeId] ? activeId : state.apps[0].id);
-});
+ipcMain.on('close-library', closeLibrary);
 
 ipcMain.on('add-app', (e, appDef) => {
   if (!appDef || !appDef.id || !appDef.url || views[appDef.id]) return;
@@ -837,17 +862,17 @@ function buildMenu() {
         {
           label: 'Zurück',
           accelerator: 'CmdOrCtrl+[',
-          click: () => activeId && views[activeId] && views[activeId].webContents.navigationHistory.goBack(),
+          click: navBackActive,
         },
         {
           label: 'Vorwärts',
           accelerator: 'CmdOrCtrl+]',
-          click: () => activeId && views[activeId] && views[activeId].webContents.navigationHistory.goForward(),
+          click: navForwardActive,
         },
         {
           label: 'Zur Startseite',
           accelerator: 'CmdOrCtrl+Shift+H',
-          click: () => activeId && navHome(activeId),
+          click: navHomeActive,
         },
         { type: 'separator' },
         { role: 'togglefullscreen' },

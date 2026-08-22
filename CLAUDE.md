@@ -13,6 +13,7 @@ Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electr
 - `icons/` – lokal eingebettete App-Logos (WhatsApp/Stackfield/Telegram, weil Favicon-Dienste dort versagen; Stackfield-Haken wurde manuell weiß gefüllt, war transparent ausgestanzt)
 - `build/` – App-Icon (icon.png) und DMG-Hintergrund
 - `docs/` – Landingpage (GitHub Pages): https://freddyveee.github.io/verti/
+- `BACKLOG.md` – Ideen und Wünsche (Offen / Umgesetzt-ungebaut / Blockiert / Veröffentlicht). Jeden neuen Wunsch von Freddy sofort dort eintragen; Umsetzung laufend, Release gebündelt auf „jetzt bauen"
 
 ## Wichtige Entscheidungen
 
@@ -49,7 +50,7 @@ npx electron scripts/google-login-probe.js
 
 ## Release (Ablauf)
 
-1. Version in `package.json` erhöhen, auch den Versionstext in `docs/index.html` anpassen
+1. Version in `package.json` erhöhen, auch den Versionstext in `docs/index.html` anpassen; in `BACKLOG.md` die Punkte aus „Umgesetzt, noch nicht veröffentlicht" unter die neue Version verschieben
 2. Bauen (getrennt ausführen, `--universal` bricht sonst den Windows-Build; der Mac-Build signiert + notarisiert automatisch, die Notarisierung bei Apple dauert oft 5–15 Minuten):
 
    ```
@@ -84,5 +85,6 @@ Freddy arbeitet abwechselnd am MacBook und am Windows-PC. Deshalb:
 ## Hinweise zur Zusammenarbeit mit Freddy
 
 - Kurze Antworten, keine langen Gedankenstriche im Fließtext
+- Neue Wünsche landen immer in `BACKLOG.md` (Freddys Wunsch 22.08.2026), Releases werden gesammelt gebaut
 - Vor Weichenstellungen (Hosting, öffentlich/privat, Verteilwege) erst Optionen nennen und Freddy entscheiden lassen
 - Auf Freddys Mac liegt gh unter /opt/homebrew/bin/gh (nicht im Terminal-PATH); Veröffentlichungs-Befehle führt Freddy selbst im Terminal aus
