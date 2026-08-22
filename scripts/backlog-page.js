@@ -8,6 +8,11 @@ const fs = require('fs');
 const path = require('path');
 
 const src = fs.readFileSync(path.join(__dirname, '..', 'BACKLOG.md'), 'utf8');
+// Nächste Version = package.json + 1 (Patch). Beim Release wird package.json
+// angehoben und die Punkte wandern unter „Veröffentlicht", der Abschnitt
+// „Umgesetzt" zeigt dann automatisch die übernächste Nummer.
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+const nextVersion = pkg.version.replace(/(\d+)$/, (m) => String(Number(m) + 1));
 // --full: komplettes HTML-Dokument (für die Vorschau als Datei); ohne Flag nur
 // der Seiteninhalt, so wie der Artifact-Dienst ihn erwartet
 const full = process.argv.includes('--full');
@@ -89,7 +94,7 @@ const sectionHtml = (s) => {
   return `
     <section class="block ${s.state}">
       <header class="block-head">
-        <h2>${esc(s.title)}</h2>
+        <div class="head-left"><h2>${esc(s.title)}</h2>${s.state === 'ready' ? `<span class="version next">kommt mit ${esc(nextVersion)}</span>` : ''}</div>
         <span class="count">${n}</span>
       </header>
       ${s.items.length || !s.groups.length ? `<ul class="items">${s.items.length ? s.items.map((it) => item(it, s.state)).join('') : empty(s.state)}</ul>` : ''}
@@ -141,6 +146,8 @@ const html = `<title>Verti Backlog</title>
   .blocks { display: flex; flex-direction: column; gap: 18px; }
   .block { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 6px 0 8px; }
   .block-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px 8px; }
+  .head-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .version.next { text-transform: none; letter-spacing: 0; }
   h2 { font-size: 13px; font-weight: 700; letter-spacing: 0.7px; text-transform: uppercase; color: var(--muted); margin: 0; }
   .block.ready h2 { color: var(--accent-ink); }
   .count { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); background: var(--ground); border-radius: 999px; padding: 2px 9px; }
@@ -172,7 +179,7 @@ const html = `<title>Verti Backlog</title>
     <p class="intro">${inline(intro)}</p>
     <div class="stats">
       <div class="stat open"><div class="n">${count('open')}</div><div class="l">Offen</div></div>
-      <div class="stat ready"><div class="n">${count('ready')}</div><div class="l">Bereit fürs Release</div></div>
+      <div class="stat ready"><div class="n">${count('ready')}</div><div class="l">Bereit für ${esc(nextVersion)}</div></div>
       <div class="stat blocked"><div class="n">${count('blocked')}</div><div class="l">Blockiert</div></div>
       <div class="stat shipped"><div class="n">${count('shipped')}</div><div class="l">Veröffentlicht${latest ? ` · ${esc(latest.label)}` : ''}</div></div>
     </div>
