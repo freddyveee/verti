@@ -33,6 +33,23 @@
     pointer-events: none;
   }
   .brandmark em { font-style: normal; color: #b78aff; }
+  /* Rotes Etikett nur in der Dev-Version (npx electron .), sonst verwechselt
+     man sie mit der installierten App */
+  .dev-tag {
+    display: none;
+    margin-left: 8px;
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: #fff;
+    background: #e5484d;
+    vertical-align: 2px;
+    pointer-events: auto; /* Tooltip mit Versionsnummer, obwohl die Marke selbst Klicks durchlässt */
+  }
+  .dev-tag.show { display: inline-block; }
   /* Lila Update-Hinweis oben rechts, wenn während des Betriebs ein Update kommt */
   .update-pill {
     position: fixed;
@@ -308,7 +325,7 @@
 </head>
 <body>
   <div class="drag-region"></div>
-  <div class="brandmark">Verti<em>.</em></div>
+  <div class="brandmark">Verti<em>.</em><span class="dev-tag" id="devTag">Dev-Version</span></div>
   <button class="update-pill" id="updatePill" title="Neue Version bereit – klicken für Details">Update verfügbar</button>
   <div class="nav">
     <button id="navBack" title="Zurück (Cmd+[)">
@@ -343,6 +360,12 @@
       let apps = await window.verti.getApps();
       const catalog = await window.verti.getCatalog();
       let badgeCounts = await window.verti.getBadges();
+      const appInfo = await window.verti.getAppInfo();
+      if (!appInfo.packaged) {
+        const devTag = document.getElementById('devTag');
+        devTag.title = `Dev-Version ${appInfo.version} aus ~/Projekte/verti`;
+        devTag.classList.add('show');
+      }
       const appsEl = document.getElementById('apps');
       const catalogEl = document.getElementById('catalog');
       const library = document.getElementById('library');

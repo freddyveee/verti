@@ -705,7 +705,9 @@ function createWindow() {
     ...state.bounds,
     minWidth: 900,
     minHeight: 600,
-    title: 'Verti',
+    // Dev-Version (npx electron .) kenntlich machen, damit sie nicht mit der
+    // installierten App verwechselt wird (Sidebar zeigt dazu ein rotes Etikett)
+    title: app.isPackaged ? 'Verti' : 'Verti (Dev)',
     titleBarStyle: 'hidden',
     ...(isMac
       ? { trafficLightPosition: { x: 18, y: 16 } }
@@ -783,6 +785,7 @@ ipcMain.on('nav-back', navBackActive);
 ipcMain.on('nav-forward', navForwardActive);
 ipcMain.on('nav-home', navHomeActive);
 ipcMain.handle('get-apps', () => state.apps);
+ipcMain.handle('get-app-info', () => ({ version: app.getVersion(), packaged: app.isPackaged }));
 // Die Sidebar fragt nach dem Start einmal nach: Das erste 'active-app' aus
 // switchApp (did-finish-load) kommt, bevor sie ihre Empfänger registriert
 // hat, und verpuffte → kein Icon war markiert, bis man klickte (bis 1.0.20).
