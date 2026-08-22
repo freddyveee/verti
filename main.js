@@ -525,8 +525,10 @@ ipcMain.on('set-overlay', (e, dataUrl, total) => {
 // der Seite abfangen (before-mouse-event + preventDefault; die Seite sieht
 // sie gar nicht, Chromium navigiert also auch nicht doppelt) und selbst
 // navigieren. Windows schickt für Maus-/Treibertasten außerdem
-// WM_APPCOMMAND (app-command); ein kurzer Riegel verhindert, dass beide Wege
-// dieselbe Taste doppelt auslösen. Tastatur (Cmd+[ / Cmd+]) läuft übers Menü.
+// WM_APPCOMMAND (app-command), Mac-Treiber wie Logi Options+ schicken statt
+// Tasten eine Wischgeste (swipe, s. createWindow); ein kurzer Riegel
+// verhindert, dass zwei Wege dieselbe Taste doppelt auslösen. Tastatur
+// (Cmd+[ / Cmd+]) läuft übers Menü.
 let lastMouseNav = { dir: '', at: 0 };
 function mouseNav(wc, dir) {
   const now = Date.now();
@@ -683,10 +685,21 @@ function createWindow() {
   });
 
   win.loadFile('sidebar.html');
-  // Seitentasten über der Sidebar navigieren die aktive App; Windows meldet
-  // Maus-/Treibertasten zusätzlich als app-command
+  // Seitentasten über der Sidebar navigieren die aktive App
   attachMouseNav(win.webContents, activeWebContents);
-  if (!isMac) {
+  if (isMac) {
+    // Logi Options+ & Co. setzen „Zurück/Vorwärts" der Maus-Seitentasten auf
+    // dem Mac als Wischgeste um (gemessen 22.08.2026 mit scripts/mouse-probe.js:
+    // swipe left/right, keine Maustaste, kein Tastenkürzel – deshalb griff
+    // before-mouse-event bei Freddy nicht). Dieselbe Geste kommt vom Trackpad
+    // mit drei Fingern („Zwischen Seiten wischen"). Richtung wie in Chrome und
+    // Firefox: deltaX>0 (Electron „left") = zurück, deltaX<0 („right") = vor.
+    win.on('swipe', (e, dir) => {
+      if (dir === 'left') mouseNav(activeWebContents(), 'back');
+      else if (dir === 'right') mouseNav(activeWebContents(), 'forward');
+    });
+  } else {
+    // Windows meldet Maus-/Treibertasten zusätzlich als app-command
     win.on('app-command', (e, cmd) => {
       if (cmd === 'browser-backward') mouseNav(activeWebContents(), 'back');
       else if (cmd === 'browser-forward') mouseNav(activeWebContents(), 'forward');
