@@ -11,6 +11,27 @@ const isMac = process.platform === 'darwin';
 // laufende Verti-Instanz) zu stören: VERTI_USER_DATA=/pfad/testprofil npx electron .
 if (process.env.VERTI_USER_DATA) app.setPath('userData', process.env.VERTI_USER_DATA);
 
+// Nur EINE Verti-Instanz pro Profil. Liefen zwei Prozesse auf derselben
+// Session (persist:apps) — z.B. die installierte App und eine Dev-Version —,
+// stritten sie sich um die Live-Verbindungen von Kalender/WhatsApp/Spotify
+// (Google-Push, WebSockets) und blockierten sie gegenseitig: Die Apps luden
+// nicht mehr, obwohl das Netz da war (im echten Browser lief alles). Zwei
+// Prozesse auf einem Profil riskieren zudem dessen Beschädigung (LevelDB/
+// Safe Storage) — vermutlich ein Teil des Chaos vom 21.08. Die zweite
+// Instanz beendet sich und holt die erste nach vorn. Testprofile
+// (VERTI_USER_DATA) haben einen eigenen Pfad und damit einen eigenen Lock,
+// stören die installierte App also nicht.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+  });
+}
+
 const DEFAULT_APPS = [
   { id: 'calendar', name: 'Google Kalender', url: 'https://calendar.google.com/', icon: 'https://ssl.gstatic.com/calendar/images/dynamiclogo_2020q4/calendar_31_2x.png' },
   { id: 'whatsapp', name: 'WhatsApp', url: 'https://web.whatsapp.com/', icon: 'icons/whatsapp.png' },
