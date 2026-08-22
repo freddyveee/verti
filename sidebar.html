@@ -109,8 +109,21 @@
     justify-content: center;
     cursor: pointer;
     position: relative;
-    transition: background 0.15s;
+    transition: background 0.15s, transform 0.18s ease;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-drag: none;
   }
+  /* Sortieren per Ziehen: das gezogene Icon hebt sich ab und folgt dem Zeiger
+     ohne Verzögerung, die anderen rutschen animiert (transform-Transition) */
+  .app-btn.dragging {
+    transition: background 0.15s, box-shadow 0.15s;
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+    z-index: 5;
+    cursor: grabbing;
+  }
+  #apps.no-anim .app-btn { transition: none !important; }
   .app-btn:hover { background: rgba(255, 255, 255, 0.08); }
   .app-btn.active { background: rgba(255, 255, 255, 0.14); }
   .app-btn.active::before {
@@ -369,16 +382,73 @@
         return img;
       }
 
-      let dragId = null;
+      // Sortieren per Ziehen, wie auf dem iPhone: Das gezogene Icon folgt dem
+      // Zeiger, die anderen rutschen live in ihre neue Position (Transition auf
+      // transform), beim Loslassen gleitet das Icon in die Lücke und erst dann
+      // wird die Reihenfolge übernommen. Erst ab 5 px Bewegung wird gezogen,
+      // ein normaler Klick bleibt ein Klick. Während des Ziehens wird die
+      // Sidebar nicht neu aufgebaut (Badge-Updates warten bis zum Loslassen).
+      let drag = null; // { btn, from, to, pitch, startY, pointerId, moved }
+      let pendingRender = false;
+      let suppressClick = false;
+      const listItems = () => [...appsEl.querySelectorAll('.app-btn')];
+      function dragShift(items, from, to) {
+        items.forEach((el, j) => {
+          if (el === drag.btn) return;
+          let shift = 0;
+          if (from < to && j > from && j <= to) shift = -drag.pitch;
+          else if (from > to && j >= to && j < from) shift = drag.pitch;
+          el.style.transform = shift ? `translateY(${shift}px)` : '';
+        });
+      }
+      function onDragMove(e) {
+        if (!drag || e.pointerId !== drag.pointerId) return;
+        const dy = e.clientY - drag.startY;
+        if (!drag.moved) {
+          if (Math.abs(dy) < 5) return;
+          drag.moved = true;
+          drag.btn.classList.add('dragging');
+        }
+        const items = listItems();
+        drag.to = Math.max(0, Math.min(items.length - 1, drag.from + Math.round(dy / drag.pitch)));
+        drag.btn.style.transform = `translateY(${dy}px) scale(1.08)`;
+        dragShift(items, drag.from, drag.to);
+      }
+      function onDragEnd(e) {
+        if (!drag || e.pointerId !== drag.pointerId) return;
+        const d = drag;
+        drag = null;
+        window.removeEventListener('pointermove', onDragMove);
+        window.removeEventListener('pointerup', onDragEnd);
+        window.removeEventListener('pointercancel', onDragEnd);
+        if (!d.moved) return; // war nur ein Klick
+        suppressClick = true;
+        setTimeout(() => { suppressClick = false; }, 0); // der Klick kommt direkt nach pointerup
+        d.btn.classList.remove('dragging');
+        d.btn.style.transform = `translateY(${(d.to - d.from) * d.pitch}px)`; // in die Lücke gleiten
+        setTimeout(() => {
+          // Positionen sind erreicht: Transforms ohne Animation zurücksetzen
+          // und das DOM in dieselbe Reihenfolge bringen → kein sichtbarer Sprung
+          appsEl.classList.add('no-anim');
+          for (const el of listItems()) el.style.transform = '';
+          const others = listItems().filter((el) => el !== d.btn);
+          appsEl.insertBefore(d.btn, others[d.to] || null);
+          void appsEl.offsetHeight;
+          appsEl.classList.remove('no-anim');
+          const ids = listItems().map((b) => b.dataset.id);
+          if (ids.join() !== apps.map((a) => a.id).join()) window.verti.reorderApps(ids);
+          if (pendingRender) { pendingRender = false; renderSidebar(); }
+        }, 200);
+      }
 
       function renderSidebar() {
+        if (drag && drag.moved) { pendingRender = true; return; }
         appsEl.innerHTML = '';
         for (const app of apps) {
           const btn = document.createElement('button');
           btn.className = 'app-btn' + (app.id === activeId ? ' active' : '');
           btn.title = app.name;
           btn.dataset.id = app.id;
-          btn.draggable = true;
           btn.appendChild(iconFor(app));
           const count = badgeCounts[app.id] || 0;
           if (count > 0) {
@@ -387,32 +457,25 @@
             badge.textContent = count > 99 ? '99+' : String(count);
             btn.appendChild(badge);
           }
-          btn.addEventListener('click', () => window.verti.switchApp(app.id));
+          btn.addEventListener('click', () => {
+            if (suppressClick) return; // Loslassen nach dem Ziehen ist kein Klick
+            window.verti.switchApp(app.id);
+          });
           btn.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             window.verti.showAppMenu(app.id);
           });
-          btn.addEventListener('dragstart', (e) => {
-            dragId = app.id;
-            e.dataTransfer.effectAllowed = 'move';
-            btn.style.opacity = '0.4';
-          });
-          btn.addEventListener('dragend', () => {
-            btn.style.opacity = '';
-            dragId = null;
-            const ids = [...appsEl.querySelectorAll('.app-btn')].map((b) => b.dataset.id);
-            if (ids.join() !== apps.map((a) => a.id).join()) {
-              window.verti.reorderApps(ids);
-            }
-          });
-          btn.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            if (!dragId || dragId === app.id) return;
-            const dragged = appsEl.querySelector('[data-id="' + dragId + '"]');
-            if (!dragged) return;
-            const rect = btn.getBoundingClientRect();
-            const before = e.clientY < rect.top + rect.height / 2;
-            appsEl.insertBefore(dragged, before ? btn : btn.nextSibling);
+          btn.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0 || drag) return;
+            const items = listItems();
+            if (items.length < 2) return;
+            const pitch = items[1].getBoundingClientRect().top - items[0].getBoundingClientRect().top || 56;
+            const from = items.indexOf(btn);
+            drag = { btn, from, to: from, pitch, startY: e.clientY, pointerId: e.pointerId, moved: false };
+            try { btn.setPointerCapture(e.pointerId); } catch {}
+            window.addEventListener('pointermove', onDragMove);
+            window.addEventListener('pointerup', onDragEnd);
+            window.addEventListener('pointercancel', onDragEnd);
           });
           appsEl.appendChild(btn);
         }
