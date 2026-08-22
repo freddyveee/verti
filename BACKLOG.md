@@ -4,6 +4,7 @@ Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm s
 
 ## Offen
 
+- Spotify läuft technisch (Probe-Build „Verti Spotify-Test" mit castLabs-Electron + EVS-Signatur spielt durch, 22.08.2026). Entscheidung offen: Verti dauerhaft auf die castLabs-Variante umstellen (gilt für alle, Electron leicht hinterher, Signierschritt im Build)? Dann Umsetzung in main.js, package.json, Entitlements, Build-Hook, Windows-Build prüfen. (22.08.2026)
 - Rechtsklick-Menü in den Apps: Kopieren/Einfügen/Ausschneiden, Rechtschreibvorschläge, „Link kopieren", „Bild sichern", „Im Browser öffnen". Heute passiert bei Rechtsklick nichts. (22.08.2026)
 - Letzte Seite pro App merken: Nach einem Neustart dort weitermachen, wo man war (z. B. der Stackfield-Raum), statt auf der Startseite. (22.08.2026)
 - Zoom pro App: Cmd +, Cmd −, Cmd 0, wird je App gemerkt. (22.08.2026)
@@ -19,7 +20,7 @@ Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm s
 
 ## Blockiert
 
-- Spotify (Widevine-DRM): braucht einen castLabs-EVS-Account (evs.castlabs.com), dann Fork mit VMP-Signierung und erneuter Test. Wartet auf Freddy.
+- (nichts)
 
 ## Ideen, noch nicht entschieden
 
