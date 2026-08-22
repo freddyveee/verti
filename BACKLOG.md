@@ -6,7 +6,7 @@ Nächstes Release: 1.1.1
 
 ## Offen
 
-- Wispr Flow als App in den Katalog (Web-Oberfläche mit Verlauf, Wörterbuch und Einstellungen; das Diktieren selbst bleibt die native Mac-App). Adresse und Login-Verhalten prüfen. (23.08.2026)
+- Wispr Flow als App in den Katalog: Recherche 23.08. ergab, dass es keine Web-Oberfläche für Verlauf/Wörterbuch gibt (das lebt in der Desktop-App, synchronisiert über Geräte); im Browser gibt es nur die Kontoverwaltung (wisprflow.ai/login), das Admin-Portal (admin.wisprflow.ai) und das API-Dashboard (platform.wisprflow.ai). Entscheidung offen: Admin-Portal als App aufnehmen oder Punkt streichen. (23.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
