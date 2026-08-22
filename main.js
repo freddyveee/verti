@@ -254,6 +254,7 @@ function windowOpenPolicy(openerContents) {
 function adoptChildWindow(child) {
   child.webContents.setWindowOpenHandler(windowOpenPolicy(child.webContents));
   child.webContents.on('did-create-window', (grandchild) => adoptChildWindow(grandchild));
+  attachMouseNav(child.webContents);
 }
 
 // Pro App: CSS/JS gegen "Lade unsere Desktop-App"-Werbung der Web-Apps.
@@ -401,11 +402,16 @@ function switchApp(id) {
 // Bei diesen Apps darf die Zahl überall im Titel stehen; bei allen anderen
 // nur ganz vorn, sonst machen Inhalts-Titel wie "Top 10 (2024)" falsche Badges.
 const TITLE_BADGE_APPS = new Set(['whatsapp', 'gmail', 'telegram', 'messenger', 'slack', 'linkedin', 'x', 'discord', 'teams', 'instagram', 'facebook']);
-// Zwei Quellen: Titel-Zahl (exakt, für die Apps oben) und gezählte Web-
-// Benachrichtigungen (für alle anderen, z.B. Stackfield). titleCounts ist
-// absolut, notifCounts wird pro Meldung hochgezählt und beim Öffnen genullt.
+// Drei Quellen: Titel-Zahl (exakt, für die Apps oben), die von der Seite
+// selbst gemeldete Zahl (Favico.js-Hook in view-preload.js – so zählt
+// Stackfield seine Ungelesenen exakt) und gezählte Web-Benachrichtigungen
+// (für alle übrigen). titleCounts ist absolut, notifCounts wird pro Meldung
+// hochgezählt und beim Öffnen genullt. pageCounts hat Vorrang vor notifCounts
+// und wird beim Öffnen NICHT genullt: Die Seite setzt sie selbst auf 0, sobald
+// gelesen wurde (wie ihr eigenes Favicon).
 const titleCounts = {};
 const notifCounts = {};
+const pageCounts = {};
 const badges = {};
 
 function parseUnread(id, title) {
@@ -415,9 +421,12 @@ function parseUnread(id, title) {
 }
 
 function effectiveBadge(id) {
-  // Titel-fähige Apps zählen NUR über den Titel (sonst Doppelzählung),
-  // alle anderen über eingegangene Benachrichtigungen
-  return TITLE_BADGE_APPS.has(id) ? (titleCounts[id] || 0) : (notifCounts[id] || 0);
+  // Titel-fähige Apps zählen NUR über den Titel (sonst Doppelzählung), alle
+  // anderen über die von der Seite gemeldete Zahl, ersatzweise über
+  // eingegangene Benachrichtigungen
+  if (TITLE_BADGE_APPS.has(id)) return titleCounts[id] || 0;
+  if (pageCounts[id] !== undefined) return pageCounts[id];
+  return notifCounts[id] || 0;
 }
 
 function recomputeBadge(id) {
@@ -440,10 +449,21 @@ function addNotif(id) {
   recomputeBadge(id);
 }
 
+function setPageBadge(id, count) {
+  pageCounts[id] = Math.min(999, Math.max(0, Math.round(Number(count) || 0)));
+  recomputeBadge(id);
+}
+
 function clearBadge(id) {
   titleCounts[id] = 0;
   notifCounts[id] = 0;
   recomputeBadge(id);
+}
+
+// App entfernt → auch die gemeldete Zahl vergessen
+function forgetBadge(id) {
+  delete pageCounts[id];
+  clearBadge(id);
 }
 
 function broadcastBadges() {
@@ -458,14 +478,33 @@ function broadcastBadges() {
 }
 
 ipcMain.handle('get-badges', () => badges);
-// Eine App hat eine Web-Benachrichtigung gefeuert (view-preload.js) → welche?
-ipcMain.on('verti-app-notify', (e) => {
+// Welche App steckt hinter einem IPC-Absender? (Login-Popups haben dasselbe
+// Preload, gehören aber zu keiner View → null)
+function appIdOf(sender) {
   for (const [id, view] of Object.entries(views)) {
-    if (view.webContents === e.sender) {
-      addNotif(id);
-      break;
-    }
+    if (view.webContents === sender) return id;
   }
+  return null;
+}
+// Signale aus view-preload.js: Web-Benachrichtigung gefeuert, Seite meldet
+// ihre Ungelesen-Zahl (Favico.js), Nutzer hat eine Meldung angeklickt
+ipcMain.on('verti-app-notify', (e) => {
+  const id = appIdOf(e.sender);
+  if (id) addNotif(id);
+});
+ipcMain.on('verti-app-badge', (e, count) => {
+  const id = appIdOf(e.sender);
+  if (id) setPageBadge(id, count);
+});
+ipcMain.on('verti-app-notify-click', (e) => {
+  const id = appIdOf(e.sender);
+  if (!id || !win || win.isDestroyed()) return;
+  // Klick auf die Meldung → Verti nach vorn und zur App springen (die Seite
+  // selbst kann aus einer versteckten View heraus kein Fenster holen)
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+  if (id !== activeId) switchApp(id);
 });
 ipcMain.handle('get-pending-update', () => (pendingUpdate ? pendingUpdate.version : null));
 ipcMain.on('open-update-popup', () => {
@@ -478,12 +517,45 @@ ipcMain.on('set-overlay', (e, dataUrl, total) => {
   else win.setOverlayIcon(null, '');
 });
 
+// ---------- Maus-Seitentasten (Zurück/Vorwärts) ----------
+// Die Daumentasten kommen als Maustaste „back"/„forward" an (Mac: Button 3/4,
+// Windows: XButton1/2). Chromium würde damit selbst navigieren, aber nur,
+// wenn die Seite das mouseUp nicht verbraucht – Kalender, Stackfield & Co.
+// fangen Mausereignisse gern ab, dann passiert nichts. Deshalb: Taste VOR
+// der Seite abfangen (before-mouse-event + preventDefault; die Seite sieht
+// sie gar nicht, Chromium navigiert also auch nicht doppelt) und selbst
+// navigieren. Windows schickt für Maus-/Treibertasten außerdem
+// WM_APPCOMMAND (app-command); ein kurzer Riegel verhindert, dass beide Wege
+// dieselbe Taste doppelt auslösen. Tastatur (Cmd+[ / Cmd+]) läuft übers Menü.
+let lastMouseNav = { dir: '', at: 0 };
+function mouseNav(wc, dir) {
+  const now = Date.now();
+  if (lastMouseNav.dir === dir && now - lastMouseNav.at < 250) return;
+  lastMouseNav = { dir, at: now };
+  if (!wc || wc.isDestroyed()) return;
+  const nh = wc.navigationHistory;
+  if (dir === 'back' && nh.canGoBack()) nh.goBack();
+  else if (dir === 'forward' && nh.canGoForward()) nh.goForward();
+}
+// target: welche WebContents navigiert werden (Sidebar → die aktive App)
+function attachMouseNav(wc, target = () => wc) {
+  wc.on('before-mouse-event', (e, m) => {
+    if (m.button !== 'back' && m.button !== 'forward') return;
+    e.preventDefault();
+    if (m.type === 'mouseUp') mouseNav(target(), m.button);
+  });
+}
+function activeWebContents() {
+  return activeId && views[activeId] ? views[activeId].webContents : null;
+}
+
 function createView(appDef) {
   const view = new WebContentsView({ webPreferences: viewWebPreferences() });
   view.webContents.setUserAgent(chromeUserAgent());
   view.webContents.loadURL(appDef.url);
   view.webContents.setWindowOpenHandler(windowOpenPolicy(view.webContents));
   view.webContents.on('did-create-window', (child) => adoptChildWindow(child));
+  attachMouseNav(view.webContents);
   const tweaks = APP_TWEAKS[appDef.id];
   if (tweaks) {
     view.webContents.on('dom-ready', () => {
@@ -611,6 +683,15 @@ function createWindow() {
   });
 
   win.loadFile('sidebar.html');
+  // Seitentasten über der Sidebar navigieren die aktive App; Windows meldet
+  // Maus-/Treibertasten zusätzlich als app-command
+  attachMouseNav(win.webContents, activeWebContents);
+  if (!isMac) {
+    win.on('app-command', (e, cmd) => {
+      if (cmd === 'browser-backward') mouseNav(activeWebContents(), 'back');
+      else if (cmd === 'browser-forward') mouseNav(activeWebContents(), 'forward');
+    });
+  }
 
   for (const appDef of state.apps) {
     createView(appDef);
@@ -670,7 +751,7 @@ function removeApp(id) {
   win.contentView.removeChildView(view);
   view.webContents.close();
   delete views[id];
-  clearBadge(id);
+  forgetBadge(id);
   state.apps = state.apps.filter((a) => a.id !== id);
   buildMenu();
   saveState();
