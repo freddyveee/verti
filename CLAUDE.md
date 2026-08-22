@@ -7,13 +7,16 @@ Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electr
 - `main.js` – Electron-Hauptprozess: Fenster, WebContentsViews, App-Katalog (`CATALOG`, `IMPERIO_IDS`), Fensterposition/State in `userData/window-state.json`, natives Menü, IPC
 - `sidebar.html` – Renderer: Sidebar, App-Bibliothek (Bereiche "IMPERIO Apps" / "Weitere Apps"), Navigation, Drag-and-drop-Sortierung
 - `preload.js` – contextBridge-API (`window.verti`)
+- `view-preload.js` – Preload aller App-Views und Login-Popups: Firefox-Tarnung für Google-Anmeldeseiten (JS-Seite) + Notification-Brücke für Badges
+- `scripts/google-login-probe.js` – Sonde, die Googles Anmeldeseite mit Vertis Tarnung testet (siehe Entwickeln); wird nicht mitgepackt
 - `icons/` – lokal eingebettete App-Logos (WhatsApp/Stackfield/Telegram, weil Favicon-Dienste dort versagen; Stackfield-Haken wurde manuell weiß gefüllt, war transparent ausgestanzt)
 - `build/` – App-Icon (icon.png) und DMG-Hintergrund
 - `docs/` – Landingpage (GitHub Pages): https://freddyveee.github.io/verti/
 
 ## Wichtige Entscheidungen
 
-- User-Agent wird plattformabhängig auf Chrome gefälscht, sonst blockt Google-Login
+- User-Agent wird plattformabhängig auf Chrome gefälscht (`chromeUserAgent()`); Electron schickt dabei keine Client-Hint-Header (`sec-ch-ua`)
+- Google-Login (Stand 22.08.2026, mit `scripts/google-login-probe.js` gemessen): Google lehnt jeden Chrome-UA aus Electron ab („Dieser Browser oder diese App ist unter Umständen nicht sicher", URL `…/signin/rejected?…rrk=46`), auch mit voller Versionsnummer wie bei Ferdium. Durch kommt nur die Firefox-Tarnung auf `accounts.google.com`/`accounts.youtube.com`: Header per `webRequest` (`applyGoogleAuthDisguise`) + JS-Kennung per `view-preload.js`. Das Preload muss `webFrame.executeJavaScript` benutzen (ein eingefügtes `<script>` verwirft Googles CSP still) und auch Login-Popups mitgegeben werden (`popupWindowOptions` → `viewWebPreferences()`, Popups erben kein Preload). Nie `setUserAgent` aus Navigations-Events aufrufen (Startabsturz 1.0.15–1.0.17)
 - Session-Partition `persist:apps` hält alle Logins lokal
 - Windows: eigener AppUserModelId, kein Strg+W-Close im Menü, titleBarOverlay statt Ampel-Buttons
 - Mac: signiert & notarisiert (ab 1.0.6, „Developer ID Application: Freddy Henrich-Held", Team CHS9G483R4). Zertifikat + privater Schlüssel liegen NUR in Freddys MacBook-Schlüsselbund (Backup in `~/Verti-Signing/`), Notar-Zugang als Keychain-Profil `verti-notary` → Mac-Builds gehen nur auf dem MacBook. Windows bleibt unsigniert → SmartScreen-Hinweis, Anleitung auf der Landingpage
@@ -26,6 +29,18 @@ Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electr
 ```bash
 npm install
 npm start
+```
+
+Testen mit eigenem Profil, ohne das echte Profil oder eine laufende Verti-Instanz zu stören (dev und installierte App teilen sich sonst `~/Library/Application Support/Verti`):
+
+```bash
+VERTI_USER_DATA=/tmp/verti-test npx electron .
+```
+
+Google-Login prüfen (tippt eine Fantasie-Adresse ein, kein Passwort nötig; sparsam einsetzen, jeder Lauf ist ein Anmeldeversuch bei Google):
+
+```bash
+npx electron scripts/google-login-probe.js
 ```
 
 ## Release (Ablauf)

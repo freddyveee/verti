@@ -7,6 +7,10 @@ const TOP_BAR = 44;
 const FRAME = 8;
 const isMac = process.platform === 'darwin';
 
+// Entwickeln/Testen mit eigenem Profil, ohne das echte Verti-Profil (und eine
+// laufende Verti-Instanz) zu stören: VERTI_USER_DATA=/pfad/testprofil npx electron .
+if (process.env.VERTI_USER_DATA) app.setPath('userData', process.env.VERTI_USER_DATA);
+
 const DEFAULT_APPS = [
   { id: 'calendar', name: 'Google Kalender', url: 'https://calendar.google.com/', icon: 'https://ssl.gstatic.com/calendar/images/dynamiclogo_2020q4/calendar_31_2x.png' },
   { id: 'whatsapp', name: 'WhatsApp', url: 'https://web.whatsapp.com/', icon: 'icons/whatsapp.png' },
@@ -177,12 +181,16 @@ function isInstalledAppUrl(url) {
   });
 }
 
+// Popups erben von Electron nur sicherheitsrelevante webPreferences — Preload
+// und Argumente müssen ausdrücklich mit, sonst läuft das Google-Login-Popup
+// („Mit Google anmelden" bei Notion, Todoist …) ohne die JS-Seite der Tarnung
+// (so war es bis 1.0.18).
 function popupWindowOptions(width, height) {
   return {
     width,
     height,
     autoHideMenuBar: true,
-    webPreferences: { partition: 'persist:apps' },
+    webPreferences: viewWebPreferences(),
   };
 }
 
@@ -258,10 +266,30 @@ function chromeUserAgent() {
 // Firefox aus — der kennt weder Client-Hints noch userAgentData, es gibt
 // also nichts, was sich widersprechen könnte. Alle anderen Seiten bekommen
 // unverändert den Chrome-UA (bewährt seit 1.0.0, keine Extra-Header).
-const FIREFOX_UA = isMac
-  ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:144.0) Gecko/20100101 Firefox/144.0'
-  : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0';
+// Gemessen (Sonde 22.08.2026): Chrome-UA ohne Client-Hints → Ablehnung
+// „rrk=46"; Firefox-Header → Google prüft das Konto ganz normal.
+// Die Versionsnummer läuft grob mit (Mozilla: alle vier Wochen eine Haupt-
+// version, 144 erschien am 14.10.2025, wir melden immer eine dahinter),
+// damit Google die Tarnung nicht irgendwann als veralteten Browser abweist.
+function firefoxUserAgent() {
+  const major = 143 + Math.floor((Date.now() - Date.UTC(2025, 9, 14)) / (28 * 864e5));
+  const os = isMac ? 'Macintosh; Intel Mac OS X 10.15' : 'Windows NT 10.0; Win64; x64';
+  return `Mozilla/5.0 (${os}; rv:${major}.0) Gecko/20100101 Firefox/${major}.0`;
+}
+const FIREFOX_UA = firefoxUserAgent();
 const GOOGLE_AUTH_HOSTS = new Set(['accounts.google.com', 'accounts.youtube.com']);
+
+// webPreferences aller App-Views und der von uns erlaubten Login-Popups.
+// Die Firefox-Kennung reist als Argument mit, damit view-preload.js exakt
+// dieselbe Zeichenkette wie die Header-Tarnung setzt (eine Quelle).
+function viewWebPreferences() {
+  return {
+    partition: 'persist:apps',
+    spellcheck: true,
+    preload: path.join(__dirname, 'view-preload.js'),
+    additionalArguments: [`--verti-firefox-ua=${FIREFOX_UA}`],
+  };
+}
 
 function isGoogleAuthUrl(url) {
   try {
@@ -307,8 +335,9 @@ function applyGoogleAuthDisguise(ses) {
 // Profilen blieb er unsichtbar, deshalb wurde er tagelang überall anders
 // gesucht. NIE wieder setUserAgent aus Navigations-Events aufrufen!
 // Die JS-Kennung stellt jetzt view-preload.js per Property-Override um
-// (rein lesend, kein Navigations-Eingriff); die Header macht weiterhin
-// applyGoogleAuthDisguise oben.
+// (rein lesend, kein Navigations-Eingriff; seit 1.0.19 per
+// webFrame.executeJavaScript, weil Googles CSP eingefügte <script>-Elemente
+// still verwirft); die Header macht weiterhin applyGoogleAuthDisguise oben.
 
 function layoutViews() {
   if (!win) return;
@@ -421,13 +450,7 @@ ipcMain.on('set-overlay', (e, dataUrl, total) => {
 });
 
 function createView(appDef) {
-  const view = new WebContentsView({
-    webPreferences: {
-      partition: 'persist:apps',
-      spellcheck: true,
-      preload: path.join(__dirname, 'view-preload.js'),
-    },
-  });
+  const view = new WebContentsView({ webPreferences: viewWebPreferences() });
   view.webContents.setUserAgent(chromeUserAgent());
   view.webContents.loadURL(appDef.url);
   view.webContents.setWindowOpenHandler(windowOpenPolicy(view.webContents));
