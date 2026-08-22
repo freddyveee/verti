@@ -783,6 +783,13 @@ ipcMain.on('nav-back', navBackActive);
 ipcMain.on('nav-forward', navForwardActive);
 ipcMain.on('nav-home', navHomeActive);
 ipcMain.handle('get-apps', () => state.apps);
+// Die Sidebar fragt nach dem Start einmal nach: Das erste 'active-app' aus
+// switchApp (did-finish-load) kommt, bevor sie ihre Empfänger registriert
+// hat, und verpuffte → kein Icon war markiert, bis man klickte (bis 1.0.20).
+ipcMain.handle('get-active-app', () => {
+  if (activeId) sendNavStateFor(activeId);
+  return activeId;
+});
 ipcMain.handle('get-catalog', () => CATALOG.map((c) => ({ ...c, imperio: IMPERIO_IDS.includes(c.id) })));
 ipcMain.on('open-library', () => setLibrary(true));
 ipcMain.on('close-library', closeLibrary);

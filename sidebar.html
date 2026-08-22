@@ -598,6 +598,13 @@
         closeLibrary(false);
         renderSidebar();
       });
+      // Das erste 'active-app' kann vor der Registrierung oben gekommen sein
+      // (Wettlauf beim Laden) → aktuellen Stand einmal abholen
+      const currentActive = await window.verti.getActiveApp();
+      if (currentActive && !activeId) {
+        activeId = currentActive;
+        renderSidebar();
+      }
 
       window.verti.onAppsChanged((newApps) => {
         apps = newApps;
