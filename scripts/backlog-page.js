@@ -57,7 +57,7 @@ for (const raw of src.split('\n')) {
   }
   if (/^- /.test(line) && cur) {
     let text = line.slice(2).trim();
-    if (/^\(noch nichts/i.test(text)) continue; // Platzhalter
+    if (/^\((noch )?nichts/i.test(text)) continue; // Platzhalter
     let date = '';
     const dm = /\s*\((\d{2}\.\d{2}\.\d{4})\)\s*$/.exec(text);
     if (dm) { date = dm[1]; text = text.slice(0, dm.index); }
