@@ -14,7 +14,7 @@ if (process.env.VERTI_USER_DATA) app.setPath('userData', process.env.VERTI_USER_
 const DEFAULT_APPS = [
   { id: 'calendar', name: 'Google Kalender', url: 'https://calendar.google.com/', icon: 'https://ssl.gstatic.com/calendar/images/dynamiclogo_2020q4/calendar_31_2x.png' },
   { id: 'whatsapp', name: 'WhatsApp', url: 'https://web.whatsapp.com/', icon: 'icons/whatsapp.png' },
-  { id: 'todoist', name: 'Todoist', url: 'https://app.todoist.com/app/today' },
+  { id: 'todoist', name: 'Todoist', url: 'https://app.todoist.com/app/upcoming' },
   { id: 'chatgpt', name: 'ChatGPT', url: 'https://chatgpt.com/' },
 ];
 
@@ -27,7 +27,7 @@ const CATALOG = [
   { id: 'gmail', name: 'Gmail', url: 'https://mail.google.com/' },
   { id: 'gdrive', name: 'Google Drive', url: 'https://drive.google.com/', icon: 'https://ssl.gstatic.com/images/branding/product/2x/drive_2020q4_48dp.png' },
   { id: 'stackfield', name: 'Stackfield', url: 'https://www.stackfield.com/', icon: 'icons/stackfield.png' },
-  { id: 'notion', name: 'Notion', url: 'https://www.notion.so/' },
+  { id: 'notion', name: 'Notion', url: 'https://app.notion.com/' },
   { id: 'slack', name: 'Slack', url: 'https://app.slack.com/client' },
   { id: 'telegram', name: 'Telegram', url: 'https://web.telegram.org/', icon: 'icons/telegram.png' },
   { id: 'messenger', name: 'Messenger', url: 'https://www.messenger.com/' },
@@ -77,10 +77,16 @@ function loadState() {
     s = {};
   }
   const apps = (Array.isArray(s.apps) && s.apps.length ? s.apps : DEFAULT_APPS)
-    // Icon-Updates aus dem Katalog auch für bereits gespeicherte Apps übernehmen
+    // Stammdaten (URL, Name, Icon) sind Katalog-Sache und werden für schon
+    // gespeicherte Apps übernommen. Sonst blieben Katalog-Verbesserungen —
+    // etwa Todoist, das direkt in „Demnächst" statt „Heute" startet — bei
+    // bestehenden Nutzern hängen, weil deren window-state.json die alte URL
+    // hält. saveState() schreibt die aktuelle Seite NICHT pro App zurück, es
+    // geht also keine „zuletzt besuchte Seite" verloren. Reihenfolge und
+    // Auswahl der Apps bleiben dem Nutzer; URLs kann er ohnehin nicht ändern.
     .map((a) => {
       const cat = CATALOG.find((c) => c.id === a.id);
-      return cat && cat.icon ? { ...a, icon: cat.icon } : a;
+      return cat ? { ...a, name: cat.name, url: cat.url, icon: cat.icon || a.icon } : a;
     });
   return {
     bounds: s.bounds || { width: 1400, height: 900 },
@@ -130,8 +136,10 @@ const AUTH_TARGETS = [
   { host: 'slack.com', path: /^\/(signin|sso|openid|workspace-signin)([/?]|$)/ },
   { host: 'stackfield.com', path: /^\/login/ },
   { host: 'claude.ai', path: /^\/(login|oauth)([/?]|$)/ },
-  // Notion startet sein Google-Login-Popup auf einer eigenen notion.so-URL
+  // Notion startet sein Google-Login-Popup auf einer eigenen Notion-URL.
+  // App läuft seit 1.0.19 auf app.notion.com (notion.com), Altbestand auf notion.so.
   { host: 'notion.so', path: /^\/(login|verifyNoPopupBlocker|googlepopupredirect)/i },
+  { host: 'notion.com', path: /^\/(login|verifyNoPopupBlocker|googlepopupredirect)/i },
 ];
 
 function isAuthUrl(url) {
