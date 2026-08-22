@@ -4,7 +4,7 @@ Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm s
 
 ## Offen
 
-- Spotify läuft technisch (Probe-Build „Verti Spotify-Test" mit castLabs-Electron + EVS-Signatur spielt durch, 22.08.2026). Entscheidung offen: Verti dauerhaft auf die castLabs-Variante umstellen (gilt für alle, Electron leicht hinterher, Signierschritt im Build)? Dann Umsetzung in main.js, package.json, Entitlements, Build-Hook, Windows-Build prüfen. (22.08.2026)
+- Wispr Flow als App in den Katalog (Web-Oberfläche mit Verlauf, Wörterbuch und Einstellungen; das Diktieren selbst bleibt die native Mac-App). Adresse und Login-Verhalten prüfen. (23.08.2026)
 - Rechtsklick-Menü in den Apps: Kopieren/Einfügen/Ausschneiden, Rechtschreibvorschläge, „Link kopieren", „Bild sichern", „Im Browser öffnen". Heute passiert bei Rechtsklick nichts. (22.08.2026)
 - Letzte Seite pro App merken: Nach einem Neustart dort weitermachen, wo man war (z. B. der Stackfield-Raum), statt auf der Startseite. (22.08.2026)
 - Zoom pro App: Cmd +, Cmd −, Cmd 0, wird je App gemerkt. (22.08.2026)
@@ -12,6 +12,7 @@ Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm s
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- Spotify läuft in Verti: Umstieg auf castLabs' Electron mit Widevine-DRM und EVS-Produktionssignatur. Mac-Probe-Build spielt durch, Windows-Build signiert ebenfalls korrekt. Nutzer merken nur: Spotify spielt; beim ersten Start lädt die App einmal das DRM-Modul (10 MB) nach. (23.08.2026)
 - Dev-Version ist als solche erkennbar: rotes Etikett „Dev-Version" neben dem Verti-Logo und Fenstertitel „Verti (Dev)", nur bei `npx electron .`, nie in der installierten App. (22.08.2026)
 - Fehler behoben: Nach dem Start war kein App-Icon in der Sidebar als aktiv markiert (lila Balken kam erst nach dem ersten Klick), Wettlauf beim Laden. (22.08.2026)
 - Sidebar-Sortierung wie auf dem iPhone: Das gezogene Icon hebt sich ab und folgt dem Zeiger, die anderen rutschen animiert in ihre neue Position, beim Loslassen gleitet es in die Lücke. (22.08.2026)

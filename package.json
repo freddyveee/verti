@@ -83,7 +83,8 @@
     "electronDownload": {
       "mirror": "https://github.com/castlabs/electron-releases/releases/download/"
     },
-    "afterPack": "scripts/ecs-afterpack.js"
+    "afterPack": "scripts/ecs-afterpack.js",
+    "afterSign": "scripts/ecs-aftersign.js"
   },
   "dependencies": {
     "electron-updater": "^6.6.2"

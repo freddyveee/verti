@@ -5,8 +5,7 @@
 //    non-binary files to have identical SHAs"), die Dateien unterscheiden sich je Architektur.
 //  - Universal-Bundle: VMP-Produktionssignatur per castLabs EVS holen (sign-pkg auf dem
 //    Verzeichnis mit der .app), VOR Apple-Codesign/Notarisierung (macOS-Reihenfolge).
-// Windows: VMP-Signatur nach dem Packen (win-unpacked); Verti signiert unter Windows
-//  nicht mit einem Zertifikat, sonst müsste VMP NACH dem Codesign laufen (afterSign).
+// Windows: siehe scripts/ecs-aftersign.js (VMP muss NACH der Exe-Bearbeitung laufen).
 // Voraussetzungen: pip-Paket castlabs-evs (Python 3.11) und ein angemeldeter
 // EVS-Account (`python3.11 -m castlabs_evs.account reauth`, Token hält ~1 Monat).
 const fs = require('fs');
@@ -53,7 +52,8 @@ exports.default = async function afterPack(context) {
     vmpSign(context.appOutDir);
     return;
   }
-  if (context.electronPlatformName === 'win32') {
-    vmpSign(context.appOutDir);
-  }
+  // Windows: NICHT hier. electron-builder bearbeitet Verti.exe nach afterPack noch
+  // (Icon/Metadaten per rcedit, ggf. Codesign) und bricht damit jede vorher
+  // gesetzte VMP-Signatur. Windows läuft deshalb in scripts/ecs-aftersign.js.
 };
+exports.vmpSign = vmpSign;
