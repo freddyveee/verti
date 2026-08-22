@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 // Baut aus BACKLOG.md eine HTML-Checkliste (eine Quelle, keine Doppelpflege).
-// Aufruf: node scripts/backlog-page.js [ausgabe.html]  – Standard: stdout.
+// Aufruf: node scripts/backlog-page.js [ausgabe.html] [--full]  – Standard: stdout.
+// --full schreibt ein komplettes Dokument (lokale Vorschau .backlog-preview.html).
 // Die Seite wird als Artifact veröffentlicht (siehe CLAUDE.md); sie enthält
 // absichtlich kein <html>/<head>/<body>, das ergänzt der Artifact-Dienst.
 const fs = require('fs');
 const path = require('path');
 
 const src = fs.readFileSync(path.join(__dirname, '..', 'BACKLOG.md'), 'utf8');
-const out = process.argv[2];
+// --full: komplettes HTML-Dokument (für die Vorschau als Datei); ohne Flag nur
+// der Seiteninhalt, so wie der Artifact-Dienst ihn erwartet
+const full = process.argv.includes('--full');
+const out = process.argv.filter((a) => !a.startsWith('--'))[2];
 
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // Inline-Markdown, das im Backlog vorkommt: `code`, [text](url), **fett**
@@ -178,5 +182,6 @@ const html = `<title>Verti Backlog</title>
   <p class="foot">Quelle: <code>BACKLOG.md</code> im Verti-Repo, Stand ${stand}. Kästchen: leer = offen, Haken = umgesetzt, Strich = blockiert, gestrichelt = verschoben.</p>
 </div>
 `;
-if (out) fs.writeFileSync(out, html); else process.stdout.write(html);
+const doc = full ? `<!doctype html>\n<html lang="de">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n</head>\n<body>\n${html}</body>\n</html>\n` : html;
+if (out) fs.writeFileSync(out, doc); else process.stdout.write(doc);
 if (out) console.error(`Backlog-Seite geschrieben: ${out} (${html.length} Zeichen)`);
