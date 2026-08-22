@@ -1,4 +1,4 @@
-const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog, nativeImage, desktopCapturer } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog, nativeImage, desktopCapturer, clipboard, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -113,7 +113,56 @@ function loadState() {
     bounds: s.bounds || { width: 1400, height: 900 },
     activeApp: s.activeApp || 'calendar',
     apps,
+    lastUrls: s.lastUrls && typeof s.lastUrls === 'object' ? s.lastUrls : {}, // zuletzt besuchte Seite je App
+    zoom: s.zoom && typeof s.zoom === 'object' ? s.zoom : {}, // Zoomstufe je App
   };
+}
+
+// ---------- Letzte Seite pro App ----------
+// Nach einem Neustart macht jede App dort weiter, wo man war (Stackfield-Raum,
+// Kalenderwoche …), statt auf der Startseite (Freddys Wunsch 22.08.2026). Gemerkt
+// wird nur eine Adresse derselben Site wie die Katalog-URL: Login-Seiten
+// (accounts.google.com), Fremdseiten und Katalog-Umzüge (notion.so → notion.com)
+// fallen damit raus, dann gilt wieder die Katalog-URL. „Zur Startseite" bleibt
+// der Weg zurück zur Katalog-URL.
+function sameSite(url, appUrl) {
+  try {
+    const a = new URL(url), b = new URL(appUrl);
+    if (a.protocol !== 'https:' && a.protocol !== 'http:') return false;
+    return a.host === b.host || a.host.endsWith('.' + b.host);
+  } catch {
+    return false;
+  }
+}
+function startUrlFor(appDef) {
+  const last = state.lastUrls[appDef.id];
+  return last && sameSite(last, appDef.url) ? last : appDef.url;
+}
+// Anmeldeseiten nicht merken (z.B. app.todoist.com/auth/login liegt auf demselben
+// Host): bekannte Login-Adressen (isAuthUrl) plus typische Pfadmuster
+function looksLikeAuth(url) {
+  if (isAuthUrl(url)) return true;
+  try { return /(^|\/)(login|log-in|signin|sign-in|auth|oauth|sso)(\/|$)/i.test(new URL(url).pathname); } catch { return false; }
+}
+function rememberUrl(appDef, url) {
+  if (!sameSite(url, appDef.url) || looksLikeAuth(url) || state.lastUrls[appDef.id] === url) return;
+  state.lastUrls[appDef.id] = url;
+  saveState();
+}
+
+// ---------- Zoom pro App ----------
+// Cmd/Strg + Plus/Minus/0 im Menü „Ansicht"; die Stufe wird je App gemerkt und
+// bei jedem Seitenladen wieder angewandt (Electron-Zoomstufen: Faktor 1,2^Stufe,
+// 0,5 Stufen ≈ 10 %).
+const ZOOM_STEP = 0.5;
+function zoomActive(delta) {
+  const wc = activeWebContents();
+  if (!wc) return;
+  const level = delta === 0 ? 0 : Math.max(-4, Math.min(6, wc.getZoomLevel() + delta));
+  wc.setZoomLevel(level);
+  if (level) state.zoom[activeId] = level;
+  else delete state.zoom[activeId];
+  saveState();
 }
 
 let state = null;
@@ -257,6 +306,7 @@ function adoptChildWindow(child) {
   child.webContents.setWindowOpenHandler(windowOpenPolicy(child.webContents));
   child.webContents.on('did-create-window', (grandchild) => adoptChildWindow(grandchild));
   attachMouseNav(child.webContents);
+  attachContextMenu(child.webContents);
 }
 
 // Pro App: CSS/JS gegen "Lade unsere Desktop-App"-Werbung der Web-Apps.
@@ -560,13 +610,105 @@ function activeWebContents() {
   return activeId && views[activeId] ? views[activeId].webContents : null;
 }
 
+// ---------- Downloads ----------
+// Ohne Nachfrage in den Downloads-Ordner (Freddys Wunsch 22.08.2026), danach eine
+// Mitteilung; Klick darauf zeigt die Datei im Finder/Explorer. Gleichnamige
+// Dateien bekommen „(2)", „(3)" … Gilt für App-Views und Login-/App-Popups.
+function uniqueFileName(dir, name) {
+  const ext = path.extname(name);
+  const base = path.basename(name, ext);
+  let candidate = name;
+  for (let i = 2; fs.existsSync(path.join(dir, candidate)); i++) candidate = `${base} (${i})${ext}`;
+  return candidate;
+}
+function notify(title, body, onClick) {
+  if (!Notification.isSupported()) return;
+  const n = new Notification({ title, body });
+  if (onClick) n.on('click', onClick);
+  n.show();
+}
+function setupDownloads(ses) {
+  ses.on('will-download', (e, item) => {
+    const dir = app.getPath('downloads');
+    const name = uniqueFileName(dir, item.getFilename() || 'Download');
+    const target = path.join(dir, name);
+    item.setSavePath(target); // kein Dialog
+    item.once('done', (ev, result) => {
+      if (result === 'completed') {
+        if (isMac && app.dock) app.dock.downloadFinished(target);
+        notify('Download fertig', name, () => shell.showItemInFolder(target));
+      } else if (result === 'interrupted') {
+        notify('Download abgebrochen', name);
+      }
+    });
+  });
+}
+
+// ---------- Rechtsklick-Menü in den Apps ----------
+// Electron bringt keins mit; ohne gab es kein Kopieren/Einfügen per Maus und
+// keine Rechtschreibvorschläge, obwohl die Prüfung läuft (Freddys Wunsch
+// 22.08.2026). Inhalt richtet sich nach der Stelle: Wort, Link, Bild, Textfeld,
+// Auswahl. Alle Aktionen laufen explizit über die jeweiligen WebContents,
+// Menü-Rollen würden die Sidebar treffen.
+function attachContextMenu(wc) {
+  wc.on('context-menu', (e, p) => {
+    const items = [];
+    const sep = () => { if (items.length && items[items.length - 1].type !== 'separator') items.push({ type: 'separator' }); };
+    if (p.misspelledWord) {
+      const suggestions = (p.dictionarySuggestions || []).slice(0, 5);
+      for (const word of suggestions) items.push({ label: word, click: () => wc.replaceMisspelling(word) });
+      if (!suggestions.length) items.push({ label: 'Keine Vorschläge', enabled: false });
+      items.push({ label: 'Zum Wörterbuch hinzufügen', click: () => wc.session.addWordToSpellCheckerDictionary(p.misspelledWord) });
+      sep();
+    }
+    if (p.linkURL) {
+      items.push(
+        { label: 'Link im Browser öffnen', click: () => openExternally(p.linkURL) },
+        { label: 'Link kopieren', click: () => clipboard.writeText(p.linkURL) },
+      );
+      sep();
+    }
+    if (p.mediaType === 'image' && p.srcURL) {
+      items.push(
+        { label: 'Bild kopieren', click: () => wc.copyImageAt(p.x, p.y) },
+        { label: 'Bild in Downloads sichern', click: () => wc.downloadURL(p.srcURL) },
+        { label: 'Bildadresse kopieren', click: () => clipboard.writeText(p.srcURL) },
+      );
+      sep();
+    }
+    const f = p.editFlags || {};
+    if (p.isEditable) {
+      items.push(
+        { label: 'Rückgängig', enabled: !!f.canUndo, click: () => wc.undo() },
+        { label: 'Wiederholen', enabled: !!f.canRedo, click: () => wc.redo() },
+        { type: 'separator' },
+        { label: 'Ausschneiden', enabled: !!f.canCut, click: () => wc.cut() },
+        { label: 'Kopieren', enabled: !!f.canCopy, click: () => wc.copy() },
+        { label: 'Einfügen', enabled: !!f.canPaste, click: () => wc.paste() },
+        { label: 'Alles auswählen', enabled: !!f.canSelectAll, click: () => wc.selectAll() },
+      );
+      sep();
+    } else if (p.selectionText && p.selectionText.trim()) {
+      items.push({ label: 'Kopieren', click: () => wc.copy() });
+      sep();
+    }
+    items.push({ label: 'Neu laden', click: () => wc.reload() });
+    Menu.buildFromTemplate(items).popup({ window: BrowserWindow.fromWebContents(wc) || win });
+  });
+}
+
 function createView(appDef) {
   const view = new WebContentsView({ webPreferences: viewWebPreferences() });
   view.webContents.setUserAgent(chromeUserAgent());
-  view.webContents.loadURL(appDef.url);
+  view.webContents.loadURL(startUrlFor(appDef));
   view.webContents.setWindowOpenHandler(windowOpenPolicy(view.webContents));
   view.webContents.on('did-create-window', (child) => adoptChildWindow(child));
   attachMouseNav(view.webContents);
+  attachContextMenu(view.webContents);
+  view.webContents.on('did-finish-load', () => {
+    const z = state.zoom[appDef.id];
+    if (z) view.webContents.setZoomLevel(z);
+  });
   const tweaks = APP_TWEAKS[appDef.id];
   if (tweaks) {
     view.webContents.on('dom-ready', () => {
@@ -576,11 +718,12 @@ function createView(appDef) {
   }
   view.setVisible(false);
   try { view.setBorderRadius(10); } catch {}
-  const sendNavState = () => {
+  const onNavigated = (e, url) => {
     if (appDef.id === activeId) sendNavStateFor(appDef.id);
+    rememberUrl(appDef, url);
   };
-  view.webContents.on('did-navigate', sendNavState);
-  view.webContents.on('did-navigate-in-page', sendNavState);
+  view.webContents.on('did-navigate', onNavigated);
+  view.webContents.on('did-navigate-in-page', onNavigated);
   view.webContents.on('page-title-updated', (_e, title) => setTitleBadge(appDef.id, parseUnread(appDef.id, title)));
   win.contentView.addChildView(view);
   views[appDef.id] = view;
@@ -692,6 +835,8 @@ function createWindow() {
   ses.setPermissionRequestHandler((wc, permission, cb) => {
     cb(['notifications', 'media', 'clipboard-read', 'clipboard-sanitized-write', 'fullscreen'].includes(permission));
   });
+  setupDownloads(ses);
+  setupDownloads(session.defaultSession);
   // Bildschirmfreigabe (Zoom/Meet/Teams): eigener Auswahldialog, damit der
   // Nutzer Bildschirm oder Fenster wählen kann
   ses.setDisplayMediaRequestHandler((request, callback) => {
@@ -823,6 +968,8 @@ function removeApp(id) {
   view.webContents.close();
   delete views[id];
   forgetBadge(id);
+  delete state.lastUrls[id];
+  delete state.zoom[id];
   state.apps = state.apps.filter((a) => a.id !== id);
   buildMenu();
   saveState();
@@ -892,6 +1039,13 @@ function buildMenu() {
           accelerator: 'CmdOrCtrl+R',
           click: () => activeId && views[activeId] && views[activeId].webContents.reload(),
         },
+        { type: 'separator' },
+        { label: 'Vergrößern', accelerator: 'CmdOrCtrl+Plus', click: () => zoomActive(ZOOM_STEP) },
+        // zweiter Weg für Tastaturen, auf denen „+" nur über Shift+= erreichbar ist
+        { label: 'Vergrößern', accelerator: 'CmdOrCtrl+=', visible: false, acceleratorWorksWhenHidden: true, click: () => zoomActive(ZOOM_STEP) },
+        { label: 'Verkleinern', accelerator: 'CmdOrCtrl+-', click: () => zoomActive(-ZOOM_STEP) },
+        { label: 'Originalgröße', accelerator: 'CmdOrCtrl+0', click: () => zoomActive(0) },
+        { type: 'separator' },
         {
           label: 'Zurück',
           accelerator: 'CmdOrCtrl+[',

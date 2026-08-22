@@ -12,7 +12,10 @@ const src = fs.readFileSync(path.join(__dirname, '..', 'BACKLOG.md'), 'utf8');
 // angehoben und die Punkte wandern unter „Veröffentlicht", der Abschnitt
 // „Umgesetzt" zeigt dann automatisch die übernächste Nummer.
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
-const nextVersion = pkg.version.replace(/(\d+)$/, (m) => String(Number(m) + 1));
+// Steht in BACKLOG.md eine Zeile „Nächstes Release: X.Y.Z", gilt die (z.B. Sprung auf 1.1.1);
+// sonst package.json + 1 (Patch).
+const override = /^Nächstes Release:\s*(\d+\.\d+\.\d+)\s*$/m.exec(src);
+const nextVersion = override ? override[1] : pkg.version.replace(/(\d+)$/, (m) => String(Number(m) + 1));
 // --full: komplettes HTML-Dokument (für die Vorschau als Datei); ohne Flag nur
 // der Seiteninhalt, so wie der Artifact-Dienst ihn erwartet
 const full = process.argv.includes('--full');
@@ -64,7 +67,7 @@ for (const raw of src.split('\n')) {
     (group ? group.items : cur.items).push({ text, date });
     continue;
   }
-  if (!cur && line && !line.startsWith('#')) intro += (intro ? ' ' : '') + line;
+  if (!cur && line && !line.startsWith('#') && !/^Nächstes Release:/.test(line)) intro += (intro ? ' ' : '') + line;
 }
 
 const count = (state) => sections.filter((s) => s.state === state)
