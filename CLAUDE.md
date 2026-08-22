@@ -13,7 +13,8 @@ Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electr
 - `icons/` – lokal eingebettete App-Logos (WhatsApp/Stackfield/Telegram, weil Favicon-Dienste dort versagen; Stackfield-Haken wurde manuell weiß gefüllt, war transparent ausgestanzt)
 - `build/` – App-Icon (icon.png) und DMG-Hintergrund
 - `docs/` – Landingpage (GitHub Pages): https://freddyveee.github.io/verti/
-- `BACKLOG.md` – Ideen und Wünsche (Offen / Umgesetzt-ungebaut / Blockiert / Veröffentlicht). Jeden neuen Wunsch von Freddy sofort dort eintragen; Umsetzung laufend, Release gebündelt auf „jetzt bauen"
+- `BACKLOG.md` – Ideen und Wünsche (Offen / Umgesetzt-ungebaut / Blockiert / Veröffentlicht). Jeden neuen Wunsch von Freddy sofort dort eintragen; Umsetzung laufend, Release gebündelt auf „jetzt bauen". Format: `- Text (TT.MM.JJJJ)`, Releases als `### 1.0.x (Datum)`
+- `scripts/backlog-page.js` – baut aus `BACKLOG.md` die Checklisten-Seite (`node scripts/backlog-page.js ausgabe.html`), die als Artifact „Verti Backlog" veröffentlicht ist. Nach JEDER Änderung an BACKLOG.md neu bauen und das Artifact unter derselben Adresse aktualisieren (URL steht im Memory); wird nicht mitgepackt
 
 ## Wichtige Entscheidungen
 
