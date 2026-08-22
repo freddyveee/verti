@@ -9,6 +9,7 @@ Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electr
 - `preload.js` – contextBridge-API (`window.verti`)
 - `view-preload.js` – Preload aller App-Views und Login-Popups: Firefox-Tarnung für Google-Anmeldeseiten (JS-Seite) + Brücke Seite→Verti für Badges (Notification, showNotification, Favico.js) und Klicks auf Meldungen
 - `scripts/google-login-probe.js` – Sonde, die Googles Anmeldeseite mit Vertis Tarnung testet (siehe Entwickeln); wird nicht mitgepackt
+- `scripts/mouse-probe.js` – Sonde, die im Fenster zeigt, was Maus-Seitentasten/Tastenkürzel im Hauptprozess auslösen (`npx electron scripts/mouse-probe.js`); wird nicht mitgepackt
 - `icons/` – lokal eingebettete App-Logos (WhatsApp/Stackfield/Telegram, weil Favicon-Dienste dort versagen; Stackfield-Haken wurde manuell weiß gefüllt, war transparent ausgestanzt)
 - `build/` – App-Icon (icon.png) und DMG-Hintergrund
 - `docs/` – Landingpage (GitHub Pages): https://freddyveee.github.io/verti/
