@@ -2,7 +2,7 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.2
+Nächstes Release: 1.1.3
 
 ## Offen
 
@@ -10,8 +10,7 @@ Nächstes Release: 1.1.2
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- „Spielt gerade"-Zeichen in der Sidebar: Gibt eine App Ton aus (Spotify/YouTube im Hintergrund), erscheint ein gläserner Equalizer (Frosted Glass, das Logo schimmert durch) an der unteren Ecke des App-Icons, damit man sieht, woher die Musik kommt. (23.08.2026)
-- Klick aufs Sidebar-Icon gibt der App sofort den Tastatur-Fokus: App-Tastenkürzel wie Leertaste (Play/Pause bei Spotify) wirken direkt, ohne erst ins Fenster zu klicken. (23.08.2026)
+- (noch nichts)
 
 ## Blockiert
 
@@ -32,6 +31,11 @@ Nächstes Release: 1.1.2
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.2 (23.08.2026)
+
+- „Spielt gerade"-Zeichen in der Sidebar: Gibt eine App Ton aus (Spotify/YouTube im Hintergrund), erscheint ein gläserner Equalizer (Frosted Glass, das Logo schimmert durch) an der unteren Ecke des App-Icons, damit man sieht, woher die Musik kommt. (23.08.2026)
+- Klick aufs Sidebar-Icon gibt der App sofort den Tastatur-Fokus: App-Tastenkürzel wie Leertaste (Play/Pause bei Spotify) wirken direkt, ohne erst ins Fenster zu klicken. (23.08.2026)
 
 ### 1.1.1 (23.08.2026)
 
