@@ -6,7 +6,7 @@ Nächstes Release: 1.1.3
 
 ## Offen
 
-- (noch nichts – neue Ideen hier eintragen)
+- Zoom-Prozentanzeige: Beim Vergrößern/Verkleinern (Cmd +/−) kurz eine Prozentzahl in der Bildschirmmitte einblenden – 100 % = Originalgröße, alle anderen Stufen entsprechend (z. B. 110 %, 90 %). So sieht man, wie weit man vom Original weg ist. Cmd 0 setzt auf 100 % zurück. (23.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
