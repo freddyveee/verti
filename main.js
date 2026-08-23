@@ -443,6 +443,9 @@ function switchApp(id) {
     view.setVisible(vid === id);
   }
   layoutViews();
+  // Tastatur-Fokus in die App geben, damit App-Tastenkürzel (z.B. Leertaste =
+  // Play/Pause bei Spotify) sofort greifen – ohne erst ins Fenster zu klicken
+  try { views[id].webContents.focus(); } catch {}
   win.webContents.send('active-app', id);
   sendNavStateFor(id);
   saveState();
@@ -465,6 +468,9 @@ const titleCounts = {};
 const notifCounts = {};
 const pageCounts = {};
 const badges = {};
+// Welche App gerade hörbar Ton ausgibt (Spotify/YouTube im Hintergrund).
+// Die Sidebar zeigt daran ein kleines „spielt gerade"-Zeichen.
+const audible = {};
 
 function parseUnread(id, title) {
   const t = String(title || '');
@@ -532,6 +538,15 @@ function broadcastBadges() {
 }
 
 ipcMain.handle('get-badges', () => badges);
+ipcMain.handle('get-audio', () => audible);
+function broadcastAudio() {
+  if (win && !win.isDestroyed()) win.webContents.send('audio', audible);
+}
+function setAudio(id, on) {
+  if (!!audible[id] === !!on) return;
+  if (on) audible[id] = true; else delete audible[id];
+  broadcastAudio();
+}
 // Welche App steckt hinter einem IPC-Absender? (Login-Popups haben dasselbe
 // Preload, gehören aber zu keiner View → null)
 function appIdOf(sender) {
@@ -705,6 +720,10 @@ function createView(appDef) {
   view.webContents.on('did-create-window', (child) => adoptChildWindow(child));
   attachMouseNav(view.webContents);
   attachContextMenu(view.webContents);
+  view.webContents.on('audio-state-changed', (e) => {
+    const on = typeof e.audible === 'boolean' ? e.audible : view.webContents.isCurrentlyAudible();
+    setAudio(appDef.id, on);
+  });
   view.webContents.on('did-finish-load', () => {
     const z = state.zoom[appDef.id];
     if (z) view.webContents.setZoomLevel(z);
@@ -968,6 +987,7 @@ function removeApp(id) {
   view.webContents.close();
   delete views[id];
   forgetBadge(id);
+  setAudio(id, false);
   delete state.lastUrls[id];
   delete state.zoom[id];
   state.apps = state.apps.filter((a) => a.id !== id);

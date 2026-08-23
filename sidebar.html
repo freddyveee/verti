@@ -160,6 +160,28 @@
     border-radius: 6px;
     pointer-events: none;
   }
+  /* „spielt gerade": kleiner Equalizer unten rechts, wenn die App Ton ausgibt
+     (Spotify/YouTube im Hintergrund). Grün = spielt, klar getrennt vom roten
+     Ungelesen-Badge oben rechts und vom lila Aktiv-Balken links. */
+  .playing {
+    position: absolute;
+    right: -2px; bottom: -2px;
+    display: flex; align-items: flex-end; gap: 1.5px;
+    height: 14px; padding: 0 3px;
+    border-radius: 5px;
+    background: #1db954;
+    box-shadow: 0 0 0 2px #22242c;
+    pointer-events: none;
+  }
+  .playing i {
+    width: 2px; background: #fff; border-radius: 1px;
+    animation: eq 0.9s ease-in-out infinite;
+  }
+  .playing i:nth-child(1) { height: 5px; animation-delay: 0s; }
+  .playing i:nth-child(2) { height: 9px; animation-delay: 0.2s; }
+  .playing i:nth-child(3) { height: 6px; animation-delay: 0.4s; }
+  @keyframes eq { 0%, 100% { transform: scaleY(0.45); } 50% { transform: scaleY(1); } }
+  @media (prefers-reduced-motion: reduce) { .playing i { animation: none; } }
   .badge {
     position: absolute;
     top: 1px;
@@ -360,6 +382,7 @@
       let apps = await window.verti.getApps();
       const catalog = await window.verti.getCatalog();
       let badgeCounts = await window.verti.getBadges();
+      let audioStates = await window.verti.getAudio();
       const appInfo = await window.verti.getAppInfo();
       if (!appInfo.packaged) {
         const devTag = document.getElementById('devTag');
@@ -479,6 +502,13 @@
             badge.className = 'badge';
             badge.textContent = count > 99 ? '99+' : String(count);
             btn.appendChild(badge);
+          }
+          if (audioStates[app.id]) {
+            const eq = document.createElement('span');
+            eq.className = 'playing';
+            eq.title = app.name + ' spielt';
+            eq.innerHTML = '<i></i><i></i><i></i>';
+            btn.appendChild(eq);
           }
           btn.addEventListener('click', () => {
             if (suppressClick) return; // Loslassen nach dem Ziehen ist kein Klick
@@ -660,6 +690,10 @@
         window.verti.setOverlay(c.toDataURL(), total);
       }
 
+      window.verti.onAudio((a) => {
+        audioStates = a;
+        renderSidebar();
+      });
       window.verti.onBadges((b) => {
         badgeCounts = b;
         renderSidebar();

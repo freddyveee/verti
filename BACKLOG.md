@@ -10,7 +10,8 @@ Nächstes Release: 1.1.2
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (noch nichts)
+- „Spielt gerade"-Zeichen in der Sidebar: Gibt eine App Ton aus (Spotify/YouTube im Hintergrund), erscheint ein kleiner grüner Equalizer am App-Icon, damit man sieht, woher die Musik kommt. (23.08.2026)
+- Klick aufs Sidebar-Icon gibt der App sofort den Tastatur-Fokus: App-Tastenkürzel wie Leertaste (Play/Pause bei Spotify) wirken direkt, ohne erst ins Fenster zu klicken. (23.08.2026)
 
 ## Blockiert
 
