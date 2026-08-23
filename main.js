@@ -151,18 +151,67 @@ function rememberUrl(appDef, url) {
 }
 
 // ---------- Zoom pro App ----------
-// Cmd/Strg + Plus/Minus/0 im Menü „Ansicht"; die Stufe wird je App gemerkt und
-// bei jedem Seitenladen wieder angewandt (Electron-Zoomstufen: Faktor 1,2^Stufe,
-// 0,5 Stufen ≈ 10 %).
-const ZOOM_STEP = 0.5;
-function zoomActive(delta) {
-  const wc = activeWebContents();
-  if (!wc) return;
-  const level = delta === 0 ? 0 : Math.max(-4, Math.min(6, wc.getZoomLevel() + delta));
-  wc.setZoomLevel(level);
-  if (level) state.zoom[activeId] = level;
-  else delete state.zoom[activeId];
+// Cmd/Strg + Plus/Minus/0 im Menü „Ansicht". Gezählt wird in Prozent
+// (100 % = Originalgröße), Schritte von 10 %. Beim Ändern erscheint kurz eine
+// Prozentanzeige mittig über der App (showZoomOverlay). Die Stufe wird je App
+// gemerkt und bei jedem Seitenladen wieder angewandt.
+const ZOOM_MIN = 50, ZOOM_MAX = 200, ZOOM_STEP = 10;
+function zoomPercent(id) {
+  let v = state.zoom[id];
+  if (v === undefined) return 100;
+  // Migration: bis 1.1.2 wurde die Electron-Zoomstufe gespeichert (~ -4..6).
+  // Solche Kleinwerte in Prozent umrechnen (Faktor 1,2^Stufe).
+  if (v < ZOOM_MIN) v = Math.round(Math.pow(1.2, v) * 100);
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(v / ZOOM_STEP) * ZOOM_STEP));
+}
+function applyZoom(id) {
+  const wc = views[id] && views[id].webContents;
+  if (wc && !wc.isDestroyed()) wc.setZoomFactor(zoomPercent(id) / 100);
+}
+function zoomActive(dir) { // dir: +1 größer, -1 kleiner, 0 zurück auf 100 %
+  if (!activeId || !views[activeId]) return;
+  const percent = dir === 0 ? 100 : Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomPercent(activeId) + dir * ZOOM_STEP));
+  views[activeId].webContents.setZoomFactor(percent / 100);
+  if (percent === 100) delete state.zoom[activeId];
+  else state.zoom[activeId] = percent;
   saveState();
+  showZoomOverlay(percent);
+}
+
+// Kurze, gläserne Prozentanzeige mittig über der App. Eigenes rahmenloses,
+// transparentes, klick-durchlässiges Fenster (die App-Views liegen als native
+// Ebene über der Sidebar, ein DOM-Overlay der Sidebar wäre also verdeckt).
+// focusable:false + showInactive: stiehlt der App NICHT den Tastatur-Fokus
+// (sonst bräche Leertaste=Play/Pause).
+let zoomHud = null, zoomHudTimer = null;
+const ZOOM_HUD = 'data:text/html;charset=utf-8,' + encodeURIComponent(`<!doctype html><meta charset="utf-8"><body style="margin:0;overflow:hidden;background:transparent;-webkit-user-select:none">
+<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center">
+  <div id="p" style="font:600 26px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#fff;background:rgba(28,28,34,0.86);border:0.5px solid rgba(255,255,255,0.18);border-radius:14px;padding:14px 22px;box-shadow:0 10px 34px rgba(0,0,0,0.4);font-variant-numeric:tabular-nums">100%</div>
+</div>
+<script>window.__z=(v)=>{document.getElementById('p').textContent=v+'%'}</script></body>`);
+function showZoomOverlay(percent) {
+  if (!win || win.isDestroyed() || !win.isVisible()) return;
+  const b = win.getContentBounds();
+  const W = 116, H = 64;
+  const x = Math.round(b.x + SIDEBAR_WIDTH + (b.width - SIDEBAR_WIDTH - W) / 2);
+  const y = Math.round(b.y + TOP_BAR + (b.height - TOP_BAR - H) / 2);
+  if (!zoomHud || zoomHud.isDestroyed()) {
+    zoomHud = new BrowserWindow({
+      width: W, height: H, x, y,
+      frame: false, transparent: true, hasShadow: false, resizable: false,
+      movable: false, focusable: false, skipTaskbar: true, show: false,
+      parent: win && !win.isDestroyed() ? win : undefined,
+    });
+    zoomHud.setIgnoreMouseEvents(true);
+    zoomHud.loadURL(ZOOM_HUD);
+  } else {
+    zoomHud.setBounds({ x, y, width: W, height: H });
+  }
+  const paint = () => { if (zoomHud && !zoomHud.isDestroyed()) zoomHud.webContents.executeJavaScript(`window.__z && window.__z(${percent})`).catch(() => {}); };
+  if (zoomHud.webContents.isLoading()) zoomHud.webContents.once('did-finish-load', paint); else paint();
+  zoomHud.showInactive();
+  clearTimeout(zoomHudTimer);
+  zoomHudTimer = setTimeout(() => { if (zoomHud && !zoomHud.isDestroyed()) zoomHud.hide(); }, 900);
 }
 
 let state = null;
@@ -724,10 +773,7 @@ function createView(appDef) {
     const on = typeof e.audible === 'boolean' ? e.audible : view.webContents.isCurrentlyAudible();
     setAudio(appDef.id, on);
   });
-  view.webContents.on('did-finish-load', () => {
-    const z = state.zoom[appDef.id];
-    if (z) view.webContents.setZoomLevel(z);
-  });
+  view.webContents.on('did-finish-load', () => applyZoom(appDef.id));
   const tweaks = APP_TWEAKS[appDef.id];
   if (tweaks) {
     view.webContents.on('dom-ready', () => {
@@ -930,6 +976,7 @@ function createWindow() {
   // Fenster kommt zurück → die aktive App gilt als geöffnet (wie beim
   // App-Wechsel: Öffnen = gelesen)
   win.on('show', () => { if (activeId) clearBadge(activeId); });
+  win.on('hide', () => { if (zoomHud && !zoomHud.isDestroyed()) zoomHud.hide(); });
 
   win.webContents.once('did-finish-load', () => {
     switchApp(views[state.activeApp] ? state.activeApp : state.apps[0].id);
@@ -1060,10 +1107,10 @@ function buildMenu() {
           click: () => activeId && views[activeId] && views[activeId].webContents.reload(),
         },
         { type: 'separator' },
-        { label: 'Vergrößern', accelerator: 'CmdOrCtrl+Plus', click: () => zoomActive(ZOOM_STEP) },
+        { label: 'Vergrößern', accelerator: 'CmdOrCtrl+Plus', click: () => zoomActive(1) },
         // zweiter Weg für Tastaturen, auf denen „+" nur über Shift+= erreichbar ist
-        { label: 'Vergrößern', accelerator: 'CmdOrCtrl+=', visible: false, acceleratorWorksWhenHidden: true, click: () => zoomActive(ZOOM_STEP) },
-        { label: 'Verkleinern', accelerator: 'CmdOrCtrl+-', click: () => zoomActive(-ZOOM_STEP) },
+        { label: 'Vergrößern', accelerator: 'CmdOrCtrl+=', visible: false, acceleratorWorksWhenHidden: true, click: () => zoomActive(1) },
+        { label: 'Verkleinern', accelerator: 'CmdOrCtrl+-', click: () => zoomActive(-1) },
         { label: 'Originalgröße', accelerator: 'CmdOrCtrl+0', click: () => zoomActive(0) },
         { type: 'separator' },
         {

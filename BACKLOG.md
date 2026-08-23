@@ -6,10 +6,11 @@ Nächstes Release: 1.1.3
 
 ## Offen
 
-- Zoom-Prozentanzeige: Beim Vergrößern/Verkleinern (Cmd +/−) kurz eine Prozentzahl in der Bildschirmmitte einblenden – 100 % = Originalgröße, alle anderen Stufen entsprechend (z. B. 110 %, 90 %). So sieht man, wie weit man vom Original weg ist. Cmd 0 setzt auf 100 % zurück. (23.08.2026)
+- (noch nichts – neue Ideen hier eintragen)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- Zoom-Prozentanzeige: Beim Vergrößern/Verkleinern (Cmd +/−) erscheint kurz eine gläserne Prozentzahl mittig über der App (100 % = Originalgröße, 10-%-Schritte, 50–200 %), Cmd 0 zurück auf 100 %. Die Stufe wird je App gemerkt. (23.08.2026)
 - Flackern behoben: Bei Musik an/aus (Spotify/YouTube) und bei Badge-Änderungen wurde die ganze Seitenleiste neu gezeichnet, wodurch Logos mit Online-Symbol (Google Kalender, Google Drive) kurz aufblitzten. Jetzt werden nur die betroffenen Zeichen (Equalizer, Badge) aktualisiert, die Icons bleiben stehen. (23.08.2026)
 
 ## Blockiert
