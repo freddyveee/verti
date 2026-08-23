@@ -2,7 +2,7 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.3
+Nächstes Release: 1.1.4
 
 ## Offen
 
@@ -10,8 +10,7 @@ Nächstes Release: 1.1.3
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- Zoom-Prozentanzeige: Beim Vergrößern/Verkleinern (Cmd +/−) erscheint kurz eine gläserne Prozentzahl mittig über der App (100 % = Originalgröße, 10-%-Schritte, 50–200 %), Cmd 0 zurück auf 100 %. Die Stufe wird je App gemerkt. (23.08.2026)
-- Flackern behoben: Bei Musik an/aus (Spotify/YouTube) und bei Badge-Änderungen wurde die ganze Seitenleiste neu gezeichnet, wodurch Logos mit Online-Symbol (Google Kalender, Google Drive) kurz aufblitzten. Jetzt werden nur die betroffenen Zeichen (Equalizer, Badge) aktualisiert, die Icons bleiben stehen. (23.08.2026)
+- (noch nichts)
 
 ## Blockiert
 
@@ -32,6 +31,11 @@ Nächstes Release: 1.1.3
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.3 (23.08.2026)
+
+- Zoom-Prozentanzeige: Beim Vergrößern/Verkleinern (Cmd +/−) erscheint kurz eine gläserne Prozentzahl mittig über der App (100 % = Originalgröße, 10-%-Schritte, 50–200 %), Cmd 0 zurück auf 100 %. Die Stufe wird je App gemerkt. (23.08.2026)
+- Flackern behoben: Bei Musik an/aus (Spotify/YouTube) und bei Badge-Änderungen wurde die ganze Seitenleiste neu gezeichnet, wodurch Logos mit Online-Symbol (Google Kalender, Google Drive) kurz aufblitzten. Jetzt werden nur die betroffenen Zeichen (Equalizer, Badge) aktualisiert, die Icons bleiben stehen. (23.08.2026)
 
 ### 1.1.2 (23.08.2026)
 
