@@ -10,7 +10,7 @@ Nächstes Release: 1.1.3
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (noch nichts)
+- Flackern behoben: Bei Musik an/aus (Spotify/YouTube) und bei Badge-Änderungen wurde die ganze Seitenleiste neu gezeichnet, wodurch Logos mit Online-Symbol (Google Kalender, Google Drive) kurz aufblitzten. Jetzt werden nur die betroffenen Zeichen (Equalizer, Badge) aktualisiert, die Icons bleiben stehen. (23.08.2026)
 
 ## Blockiert
 

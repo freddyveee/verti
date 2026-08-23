@@ -494,6 +494,35 @@
         }, 200);
       }
 
+      // Badge/Audio/Aktiv-Zustand IN PLACE ändern, ohne die Icons neu zu laden.
+      // renderSidebar() baut sonst alles neu (iconFor hängt Date.now() an die
+      // URL) → Remote-Logos wie Google Kalender/Drive flackern bei jeder
+      // Badge- oder Musik-Änderung. Diese Helfer fassen nur die Zusatz-Elemente an.
+      function setBadgeOn(btn, id) {
+        const count = badgeCounts[id] || 0;
+        let b = btn.querySelector(':scope > .badge');
+        if (count > 0) {
+          if (!b) { b = document.createElement('span'); b.className = 'badge'; btn.appendChild(b); }
+          b.textContent = count > 99 ? '99+' : String(count);
+        } else if (b) { b.remove(); }
+      }
+      function setPlayingOn(btn, id) {
+        let e = btn.querySelector(':scope > .playing');
+        if (audioStates[id]) {
+          if (!e) {
+            e = document.createElement('span');
+            e.className = 'playing';
+            e.title = (btn.title || '') + ' spielt';
+            e.innerHTML = '<i></i><i></i><i></i>';
+            btn.appendChild(e);
+          }
+        } else if (e) { e.remove(); }
+      }
+      const eachBtn = (fn) => { for (const btn of appsEl.querySelectorAll('.app-btn')) fn(btn, btn.dataset.id); };
+      const refreshBadges = () => eachBtn(setBadgeOn);
+      const refreshPlaying = () => eachBtn(setPlayingOn);
+      const refreshActive = () => { for (const btn of appsEl.querySelectorAll('.app-btn')) btn.classList.toggle('active', btn.dataset.id === activeId); };
+
       function renderSidebar() {
         if (drag && drag.moved) { pendingRender = true; return; }
         appsEl.innerHTML = '';
@@ -503,20 +532,8 @@
           btn.title = app.name;
           btn.dataset.id = app.id;
           btn.appendChild(iconFor(app));
-          const count = badgeCounts[app.id] || 0;
-          if (count > 0) {
-            const badge = document.createElement('span');
-            badge.className = 'badge';
-            badge.textContent = count > 99 ? '99+' : String(count);
-            btn.appendChild(badge);
-          }
-          if (audioStates[app.id]) {
-            const eq = document.createElement('span');
-            eq.className = 'playing';
-            eq.title = app.name + ' spielt';
-            eq.innerHTML = '<i></i><i></i><i></i>';
-            btn.appendChild(eq);
-          }
+          setBadgeOn(btn, app.id);
+          setPlayingOn(btn, app.id);
           btn.addEventListener('click', () => {
             if (suppressClick) return; // Loslassen nach dem Ziehen ist kein Klick
             window.verti.switchApp(app.id);
@@ -656,14 +673,14 @@
       window.verti.onActiveApp((id) => {
         activeId = id;
         closeLibrary(false);
-        renderSidebar();
+        refreshActive();
       });
       // Das erste 'active-app' kann vor der Registrierung oben gekommen sein
       // (Wettlauf beim Laden) → aktuellen Stand einmal abholen
       const currentActive = await window.verti.getActiveApp();
       if (currentActive && !activeId) {
         activeId = currentActive;
-        renderSidebar();
+        refreshActive();
       }
 
       window.verti.onAppsChanged((newApps) => {
@@ -699,11 +716,11 @@
 
       window.verti.onAudio((a) => {
         audioStates = a;
-        renderSidebar();
+        refreshPlaying();
       });
       window.verti.onBadges((b) => {
         badgeCounts = b;
-        renderSidebar();
+        refreshBadges();
         updateOverlay();
       });
 
