@@ -40,6 +40,8 @@ node node_modules/electron/install.js   # nur falls node_modules/electron/dist f
 npm start
 ```
 
+**Spotify läuft in der Dev-Version (`npx electron .`) NICHT richtig** – die castLabs-Prebuilts sind nur entwicklungs-VMP-signiert (`verify-pkg` sagt „valid for development only"), und Spotifys DRM-Server lässt solche Clients nur ~2 s anspielen und springt dann endlos zum nächsten Song (castLabs-Issues #56/#193). Das ist KEIN Bug im Verti-Code. Spotify nur in der gebauten/installierten App testen (dort greift die EVS-Produktionssignatur). Wer Spotify doch im Dev testen will: einmalig `EVS_NO_ASK=1 /opt/homebrew/opt/python@3.11/bin/python3.11 -m castlabs_evs.vmp sign-pkg node_modules/electron/dist` (verschwindet bei `npm install`). Alle anderen Funktionen sind im Dev normal testbar.
+
 EVS (castLabs-Signierdienst, nur zum Bauen nötig): Client einmalig `python3.11 -m pip install --user castlabs-evs` (Freddys Mac: Python 3.11 unter /opt/homebrew/opt/python@3.11/bin), Account `imperio` (Passwort in LastPass „castLabs EVS"). Das Zugangs-Token hält etwa einen Monat; meldet der Build „EVS_NO_ASK"/Token-Fehler, führt Freddy einmal `python3.11 -m castlabs_evs.account reauth` aus. Die Signatur der App selbst gilt ~4 Jahre und wird gecacht (unveränderte Binärdatei → kein neuer Upload). Nutzer merken von alldem nichts.
 
 Testen mit eigenem Profil, ohne das echte Profil oder eine laufende Verti-Instanz zu stören (dev und installierte App teilen sich sonst `~/Library/Application Support/Verti`):
