@@ -6,6 +6,7 @@ Nächstes Release: 1.1.4
 
 ## Offen
 
+- Eigener Verti-Browser: echte Browser-Tabs wie in Chrome (Adressleiste, mehrere Seiten), inklusive Chrome-Extensions. Machbarkeits-Notiz für später: Electron kann einen Teil der Chrome-Erweiterungen laden (`session.loadExtension`), aber NICHT den vollen Chrome-Web-Store-Umfang – viele Erweiterungen (besonders mit Hintergrundprozessen / Manifest V3) laufen nur eingeschränkt oder gar nicht, und einen „im Store installieren"-Knopf gibt es nicht. Vor der Umsetzung klären, welche Extensions das Team wirklich braucht, und daran prüfen, ob es sich lohnt. (24.08.2026)
 - Einstellungsseite für Verti: ein eigener Einstellungsbereich mit (a) Umschalter Hell-/Dunkelmodus für Vertis eigene Oberfläche (Sidebar, Leisten, Dialoge – die Web-Apps behalten ihr eigenes Design), (b) Anzeige der aktuellen Versionsnummer, (c) Update-Bereich wie aus Software gewohnt: nach Updates suchen, sehen ob man aktuell ist, aktualisieren, (d) Benachrichtigungen einstellen: global und pro App an/aus (dort landet dann auch der Wunsch „App stummschalten" aus den Ideen). (24.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
