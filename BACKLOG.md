@@ -2,7 +2,7 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.1
+Nächstes Release: 1.1.2
 
 ## Offen
 
@@ -10,16 +10,7 @@ Nächstes Release: 1.1.1
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- Rechtsklick-Menü in den Apps: Rechtschreibvorschläge und „Zum Wörterbuch hinzufügen", Rückgängig/Ausschneiden/Kopieren/Einfügen/Alles auswählen, „Link im Browser öffnen"/„Link kopieren", „Bild kopieren"/„Bild in Downloads sichern", „Neu laden". (23.08.2026)
-- Letzte Seite pro App merken: Nach einem Neustart macht jede App dort weiter, wo man war; Anmeldeseiten und fremde Seiten werden nicht gemerkt, „Zur Startseite" führt zurück zur Startseite. (23.08.2026)
-- Zoom pro App: Cmd +, Cmd −, Cmd 0 im Menü „Ansicht", Stufe wird je App gemerkt. (23.08.2026)
-- Downloads landen ohne Nachfrage im Downloads-Ordner (bei gleichem Namen „(2)"), danach Mitteilung; Klick darauf zeigt die Datei im Finder. (23.08.2026)
-- Spotify läuft in Verti: Umstieg auf castLabs' Electron mit Widevine-DRM und EVS-Produktionssignatur. Mac-Probe-Build spielt durch, Windows-Build signiert ebenfalls korrekt. Nutzer merken nur: Spotify spielt; beim ersten Start lädt die App einmal das DRM-Modul (10 MB) nach. (23.08.2026)
-- Dev-Version ist als solche erkennbar: rotes Etikett „Dev-Version" neben dem Verti-Logo und Fenstertitel „Verti (Dev)", nur bei `npx electron .`, nie in der installierten App. (22.08.2026)
-- Fehler behoben: Nach dem Start war kein App-Icon in der Sidebar als aktiv markiert (lila Balken kam erst nach dem ersten Klick), Wettlauf beim Laden. (22.08.2026)
-- Sidebar-Sortierung wie auf dem iPhone: Das gezogene Icon hebt sich ab und folgt dem Zeiger, die anderen rutschen animiert in ihre neue Position, beim Loslassen gleitet es in die Lücke. (22.08.2026)
-- Mac: Fenster schließen versteckt es nur noch, die Apps laufen weiter. Dock-Badge (Ungelesen-Zahl) und Benachrichtigungen kommen auch bei geschlossenem Fenster; Klick aufs Dock-Icon holt es zurück, Cmd+Q beendet. (22.08.2026)
-- App-Bibliothek: Pfeil zurück und Home-Taste oben schließen die Bibliothek (bisher nur das ✕); auch Maus-Zurück, Cmd+[ und Cmd+Shift+H. Vorwärts ist in der Bibliothek aus. (22.08.2026)
+- (noch nichts)
 
 ## Blockiert
 
@@ -40,6 +31,19 @@ Nächstes Release: 1.1.1
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.1 (23.08.2026)
+
+- Rechtsklick-Menü in den Apps: Rechtschreibvorschläge und „Zum Wörterbuch hinzufügen", Rückgängig/Ausschneiden/Kopieren/Einfügen/Alles auswählen, „Link im Browser öffnen"/„Link kopieren", „Bild kopieren"/„Bild in Downloads sichern", „Neu laden". (23.08.2026)
+- Letzte Seite pro App merken: Nach einem Neustart macht jede App dort weiter, wo man war; Anmeldeseiten und fremde Seiten werden nicht gemerkt, „Zur Startseite" führt zurück zur Startseite. (23.08.2026)
+- Zoom pro App: Cmd +, Cmd −, Cmd 0 im Menü „Ansicht", Stufe wird je App gemerkt. (23.08.2026)
+- Downloads landen ohne Nachfrage im Downloads-Ordner (bei gleichem Namen „(2)"), danach Mitteilung; Klick darauf zeigt die Datei im Finder. (23.08.2026)
+- Spotify läuft in Verti: Umstieg auf castLabs' Electron mit Widevine-DRM und EVS-Produktionssignatur. Mac-Probe-Build spielt durch, Windows-Build signiert ebenfalls korrekt. Nutzer merken nur: Spotify spielt; beim ersten Start lädt die App einmal das DRM-Modul (10 MB) nach. (23.08.2026)
+- Dev-Version ist als solche erkennbar: rotes Etikett „Dev-Version" neben dem Verti-Logo und Fenstertitel „Verti (Dev)", nur bei `npx electron .`, nie in der installierten App. (22.08.2026)
+- Fehler behoben: Nach dem Start war kein App-Icon in der Sidebar als aktiv markiert (lila Balken kam erst nach dem ersten Klick), Wettlauf beim Laden. (22.08.2026)
+- Sidebar-Sortierung wie auf dem iPhone: Das gezogene Icon hebt sich ab und folgt dem Zeiger, die anderen rutschen animiert in ihre neue Position, beim Loslassen gleitet es in die Lücke. (22.08.2026)
+- Mac: Fenster schließen versteckt es nur noch, die Apps laufen weiter. Dock-Badge (Ungelesen-Zahl) und Benachrichtigungen kommen auch bei geschlossenem Fenster; Klick aufs Dock-Icon holt es zurück, Cmd+Q beendet. (22.08.2026)
+- App-Bibliothek: Pfeil zurück und Home-Taste oben schließen die Bibliothek (bisher nur das ✕); auch Maus-Zurück, Cmd+[ und Cmd+Shift+H. Vorwärts ist in der Bibliothek aus. (22.08.2026)
 
 ### 1.0.20 (22.08.2026)
 
