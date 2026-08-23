@@ -6,7 +6,7 @@ Nächstes Release: 1.1.4
 
 ## Offen
 
-- (noch nichts – neue Ideen hier eintragen)
+- Einstellungsseite für Verti: ein eigener Einstellungsbereich mit (a) Umschalter Hell-/Dunkelmodus für Vertis eigene Oberfläche (Sidebar, Leisten, Dialoge – die Web-Apps behalten ihr eigenes Design), (b) Anzeige der aktuellen Versionsnummer, (c) Update-Bereich wie aus Software gewohnt: nach Updates suchen, sehen ob man aktuell ist, aktualisieren. (24.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
