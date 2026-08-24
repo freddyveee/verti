@@ -78,7 +78,10 @@
       "view-preload.js",
       "screen-picker.html",
       "screen-picker-preload.js",
-      "icons/**"
+      "icons/**",
+      "browser.html",
+      "browser-preload.js",
+      "browser-newtab.html"
     ],
     "electronDownload": {
       "mirror": "https://github.com/castlabs/electron-releases/releases/download/"

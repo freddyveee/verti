@@ -6,12 +6,12 @@ Nächstes Release: 1.1.4
 
 ## Offen
 
-- Eigener Verti-Browser: echte Browser-Tabs wie in Chrome (Adressleiste, mehrere Seiten), inklusive Chrome-Extensions. MACHBAR – Shift macht es vor (gleicher Chromium-Unterbau wie Verti; hat eine eigene „Erweiterungen"-Seite mit Chrome-Web-Store-Link, Screenshot 24.08.). Ist keine fertige Funktion, sondern selbst gebaut: Baustein ist `session.loadExtension`, drumherum eine eigene Erweiterungs-Verwaltung (Seite wie chrome://extensions) plus Herunterladen/Installieren/Aktualisieren aus dem Web Store. Grenze ist NICHT das Konzept, sondern einzelne Erweiterungen – die meisten laufen, manche mit tiefen chrome-eigenen APIs nicht 1:1. Vorgehen: erst Umfang festlegen (Tabs+Adressleiste als Basis, Extensions als Ausbaustufe), dann an 2–3 echten Wunsch-Extensions testen, bevor es breit kommt. (24.08.2026)
+- Verti Browser – Ausbau (Stufe 1 ist umgesetzt, s. unten): Stufe 2 = Feinschliff (Neuer-Tab-Seite mit Suchfeld, Ladebalken, Lesezeichen, Tab-Verlauf pro Tab merken). Stufe 3 = Chrome-Extensions: eigene „Erweiterungen"-Seite + Installieren/Aktualisieren aus dem Web Store (`session.loadExtension`); machbar (Shift macht es vor), Grenze ist nur die Kompatibilität einzelner Erweiterungen. (24.08.2026)
 - Einstellungsseite für Verti: ein eigener Einstellungsbereich mit (a) Umschalter Hell-/Dunkelmodus für Vertis eigene Oberfläche (Sidebar, Leisten, Dialoge – die Web-Apps behalten ihr eigenes Design), (b) Anzeige der aktuellen Versionsnummer, (c) Update-Bereich wie aus Software gewohnt: nach Updates suchen, sehen ob man aktuell ist, aktualisieren, (d) Benachrichtigungen einstellen: global und pro App an/aus (dort landet dann auch der Wunsch „App stummschalten" aus den Ideen). (24.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (noch nichts)
+- Verti Browser (Stufe 1): eigene, vorinstallierte Browser-App mit eigenem Logo (V + Weltkugel im Lila-Look). Echte Tabs (öffnen, schließen, wechseln), Adressleiste mit Web-Suche, Zurück/Vorwärts/Neu-laden – wie ein schlanker Chrome, im Verti-Dark-Look. (24.08.2026)
 
 ## Blockiert
 

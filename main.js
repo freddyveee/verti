@@ -5,6 +5,8 @@ const fs = require('fs');
 const SIDEBAR_WIDTH = 68;
 const TOP_BAR = 44;
 const FRAME = 8;
+const BROWSER_ID = 'browser';
+const BROWSER_BAR = 84; // Höhe der Browser-Leiste (Tabs + Adresszeile)
 const isMac = process.platform === 'darwin';
 
 // Entwickeln/Testen mit eigenem Profil, ohne das echte Verti-Profil (und eine
@@ -33,6 +35,7 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 const DEFAULT_APPS = [
+  { id: 'browser', name: 'Verti Browser', url: 'https://verti.browser/', icon: 'icons/verti-browser.svg' },
   { id: 'calendar', name: 'Google Kalender', url: 'https://calendar.google.com/', icon: 'https://ssl.gstatic.com/calendar/images/dynamiclogo_2020q4/calendar_31_2x.png' },
   { id: 'whatsapp', name: 'WhatsApp', url: 'https://web.whatsapp.com/', icon: 'icons/whatsapp.png' },
   { id: 'todoist', name: 'Todoist', url: 'https://app.todoist.com/app/upcoming' },
@@ -40,7 +43,7 @@ const DEFAULT_APPS = [
 ];
 
 // IMPERIO-Standard-Apps erscheinen in der Bibliothek in einem eigenen Bereich oben
-const IMPERIO_IDS = ['calendar', 'stackfield', 'claude', 'chatgpt', 'imperio-tools', 'gdrive'];
+const IMPERIO_IDS = ['browser', 'calendar', 'stackfield', 'claude', 'chatgpt', 'imperio-tools', 'gdrive'];
 
 const CATALOG = [
   ...DEFAULT_APPS,
@@ -109,6 +112,11 @@ function loadState() {
       const cat = CATALOG.find((c) => c.id === a.id);
       return cat ? { ...a, name: cat.name, url: cat.url, icon: cat.icon || a.icon } : a;
     });
+  // Der Verti-Browser ist immer vorinstalliert – bei bestehenden Profilen nachrüsten
+  if (!apps.some((a) => a.id === BROWSER_ID)) {
+    const b = CATALOG.find((c) => c.id === BROWSER_ID);
+    if (b) apps.unshift({ id: b.id, name: b.name, url: b.url, icon: b.icon });
+  }
   return {
     bounds: s.bounds || { width: 1400, height: 900 },
     activeApp: s.activeApp || 'calendar',
@@ -218,6 +226,12 @@ let state = null;
 let win = null;
 const views = {};
 let activeId = null;
+// Verti-Browser: die Leiste (Tabs+Adresse) ist views['browser'] (eine WebContentsView
+// mit browser.html); die eigentlichen Seiten sind eigene Tab-Views hier drunter.
+const browserTabs = new Map(); // key -> WebContentsView
+const browserFav = new Map();  // key -> Favicon-URL
+let browserActive = null;      // key des aktiven Tabs
+let browserSeq = 0;
 let libraryOpen = false;
 let quitting = false; // Cmd+Q/Update-Installation: echtes Beenden statt Verstecken (Mac)
 app.on('before-quit', () => { quitting = true; });
@@ -478,9 +492,10 @@ function layoutViews() {
       x: SIDEBAR_WIDTH,
       y: TOP_BAR,
       width: w - SIDEBAR_WIDTH - FRAME,
-      height: h - TOP_BAR - FRAME,
+      height: id === BROWSER_ID ? BROWSER_BAR : h - TOP_BAR - FRAME,
     });
   }
+  layoutBrowserTabs();
 }
 
 function switchApp(id) {
@@ -492,9 +507,11 @@ function switchApp(id) {
     view.setVisible(vid === id);
   }
   layoutViews();
-  // Tastatur-Fokus in die App geben, damit App-Tastenkürzel (z.B. Leertaste =
-  // Play/Pause bei Spotify) sofort greifen – ohne erst ins Fenster zu klicken
-  try { views[id].webContents.focus(); } catch {}
+  if (id === BROWSER_ID && browserTabs.size === 0) browserNewTab();
+  browserApplyVisibility();
+  // Tastatur-Fokus in die App (bzw. den aktiven Browser-Tab) geben, damit
+  // App-Tastenkürzel (z.B. Leertaste = Play/Pause) sofort greifen
+  try { (activeWebContents() || views[id].webContents).focus(); } catch {}
   win.webContents.send('active-app', id);
   sendNavStateFor(id);
   saveState();
@@ -671,7 +688,124 @@ function attachMouseNav(wc, target = () => wc) {
   });
 }
 function activeWebContents() {
+  if (activeId === BROWSER_ID) {
+    const v = browserTabs.get(browserActive);
+    return v && !v.webContents.isDestroyed() ? v.webContents : null;
+  }
   return activeId && views[activeId] ? views[activeId].webContents : null;
+}
+
+// ---------- Verti-Browser ----------
+const NEWTAB_FILE = 'browser-newtab.html';
+function browserToUrl(input) {
+  const t = String(input || '').trim();
+  if (!t) return null;
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(t)) return t;                 // hat Schema
+  if (/^(localhost|\d{1,3}(\.\d{1,3}){3})(:\d+)?(\/|$)/i.test(t)) return 'http://' + t;
+  if (/^[^\s]+\.[^\s]{2,}([\/?#]|$)/.test(t) && !t.includes(' ')) return 'https://' + t; // sieht wie Domain aus
+  return 'https://www.google.com/search?q=' + encodeURIComponent(t);  // sonst Suche
+}
+function createBrowserShell(appDef) {
+  const view = new WebContentsView({ webPreferences: { preload: path.join(__dirname, 'browser-preload.js') } });
+  view.webContents.loadFile('browser.html');
+  view.setVisible(false);
+  win.contentView.addChildView(view);
+  views[appDef.id] = view;
+}
+function layoutBrowserTabs() {
+  if (!win) return;
+  const [w, h] = win.getContentSize();
+  const b = { x: SIDEBAR_WIDTH, y: TOP_BAR + BROWSER_BAR, width: w - SIDEBAR_WIDTH - FRAME, height: h - TOP_BAR - BROWSER_BAR - FRAME };
+  for (const v of browserTabs.values()) v.setBounds(b);
+}
+function browserApplyVisibility() {
+  const show = !libraryOpen && activeId === BROWSER_ID;
+  for (const [key, v] of browserTabs) v.setVisible(show && key === browserActive);
+}
+function sendBrowserUpdate() {
+  const shell = views[BROWSER_ID];
+  if (!shell || shell.webContents.isDestroyed()) return;
+  const tabs = [...browserTabs.entries()].map(([key, v]) => ({
+    key,
+    active: key === browserActive,
+    title: v.webContents.isDestroyed() ? '' : (v.webContents.getTitle() || 'Neuer Tab'),
+    favicon: browserFav.get(key) || '',
+  }));
+  shell.webContents.send('browser:tabs', tabs);
+  const av = browserTabs.get(browserActive);
+  if (av && !av.webContents.isDestroyed()) {
+    const nh = av.webContents.navigationHistory;
+    const url = av.webContents.getURL();
+    shell.webContents.send('browser:state', {
+      url: url.endsWith('/' + NEWTAB_FILE) || url.includes(NEWTAB_FILE) ? '' : url,
+      canGoBack: nh.canGoBack(), canGoForward: nh.canGoForward(), loading: av.webContents.isLoading(),
+    });
+  } else {
+    shell.webContents.send('browser:state', { url: '', canGoBack: false, canGoForward: false, loading: false });
+  }
+  if (activeId === BROWSER_ID) sendNavStateFor(BROWSER_ID);
+}
+function browserNewTab(url) {
+  if (!win) return;
+  const key = 'bt' + (++browserSeq);
+  const view = new WebContentsView({ webPreferences: viewWebPreferences() });
+  const wc = view.webContents;
+  wc.setUserAgent(chromeUserAgent());
+  wc.setWindowOpenHandler(({ url: u }) => {
+    if (isAuthUrl(u)) return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(520, 680) };
+    if (u && u !== 'about:blank') browserNewTab(u); // Links / window.open → neuer Tab
+    return { action: 'deny' };
+  });
+  wc.on('did-create-window', (child) => adoptChildWindow(child));
+  attachMouseNav(wc);
+  attachContextMenu(wc);
+  const upd = () => sendBrowserUpdate();
+  wc.on('page-title-updated', upd);
+  wc.on('did-navigate', upd);
+  wc.on('did-navigate-in-page', upd);
+  wc.on('did-start-loading', upd);
+  wc.on('did-stop-loading', upd);
+  wc.on('page-favicon-updated', (e, favs) => { browserFav.set(key, (favs && favs[0]) || ''); sendBrowserUpdate(); });
+  win.contentView.addChildView(view);
+  browserTabs.set(key, view);
+  browserActive = key;
+  if (url) wc.loadURL(url); else wc.loadFile(NEWTAB_FILE);
+  layoutBrowserTabs();
+  browserApplyVisibility();
+  try { wc.focus(); } catch {}
+  sendBrowserUpdate();
+}
+function browserCloseTab(key) {
+  const v = browserTabs.get(key);
+  if (!v) return;
+  const keys = [...browserTabs.keys()];
+  const idx = keys.indexOf(key);
+  browserTabs.delete(key);
+  browserFav.delete(key);
+  try { win.contentView.removeChildView(v); } catch {}
+  try { v.webContents.close(); } catch {}
+  if (browserActive === key) {
+    const next = keys[idx + 1] || keys[idx - 1] || null;
+    browserActive = next;
+    if (!next) { browserNewTab(); return; } // nie ganz leer
+  }
+  layoutBrowserTabs();
+  browserApplyVisibility();
+  const av = browserTabs.get(browserActive);
+  if (av) { try { av.webContents.focus(); } catch {} }
+  sendBrowserUpdate();
+}
+function browserSwitchTab(key) {
+  if (!browserTabs.has(key)) return;
+  browserActive = key;
+  browserApplyVisibility();
+  const av = browserTabs.get(key);
+  if (av) { try { av.webContents.focus(); } catch {} }
+  sendBrowserUpdate();
+}
+function browserActiveWc() {
+  const v = browserTabs.get(browserActive);
+  return v && !v.webContents.isDestroyed() ? v.webContents : null;
 }
 
 // ---------- Downloads ----------
@@ -762,6 +896,7 @@ function attachContextMenu(wc) {
 }
 
 function createView(appDef) {
+  if (appDef.id === BROWSER_ID) return createBrowserShell(appDef);
   const view = new WebContentsView({ webPreferences: viewWebPreferences() });
   view.webContents.setUserAgent(chromeUserAgent());
   view.webContents.loadURL(startUrlFor(appDef));
@@ -795,11 +930,13 @@ function createView(appDef) {
 }
 
 function sendNavStateFor(id) {
-  if (!win || !views[id]) return;
-  const nh = views[id].webContents.navigationHistory;
+  if (!win) return;
+  let nh = null;
+  if (id === BROWSER_ID) { const wc = browserActiveWc(); nh = wc ? wc.navigationHistory : null; }
+  else if (views[id]) nh = views[id].webContents.navigationHistory;
   win.webContents.send('nav-state', {
-    canGoBack: nh.canGoBack(),
-    canGoForward: nh.canGoForward(),
+    canGoBack: nh ? nh.canGoBack() : false,
+    canGoForward: nh ? nh.canGoForward() : false,
   });
 }
 
@@ -988,6 +1125,7 @@ function setLibrary(open) {
   for (const view of Object.values(views)) {
     view.setVisible(!open && undefined !== activeId && views[activeId] === view);
   }
+  browserApplyVisibility();
 }
 
 ipcMain.on('switch-app', (e, id) => switchApp(id));
@@ -995,6 +1133,16 @@ ipcMain.on('reload-app', (e, id) => views[id] && views[id].webContents.reload())
 ipcMain.on('nav-back', navBackActive);
 ipcMain.on('nav-forward', navForwardActive);
 ipcMain.on('nav-home', navHomeActive);
+// Verti-Browser
+ipcMain.on('browser:ready', () => { if (browserTabs.size === 0 && activeId === BROWSER_ID) browserNewTab(); sendBrowserUpdate(); });
+ipcMain.on('browser:new-tab', () => browserNewTab());
+ipcMain.on('browser:close-tab', (e, key) => browserCloseTab(key));
+ipcMain.on('browser:switch-tab', (e, key) => browserSwitchTab(key));
+ipcMain.on('browser:navigate', (e, text) => { const wc = browserActiveWc(); const u = browserToUrl(text); if (wc && u) wc.loadURL(u); });
+ipcMain.on('browser:back', () => { const wc = browserActiveWc(); if (wc && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack(); });
+ipcMain.on('browser:forward', () => { const wc = browserActiveWc(); if (wc && wc.navigationHistory.canGoForward()) wc.navigationHistory.goForward(); });
+ipcMain.on('browser:reload', () => { const wc = browserActiveWc(); if (wc) wc.reload(); });
+ipcMain.on('browser:stop', () => { const wc = browserActiveWc(); if (wc) wc.stop(); });
 ipcMain.handle('get-apps', () => state.apps);
 ipcMain.handle('get-app-info', () => ({ version: app.getVersion(), packaged: app.isPackaged }));
 // Die Sidebar fragt nach dem Start einmal nach: Das erste 'active-app' aus
