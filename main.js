@@ -114,10 +114,13 @@ function loadState() {
       const cat = CATALOG.find((c) => c.id === a.id);
       return cat ? { ...a, name: cat.name, url: cat.url, icon: cat.icon || a.icon } : a;
     });
-  // Der Verti-Browser ist immer vorinstalliert – bei bestehenden Profilen nachrüsten
+  // Der Verti-Browser ist immer vorinstalliert und sitzt fix ganz oben
   if (!apps.some((a) => a.id === BROWSER_ID)) {
     const b = CATALOG.find((c) => c.id === BROWSER_ID);
     if (b) apps.unshift({ id: b.id, name: b.name, url: b.url, icon: b.icon });
+  } else {
+    const bi = apps.findIndex((a) => a.id === BROWSER_ID);
+    if (bi > 0) { const [b] = apps.splice(bi, 1); apps.unshift(b); }
   }
   return {
     bounds: s.bounds || { width: 1400, height: 900 },
@@ -1263,6 +1266,7 @@ ipcMain.on('add-app', (e, appDef) => {
 });
 
 function removeApp(id) {
+  if (id === BROWSER_ID) return; // Browser ist fix, nicht entfernbar
   if (!views[id] || state.apps.length <= 1) return;
   const view = views[id];
   win.contentView.removeChildView(view);
@@ -1288,8 +1292,11 @@ ipcMain.on('reorder-apps', (e, ids) => {
   if (!Array.isArray(ids)) return;
   const byId = Object.fromEntries(state.apps.map((a) => [a.id, a]));
   const reordered = ids.map((id) => byId[id]).filter(Boolean);
-  if (reordered.length !== state.apps.length) return;
-  state.apps = reordered;
+  // Der Browser ist oben fix und nicht Teil der sortierbaren Liste
+  const browser = state.apps.find((a) => a.id === BROWSER_ID);
+  const expected = state.apps.length - (browser ? 1 : 0);
+  if (reordered.length !== expected) return;
+  state.apps = browser ? [browser, ...reordered] : reordered;
   buildMenu();
   saveState();
   win.webContents.send('apps-changed', state.apps);
@@ -1305,7 +1312,8 @@ ipcMain.on('app-context-menu', (e, id) => {
     { label: 'Zur Startseite', click: () => navHome(id) },
     {
       label: 'Entfernen',
-      enabled: state.apps.length > 1,
+      enabled: state.apps.length > 1 && id !== BROWSER_ID,
+      visible: id !== BROWSER_ID,
       click: () => removeApp(id),
     },
   ]);
