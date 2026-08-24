@@ -7,13 +7,13 @@
     --bg: #22242c; --panel: #22242c; --card: rgba(255,255,255,0.05);
     --text: #ffffff; --text-2: rgba(255,255,255,0.6); --text-faint: rgba(255,255,255,0.22);
     --hover: rgba(255,255,255,0.08); --active: rgba(255,255,255,0.14); --divider: rgba(255,255,255,0.12);
-    --accent: #9257ff;
+    --dash: rgba(255,255,255,0.30); --accent: #9257ff;
   }
   :root[data-theme="light"] {
-    --bg: #e7e5df; --panel: #f1efe9; --card: #ffffff;
+    --bg: #efece6; --panel: #f7f5f0; --card: #ffffff;
     --text: #26262b; --text-2: rgba(0,0,0,0.55); --text-faint: rgba(0,0,0,0.30);
     --hover: rgba(0,0,0,0.06); --active: rgba(0,0,0,0.10); --divider: rgba(0,0,0,0.14);
-    --accent: #7c3aed;
+    --dash: rgba(0,0,0,0.33); --accent: #7c3aed;
   }
   :root { color-scheme: dark; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -240,9 +240,9 @@
     width: 46px;
     height: 46px;
     border-radius: 12px;
-    border: 1.5px dashed rgba(255, 255, 255, 0.3);
+    border: 1.5px dashed var(--dash);
     background: transparent;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-2);
     font-size: 22px;
     font-weight: 300;
     cursor: pointer;
@@ -250,9 +250,9 @@
     margin-top: 4px;
   }
   .plus-btn:hover {
-    border-color: rgba(255, 255, 255, 0.6);
-    color: #fff;
-    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--text-2);
+    color: var(--text);
+    background: var(--hover);
   }
 
   /* App-Bibliothek */
@@ -293,7 +293,7 @@
   }
   .close-btn:hover { background: var(--active); }
   .gear-btn {
-    position: fixed; top: 7px; right: 12px; z-index: 13; -webkit-app-region: no-drag;
+    position: fixed; top: 10px; right: 16px; z-index: 13; -webkit-app-region: no-drag;
     width: 30px; height: 30px; border: none; border-radius: 8px; background: transparent;
     color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center;
   }

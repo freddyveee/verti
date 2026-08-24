@@ -12,6 +12,7 @@ Nächstes Release: 1.1.5
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- Kein Auto-Start von Medien mehr beim Öffnen: YouTube (und andere) spielen nach dem Neuöffnen von Verti nicht mehr von allein los, sondern erst nach einem Klick, wie in Chrome (autoplay-policy). (24.08.2026)
 - Einstellungsseite (Grundgerüst): Zahnrad oben rechts öffnet die Einstellungen. Zwei Schalter – Darstellung (Dunkel bzw. helles Sandgrau; färbt Sidebar, Browser-Leiste und Dialoge um, die Web-Apps behalten ihr eigenes Design) und Externe Links (im Verti-Browser oder im System-Browser öffnen). Beides wird sofort gespeichert. (24.08.2026)
 - Vier neue Apps im Katalog (unter Weitere Apps hinzufügbar): GetResponse, weclapp (CRM), Autodesk Fusion und Bambu Lab. (24.08.2026)
 - Externe Links (z. B. aus WhatsApp) öffnen jetzt standardmäßig im Verti-Browser: das aktive Icon springt hoch zum Browser, der Link öffnet in einem neuen Tab. Die Umschaltung auf den System-Browser (Chrome/Safari) kommt mit der Einstellungsseite (Schalter schon im State: externalLinks). (24.08.2026)
