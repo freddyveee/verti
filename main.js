@@ -6,7 +6,9 @@ const SIDEBAR_WIDTH = 68;
 const TOP_BAR = 44;
 const FRAME = 8;
 const BROWSER_ID = 'browser';
-const BROWSER_BAR = 84; // Höhe der Browser-Leiste (Tabs + Adresszeile)
+const BROWSER_BAR = 84;    // Tabs + Adresszeile
+const BOOKMARK_BAR = 34;   // Lesezeichenleiste (nur wenn Lesezeichen da sind)
+function browserBarHeight() { return BROWSER_BAR + (state && Array.isArray(state.bookmarks) && state.bookmarks.length ? BOOKMARK_BAR : 0); }
 const isMac = process.platform === 'darwin';
 
 // Entwickeln/Testen mit eigenem Profil, ohne das echte Verti-Profil (und eine
@@ -124,6 +126,7 @@ function loadState() {
     lastUrls: s.lastUrls && typeof s.lastUrls === 'object' ? s.lastUrls : {}, // zuletzt besuchte Seite je App
     zoom: s.zoom && typeof s.zoom === 'object' ? s.zoom : {}, // Zoomstufe je App
     browser: s.browser && typeof s.browser === 'object' ? s.browser : null, // offene Browser-Tabs
+    bookmarks: Array.isArray(s.bookmarks) ? s.bookmarks : [], // Lesezeichen
   };
 }
 
@@ -493,7 +496,7 @@ function layoutViews() {
       x: SIDEBAR_WIDTH,
       y: TOP_BAR,
       width: w - SIDEBAR_WIDTH - FRAME,
-      height: id === BROWSER_ID ? BROWSER_BAR : h - TOP_BAR - FRAME,
+      height: id === BROWSER_ID ? browserBarHeight() : h - TOP_BAR - FRAME,
     });
   }
   layoutBrowserTabs();
@@ -716,7 +719,8 @@ function createBrowserShell(appDef) {
 function layoutBrowserTabs() {
   if (!win) return;
   const [w, h] = win.getContentSize();
-  const b = { x: SIDEBAR_WIDTH, y: TOP_BAR + BROWSER_BAR, width: w - SIDEBAR_WIDTH - FRAME, height: h - TOP_BAR - BROWSER_BAR - FRAME };
+  const bar = browserBarHeight();
+  const b = { x: SIDEBAR_WIDTH, y: TOP_BAR + bar, width: w - SIDEBAR_WIDTH - FRAME, height: h - TOP_BAR - bar - FRAME };
   for (const v of browserTabs.values()) v.setBounds(b);
 }
 function browserApplyVisibility() {
@@ -740,6 +744,7 @@ function sendBrowserUpdate() {
     shell.webContents.send('browser:state', {
       url: url.endsWith('/' + NEWTAB_FILE) || url.includes(NEWTAB_FILE) ? '' : url,
       canGoBack: nh.canGoBack(), canGoForward: nh.canGoForward(), loading: av.webContents.isLoading(),
+      bookmarked: isBookmarked(url),
     });
   } else {
     shell.webContents.send('browser:state', { url: '', canGoBack: false, canGoForward: false, loading: false });
@@ -808,6 +813,39 @@ function browserSwitchTab(key) {
 function browserActiveWc() {
   const v = browserTabs.get(browserActive);
   return v && !v.webContents.isDestroyed() ? v.webContents : null;
+}
+
+// ---- Lesezeichen ----
+function isBookmarked(url) {
+  return !!(state && state.bookmarks && state.bookmarks.some((b) => b.url === url));
+}
+function sendBrowserBookmarks() {
+  const shell = views[BROWSER_ID];
+  if (shell && !shell.webContents.isDestroyed()) shell.webContents.send('browser:bookmarks', (state && state.bookmarks) || []);
+}
+function browserToggleBookmark() {
+  const wc = browserActiveWc();
+  if (!wc) return;
+  const url = wc.getURL();
+  if (!/^https?:/i.test(url) || url.includes(NEWTAB_FILE)) return; // Neuer-Tab-Seite nicht merken
+  if (!state.bookmarks) state.bookmarks = [];
+  const i = state.bookmarks.findIndex((b) => b.url === url);
+  if (i >= 0) state.bookmarks.splice(i, 1);
+  else state.bookmarks.push({ url, title: wc.getTitle() || url, favicon: browserFav.get(browserActive) || '' });
+  saveState();
+  layoutViews();            // Leisten-Höhe ändert sich, wenn erstes/letztes Lesezeichen
+  sendBrowserBookmarks();
+  sendBrowserUpdate();
+}
+function browserRemoveBookmark(url) {
+  if (!state.bookmarks) return;
+  const i = state.bookmarks.findIndex((b) => b.url === url);
+  if (i < 0) return;
+  state.bookmarks.splice(i, 1);
+  saveState();
+  layoutViews();
+  sendBrowserBookmarks();
+  sendBrowserUpdate();
 }
 
 // Tastenkürzel wie in Chrome (Cmd/Strg + T/W/L). Cmd+W schließt NUR einen Tab,
@@ -1180,7 +1218,7 @@ ipcMain.on('nav-back', navBackActive);
 ipcMain.on('nav-forward', navForwardActive);
 ipcMain.on('nav-home', navHomeActive);
 // Verti-Browser
-ipcMain.on('browser:ready', () => { if (browserTabs.size === 0 && activeId === BROWSER_ID) browserRestoreOrNew(); else sendBrowserUpdate(); });
+ipcMain.on('browser:ready', () => { if (browserTabs.size === 0 && activeId === BROWSER_ID) browserRestoreOrNew(); else sendBrowserUpdate(); sendBrowserBookmarks(); });
 ipcMain.on('browser:new-tab', () => browserNewTab());
 ipcMain.on('browser:close-tab', (e, key) => browserCloseTab(key));
 ipcMain.on('browser:switch-tab', (e, key) => browserSwitchTab(key));
@@ -1189,6 +1227,9 @@ ipcMain.on('browser:back', () => { const wc = browserActiveWc(); if (wc && wc.na
 ipcMain.on('browser:forward', () => { const wc = browserActiveWc(); if (wc && wc.navigationHistory.canGoForward()) wc.navigationHistory.goForward(); });
 ipcMain.on('browser:reload', () => { const wc = browserActiveWc(); if (wc) wc.reload(); });
 ipcMain.on('browser:stop', () => { const wc = browserActiveWc(); if (wc) wc.stop(); });
+ipcMain.on('browser:toggle-bookmark', browserToggleBookmark);
+ipcMain.on('browser:remove-bookmark', (e, url) => browserRemoveBookmark(url));
+ipcMain.on('browser:open-bookmark', (e, url) => { const wc = browserActiveWc(); if (wc && url) wc.loadURL(url); });
 ipcMain.handle('get-apps', () => state.apps);
 ipcMain.handle('get-app-info', () => ({ version: app.getVersion(), packaged: app.isPackaged }));
 // Die Sidebar fragt nach dem Start einmal nach: Das erste 'active-app' aus
