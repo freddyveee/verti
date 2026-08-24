@@ -1,5 +1,6 @@
 const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog, nativeImage, desktopCapturer, clipboard, Notification } = require('electron');
 const path = require('path');
+const https = require('https');
 const fs = require('fs');
 
 const SIDEBAR_WIDTH = 68;
@@ -8,6 +9,7 @@ const FRAME = 8;
 const BROWSER_ID = 'browser';
 const BROWSER_BAR = 93;    // Tabs + Adresszeile (10% größer)
 const BOOKMARK_BAR = 37;   // Lesezeichenleiste (nur wenn Lesezeichen da sind)
+const SUGGEST_H = 300;     // Höhe des Vorschlags-Dropdowns (Shell wächst dann)
 function browserBarHeight() { return BROWSER_BAR + (state && Array.isArray(state.bookmarks) && state.bookmarks.length ? BOOKMARK_BAR : 0); }
 const isMac = process.platform === 'darwin';
 
@@ -130,6 +132,7 @@ function loadState() {
     zoom: s.zoom && typeof s.zoom === 'object' ? s.zoom : {}, // Zoomstufe je App
     browser: s.browser && typeof s.browser === 'object' ? s.browser : null, // offene Browser-Tabs
     bookmarks: Array.isArray(s.bookmarks) ? s.bookmarks : [], // Lesezeichen
+    history: Array.isArray(s.history) ? s.history : [], // Browser-Verlauf
   };
 }
 
@@ -239,6 +242,7 @@ const browserTabs = new Map(); // key -> WebContentsView
 const browserFav = new Map();  // key -> Favicon-URL
 let browserActive = null;      // key des aktiven Tabs
 let browserSeq = 0;
+let browserSuggestOpen = false; // Vorschlags-Dropdown offen → Shell wächst
 let libraryOpen = false;
 let quitting = false; // Cmd+Q/Update-Installation: echtes Beenden statt Verstecken (Mac)
 app.on('before-quit', () => { quitting = true; });
@@ -499,7 +503,7 @@ function layoutViews() {
       x: SIDEBAR_WIDTH,
       y: TOP_BAR,
       width: w - SIDEBAR_WIDTH - FRAME,
-      height: id === BROWSER_ID ? browserBarHeight() : h - TOP_BAR - FRAME,
+      height: id === BROWSER_ID ? browserBarHeight() + (browserSuggestOpen ? SUGGEST_H : 0) : h - TOP_BAR - FRAME,
     });
   }
   layoutBrowserTabs();
@@ -515,6 +519,7 @@ function switchApp(id) {
   }
   layoutViews();
   if (id === BROWSER_ID && browserTabs.size === 0) browserRestoreOrNew();
+  if (id !== BROWSER_ID && browserSuggestOpen) browserSuggestOpen = false;
   browserApplyVisibility();
   // Tastatur-Fokus in die App (bzw. den aktiven Browser-Tab) geben, damit
   // App-Tastenkürzel (z.B. Leertaste = Play/Pause) sofort greifen
@@ -770,13 +775,13 @@ function browserNewTab(url) {
   attachMouseNav(wc);
   attachContextMenu(wc);
   const upd = () => sendBrowserUpdate();
-  wc.on('page-title-updated', upd);
-  wc.on('did-navigate', upd);
+  wc.on('page-title-updated', (e, title) => { browserRecordHistory(wc.getURL(), title, browserFav.get(key)); upd(); });
+  wc.on('did-navigate', (e, url) => { browserRecordHistory(url, wc.getTitle(), browserFav.get(key)); upd(); });
   wc.on('did-navigate-in-page', upd);
   wc.on('did-start-loading', upd);
   wc.on('did-stop-loading', upd);
   wc.on('page-favicon-updated', (e, favs) => { browserFav.set(key, (favs && favs[0]) || ''); sendBrowserUpdate(); });
-  win.contentView.addChildView(view);
+  win.contentView.addChildView(view, 0); // unter die Shell, damit das Dropdown die Seite überdeckt
   browserTabs.set(key, view);
   browserActive = key;
   if (url) wc.loadURL(url); else wc.loadFile(NEWTAB_FILE);
@@ -816,6 +821,52 @@ function browserSwitchTab(key) {
 function browserActiveWc() {
   const v = browserTabs.get(browserActive);
   return v && !v.webContents.isDestroyed() ? v.webContents : null;
+}
+
+// ---- Verlauf ----
+function browserRecordHistory(url, title, favicon) {
+  if (!/^https?:/i.test(url) || url.includes(NEWTAB_FILE)) return;
+  if (!state.history) state.history = [];
+  const i = state.history.findIndex((h) => h.url === url);
+  const entry = { url, title: title || (i >= 0 ? state.history[i].title : '') || url, favicon: favicon || (i >= 0 ? state.history[i].favicon : '') || '', ts: 0 };
+  if (i >= 0) state.history.splice(i, 1);
+  state.history.unshift(entry);
+  if (state.history.length > 1000) state.history.length = 1000;
+  saveState();
+}
+
+// ---- Vorschläge (Verlauf + Google-Autocomplete) ----
+function fetchGoogleSuggest(q) {
+  return new Promise((resolve) => {
+    const url = 'https://suggestqueries.google.com/complete/search?client=firefox&hl=de&q=' + encodeURIComponent(q);
+    let done = false; const finish = (v) => { if (!done) { done = true; resolve(v); } };
+    try {
+      const req = https.get(url, { timeout: 2500, headers: { 'User-Agent': chromeUserAgent() } }, (res) => {
+        let data = '';
+        res.on('data', (c) => { data += c; if (data.length > 200000) req.destroy(); });
+        res.on('end', () => { try { const j = JSON.parse(data); finish(Array.isArray(j[1]) ? j[1].filter((x) => typeof x === 'string') : []); } catch { finish([]); } });
+      });
+      req.on('error', () => finish([]));
+      req.on('timeout', () => { req.destroy(); finish([]); });
+    } catch { finish([]); }
+  });
+}
+async function browserSuggest(text) {
+  const shell = views[BROWSER_ID];
+  if (!shell || shell.webContents.isDestroyed()) return;
+  const q = String(text || '').trim();
+  const send = (items) => shell.webContents.send('browser:suggestions', { text: q, items });
+  if (!q) { send([]); return; }
+  const ql = q.toLowerCase();
+  const hist = (state.history || [])
+    .filter((h) => h.url.toLowerCase().includes(ql) || (h.title || '').toLowerCase().includes(ql))
+    .slice(0, 3)
+    .map((h) => ({ kind: 'history', label: h.title || h.url, sub: h.url, value: h.url }));
+  const seen = new Set(hist.map((h) => h.value));
+  const sugs = await fetchGoogleSuggest(q);
+  const search = [];
+  for (const x of sugs) { if (search.length >= 6 - hist.length) break; if (!seen.has(x)) search.push({ kind: 'search', label: x, value: x }); }
+  send([...hist, ...search]);
 }
 
 // ---- Lesezeichen ----
@@ -1233,6 +1284,9 @@ ipcMain.on('browser:stop', () => { const wc = browserActiveWc(); if (wc) wc.stop
 ipcMain.on('browser:toggle-bookmark', browserToggleBookmark);
 ipcMain.on('browser:remove-bookmark', (e, url) => browserRemoveBookmark(url));
 ipcMain.on('browser:open-bookmark', (e, url) => { const wc = browserActiveWc(); if (wc && url) wc.loadURL(url); });
+ipcMain.on('browser:suggest', (e, text) => browserSuggest(text));
+ipcMain.on('browser:suggest-open', () => { if (!browserSuggestOpen) { browserSuggestOpen = true; layoutViews(); } });
+ipcMain.on('browser:suggest-close', () => { if (browserSuggestOpen) { browserSuggestOpen = false; layoutViews(); } });
 ipcMain.handle('get-apps', () => state.apps);
 ipcMain.handle('get-app-info', () => ({ version: app.getVersion(), packaged: app.isPackaged }));
 // Die Sidebar fragt nach dem Start einmal nach: Das erste 'active-app' aus

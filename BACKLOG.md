@@ -6,13 +6,16 @@ Nächstes Release: 1.1.5
 
 ## Offen
 
+- Externe Links (z. B. aus WhatsApp, Stackfield, Mail) öffnen standardmäßig im Verti-Browser: das lila Aktiv-Zeichen springt hoch zum Browser, der Link öffnet in einem neuen Tab. Umschaltbar (später in den Einstellungen) auf den System-Browser (Chrome/Safari …). (24.08.2026)
 - Updates erzwingen: Wenn ein Update bereitsteht, zusätzlich zum Button oben rechts ein BLOCKIERENDES Popup, das die Arbeit sperrt, bis aktualisiert wurde („Update erforderlich", einzige Aktion: Jetzt aktualisieren). Grund: Mitarbeiter schieben Updates tagelang auf. Wichtig: Fallback, falls ein Update mal fehlschlägt oder hängt – nicht dauerhaft aussperren (z. B. Blockade greift erst beim nächsten Start, plus „Erneut versuchen"). (24.08.2026)
 - Verti Browser – Stufe 3 (Stufen 1 und 2 sind fertig, s. unten): Chrome-Extensions – eigene „Erweiterungen"-Seite + Installieren/Aktualisieren aus dem Web Store (`session.loadExtension`); machbar (Shift macht es vor), Grenze ist nur die Kompatibilität einzelner Erweiterungen. (24.08.2026)
 - Einstellungsseite für Verti: ein eigener Einstellungsbereich mit (a) Umschalter Hell-/Dunkelmodus für Vertis eigene Oberfläche (Sidebar, Leisten, Dialoge – die Web-Apps behalten ihr eigenes Design), (b) Anzeige der aktuellen Versionsnummer, (c) Update-Bereich wie aus Software gewohnt: nach Updates suchen, sehen ob man aktuell ist, aktualisieren, (d) Benachrichtigungen einstellen: global und pro App an/aus (dort landet dann auch der Wunsch „App stummschalten" aus den Ideen). (24.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (noch nichts)
+- Verti Browser: Adressleiste mit Google-Vorschlägen und Verlauf – Dropdown wie in Chrome, das beim Tippen deinen Verlauf mit den Google-Autocomplete-Vorschlägen mischt (Pfeiltasten, Enter, Klick). (24.08.2026)
+- Verti Browser: Verlauf – besuchte Seiten werden gemerkt und fließen in die Adressleisten-Vorschläge ein. (24.08.2026)
+- Verti Browser: Leiste (Tabs, Adressleiste, Pfeile, Aktualisieren, Lesezeichen) 10 % größer für mehr Komfort. (24.08.2026)
 
 ## Blockiert
 
