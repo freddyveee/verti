@@ -6,6 +6,7 @@ Nächstes Release: 1.1.5
 
 ## Offen
 
+- Updates erzwingen: Wenn ein Update bereitsteht, zusätzlich zum Button oben rechts ein BLOCKIERENDES Popup, das die Arbeit sperrt, bis aktualisiert wurde („Update erforderlich", einzige Aktion: Jetzt aktualisieren). Grund: Mitarbeiter schieben Updates tagelang auf. Wichtig: Fallback, falls ein Update mal fehlschlägt oder hängt – nicht dauerhaft aussperren (z. B. Blockade greift erst beim nächsten Start, plus „Erneut versuchen"). (24.08.2026)
 - Verti Browser – Stufe 3 (Stufen 1 und 2 sind fertig, s. unten): Chrome-Extensions – eigene „Erweiterungen"-Seite + Installieren/Aktualisieren aus dem Web Store (`session.loadExtension`); machbar (Shift macht es vor), Grenze ist nur die Kompatibilität einzelner Erweiterungen. (24.08.2026)
 - Einstellungsseite für Verti: ein eigener Einstellungsbereich mit (a) Umschalter Hell-/Dunkelmodus für Vertis eigene Oberfläche (Sidebar, Leisten, Dialoge – die Web-Apps behalten ihr eigenes Design), (b) Anzeige der aktuellen Versionsnummer, (c) Update-Bereich wie aus Software gewohnt: nach Updates suchen, sehen ob man aktuell ist, aktualisieren, (d) Benachrichtigungen einstellen: global und pro App an/aus (dort landet dann auch der Wunsch „App stummschalten" aus den Ideen). (24.08.2026)
 
