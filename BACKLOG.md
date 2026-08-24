@@ -2,7 +2,7 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.5
+Nächstes Release: 1.1.6
 
 ## Offen
 
@@ -12,13 +12,7 @@ Nächstes Release: 1.1.5
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- Kein Auto-Start von Medien mehr beim Öffnen: YouTube (und andere) spielen nach dem Neuöffnen von Verti nicht mehr von allein los, sondern erst nach einem Klick, wie in Chrome (autoplay-policy). (24.08.2026)
-- Einstellungsseite (Grundgerüst): Zahnrad oben rechts öffnet die Einstellungen. Zwei Schalter – Darstellung (Dunkel bzw. helles Sandgrau; färbt Sidebar, Browser-Leiste und Dialoge um, die Web-Apps behalten ihr eigenes Design) und Externe Links (im Verti-Browser oder im System-Browser öffnen). Beides wird sofort gespeichert. (24.08.2026)
-- Vier neue Apps im Katalog (unter Weitere Apps hinzufügbar): GetResponse, weclapp (CRM), Autodesk Fusion und Bambu Lab. (24.08.2026)
-- Externe Links (z. B. aus WhatsApp) öffnen jetzt standardmäßig im Verti-Browser: das aktive Icon springt hoch zum Browser, der Link öffnet in einem neuen Tab. Die Umschaltung auf den System-Browser (Chrome/Safari) kommt mit der Einstellungsseite (Schalter schon im State: externalLinks). (24.08.2026)
-- Verti Browser: Adressleiste mit Google-Vorschlägen und Verlauf – Dropdown wie in Chrome, das beim Tippen deinen Verlauf mit den Google-Autocomplete-Vorschlägen mischt (Pfeiltasten, Enter, Klick). (24.08.2026)
-- Verti Browser: Verlauf – besuchte Seiten werden gemerkt und fließen in die Adressleisten-Vorschläge ein. (24.08.2026)
-- Verti Browser: Leiste (Tabs, Adressleiste, Pfeile, Aktualisieren, Lesezeichen) 10 % größer für mehr Komfort. (24.08.2026)
+- (nichts – wandert beim Release hierher)
 
 ## Blockiert
 
@@ -39,6 +33,16 @@ Nächstes Release: 1.1.5
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.5 (24.08.2026)
+
+- Kein Auto-Start von Medien mehr beim Öffnen: YouTube (und andere) spielen nach dem Neuöffnen von Verti nicht mehr von allein los, sondern erst nach einem Klick, wie in Chrome (autoplay-policy). (24.08.2026)
+- Einstellungsseite (Grundgerüst): Zahnrad oben rechts öffnet die Einstellungen. Zwei Schalter – Darstellung (Dunkel bzw. helles Sandgrau; färbt Sidebar, Browser-Leiste und Dialoge um, die Web-Apps behalten ihr eigenes Design) und Externe Links (im Verti-Browser oder im System-Browser öffnen). Beides wird sofort gespeichert. (24.08.2026)
+- Vier neue Apps im Katalog (unter Weitere Apps hinzufügbar): GetResponse, weclapp (CRM), Autodesk Fusion und Bambu Lab. (24.08.2026)
+- Externe Links (z. B. aus WhatsApp) öffnen jetzt standardmäßig im Verti-Browser: das aktive Icon springt hoch zum Browser, der Link öffnet in einem neuen Tab. Die Umschaltung auf den System-Browser (Chrome/Safari) kommt mit der Einstellungsseite (Schalter schon im State: externalLinks). (24.08.2026)
+- Verti Browser: Adressleiste mit Google-Vorschlägen und Verlauf – Dropdown wie in Chrome, das beim Tippen deinen Verlauf mit den Google-Autocomplete-Vorschlägen mischt (Pfeiltasten, Enter, Klick). (24.08.2026)
+- Verti Browser: Verlauf – besuchte Seiten werden gemerkt und fließen in die Adressleisten-Vorschläge ein. (24.08.2026)
+- Verti Browser: Leiste (Tabs, Adressleiste, Pfeile, Aktualisieren, Lesezeichen) 10 % größer für mehr Komfort. (24.08.2026)
 
 ### 1.1.4 (24.08.2026)
 
