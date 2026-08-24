@@ -123,6 +123,7 @@ function loadState() {
     apps,
     lastUrls: s.lastUrls && typeof s.lastUrls === 'object' ? s.lastUrls : {}, // zuletzt besuchte Seite je App
     zoom: s.zoom && typeof s.zoom === 'object' ? s.zoom : {}, // Zoomstufe je App
+    browser: s.browser && typeof s.browser === 'object' ? s.browser : null, // offene Browser-Tabs
   };
 }
 
@@ -507,7 +508,7 @@ function switchApp(id) {
     view.setVisible(vid === id);
   }
   layoutViews();
-  if (id === BROWSER_ID && browserTabs.size === 0) browserNewTab();
+  if (id === BROWSER_ID && browserTabs.size === 0) browserRestoreOrNew();
   browserApplyVisibility();
   // Tastatur-Fokus in die App (bzw. den aktiven Browser-Tab) geben, damit
   // App-Tastenkürzel (z.B. Leertaste = Play/Pause) sofort greifen
@@ -744,6 +745,7 @@ function sendBrowserUpdate() {
     shell.webContents.send('browser:state', { url: '', canGoBack: false, canGoForward: false, loading: false });
   }
   if (activeId === BROWSER_ID) sendNavStateFor(BROWSER_ID);
+  browserPersist();
 }
 function browserNewTab(url) {
   if (!win) return;
@@ -806,6 +808,50 @@ function browserSwitchTab(key) {
 function browserActiveWc() {
   const v = browserTabs.get(browserActive);
   return v && !v.webContents.isDestroyed() ? v.webContents : null;
+}
+
+// Tastenkürzel wie in Chrome (Cmd/Strg + T/W/L). Cmd+W schließt NUR einen Tab,
+// wenn der Browser aktiv ist – sonst auf dem Mac Fenster verstecken, unter
+// Windows nichts (kein versehentliches Beenden, s. CLAUDE.md).
+function browserCmdNewTab() {
+  if (activeId === BROWSER_ID) browserNewTab();
+  else switchApp(BROWSER_ID);
+}
+function browserCmdCloseTab() {
+  if (activeId === BROWSER_ID) { if (browserActive) browserCloseTab(browserActive); }
+  else if (isMac && win && !win.isDestroyed()) win.close();
+}
+function browserCmdFocusAddress() {
+  if (activeId === BROWSER_ID && views[BROWSER_ID]) views[BROWSER_ID].webContents.send('browser:focus-address');
+}
+
+// Offene Tabs merken und nach Neustart wiederherstellen
+function browserPersist() {
+  if (!state) return;
+  if (browserTabs.size === 0) return; // vor dem ersten Öffnen die gespeicherte Sitzung nicht leeren
+  const keys = [...browserTabs.keys()];
+  const tabs = keys.map((k) => {
+    const wc = browserTabs.get(k).webContents;
+    const u = wc.isDestroyed() ? '' : wc.getURL();
+    return /^https?:/i.test(u) && !u.includes(NEWTAB_FILE) ? u : null; // Neuer-Tab-Seite → null
+  });
+  state.browser = { tabs, active: keys.indexOf(browserActive) };
+  saveState();
+}
+function browserRestoreOrNew() {
+  const saved = state && state.browser;
+  if (saved && Array.isArray(saved.tabs) && saved.tabs.length) {
+    saved.tabs.slice(0, 20).forEach((u) => browserNewTab(u || undefined));
+    const keys = [...browserTabs.keys()];
+    const k = keys[saved.active] || keys[keys.length - 1];
+    if (k) browserActive = k;
+    browserApplyVisibility();
+    const av = browserTabs.get(browserActive);
+    if (av) { try { av.webContents.focus(); } catch {} }
+    sendBrowserUpdate();
+  } else {
+    browserNewTab();
+  }
 }
 
 // ---------- Downloads ----------
@@ -1134,7 +1180,7 @@ ipcMain.on('nav-back', navBackActive);
 ipcMain.on('nav-forward', navForwardActive);
 ipcMain.on('nav-home', navHomeActive);
 // Verti-Browser
-ipcMain.on('browser:ready', () => { if (browserTabs.size === 0 && activeId === BROWSER_ID) browserNewTab(); sendBrowserUpdate(); });
+ipcMain.on('browser:ready', () => { if (browserTabs.size === 0 && activeId === BROWSER_ID) browserRestoreOrNew(); else sendBrowserUpdate(); });
 ipcMain.on('browser:new-tab', () => browserNewTab());
 ipcMain.on('browser:close-tab', (e, key) => browserCloseTab(key));
 ipcMain.on('browser:switch-tab', (e, key) => browserSwitchTab(key));
@@ -1252,7 +1298,7 @@ function buildMenu() {
         {
           label: 'Aktive App neu laden',
           accelerator: 'CmdOrCtrl+R',
-          click: () => activeId && views[activeId] && views[activeId].webContents.reload(),
+          click: () => { const wc = activeWebContents(); if (wc) wc.reload(); else if (activeId && views[activeId]) views[activeId].webContents.reload(); },
         },
         { type: 'separator' },
         { label: 'Vergrößern', accelerator: 'CmdOrCtrl+Plus', click: () => zoomActive(1) },
@@ -1260,6 +1306,10 @@ function buildMenu() {
         { label: 'Vergrößern', accelerator: 'CmdOrCtrl+=', visible: false, acceleratorWorksWhenHidden: true, click: () => zoomActive(1) },
         { label: 'Verkleinern', accelerator: 'CmdOrCtrl+-', click: () => zoomActive(-1) },
         { label: 'Originalgröße', accelerator: 'CmdOrCtrl+0', click: () => zoomActive(0) },
+        // Browser-Tastenkürzel (greifen nur, wenn der Verti-Browser aktiv ist)
+        { label: 'Neuer Tab', accelerator: 'CmdOrCtrl+T', visible: false, acceleratorWorksWhenHidden: true, click: browserCmdNewTab },
+        { label: 'Tab schließen', accelerator: 'CmdOrCtrl+W', visible: false, acceleratorWorksWhenHidden: true, click: browserCmdCloseTab },
+        { label: 'Adresse fokussieren', accelerator: 'CmdOrCtrl+L', visible: false, acceleratorWorksWhenHidden: true, click: browserCmdFocusAddress },
         { type: 'separator' },
         {
           label: 'Zurück',

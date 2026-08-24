@@ -36,6 +36,9 @@
   #lock { flex: 0 0 auto; color: #8a8f9c; display: flex; }
   #addr { flex: 1; border: none; outline: none; background: transparent; color: #f0f0f4; font-size: 13.5px; }
   #addr::placeholder { color: #7b8090; }
+  #progress { position: fixed; left: 0; bottom: 0; height: 2.5px; width: 0; background: linear-gradient(90deg,#9257ff,#7c3aed); opacity: 0; border-radius: 2px; }
+  body.loading #progress { opacity: 1; animation: prog 1.1s ease-in-out infinite; }
+  @keyframes prog { 0% { left: 0; width: 6%; } 50% { width: 55%; } 100% { left: 100%; width: 8%; } }
 </style>
 <body>
   <div id="tabs"></div>
@@ -48,6 +51,7 @@
       <input id="addr" type="text" placeholder="Adresse eingeben oder im Web suchen" spellcheck="false" autocomplete="off">
     </div>
   </div>
+  <div id="progress"></div>
   <script>
     const tabsEl = document.getElementById('tabs');
     const addr = document.getElementById('addr');
@@ -86,6 +90,7 @@
     function applyState(s) {
       back.disabled = !s.canGoBack;
       fwd.disabled = !s.canGoForward;
+      document.body.classList.toggle('loading', !!s.loading);
       if (!editing) addr.value = displayUrl(s.url);
     }
     function displayUrl(u) {
