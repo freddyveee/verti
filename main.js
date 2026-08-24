@@ -133,6 +133,7 @@ function loadState() {
     browser: s.browser && typeof s.browser === 'object' ? s.browser : null, // offene Browser-Tabs
     bookmarks: Array.isArray(s.bookmarks) ? s.bookmarks : [], // Lesezeichen
     history: Array.isArray(s.history) ? s.history : [], // Browser-Verlauf
+    externalLinks: s.externalLinks === 'system' ? 'system' : 'verti', // externe Links: im Verti-Browser (Standard) oder System-Browser
   };
 }
 
@@ -366,7 +367,7 @@ function windowOpenPolicy(openerContents) {
     if (disposition === 'new-window' && isInstalledAppUrl(url)) {
       return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(1100, 800) };
     }
-    openExternally(url);
+    browserOpenExternal(url);
     return { action: 'deny' };
   };
 }
@@ -869,6 +870,18 @@ async function browserSuggest(text) {
   send([...hist, ...search]);
 }
 
+// Externe Links (aus Apps, Popups, Kontextmenü) öffnen – Standard: im Verti-
+// Browser (aktives Icon springt hoch, neuer Tab). Einstellung 'system' öffnet
+// stattdessen im Standard-Browser (Chrome/Safari …). Die Umschaltung kommt
+// später in die Einstellungsseite.
+function browserOpenExternal(url) {
+  if (!url) return;
+  if (!state || state.externalLinks === 'system' || !views[BROWSER_ID]) { openExternally(url); return; }
+  if (win && !win.isDestroyed() && !win.isVisible()) win.show();
+  switchApp(BROWSER_ID);
+  browserNewTab(url);
+}
+
 // ---- Lesezeichen ----
 function isBookmarked(url) {
   return !!(state && state.bookmarks && state.bookmarks.some((b) => b.url === url));
@@ -998,8 +1011,9 @@ function attachContextMenu(wc) {
       sep();
     }
     if (p.linkURL) {
+      const inTab = [...browserTabs.values()].some((v) => v.webContents === wc);
       items.push(
-        { label: 'Link im Browser öffnen', click: () => openExternally(p.linkURL) },
+        { label: inTab ? 'Link in neuem Tab öffnen' : 'Im Verti-Browser öffnen', click: () => browserOpenExternal(p.linkURL) },
         { label: 'Link kopieren', click: () => clipboard.writeText(p.linkURL) },
       );
       sep();
