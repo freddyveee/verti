@@ -7,11 +7,14 @@ const SIDEBAR_WIDTH = 68;
 const TOP_BAR = 44;
 const FRAME = 8;
 
-// Autoplay wie in Chrome: Medien starten NICHT von allein beim Laden, sondern
-// erst nach einer Nutzer-Interaktion mit der Seite. Verhindert, dass z. B.
-// YouTube nach dem Neuöffnen von Verti von selbst losspielt (Freddys Wunsch
-// 24.08.2026). Muss vor app-ready gesetzt werden.
-app.commandLine.appendSwitch('autoplay-policy', 'document-user-activation-required');
+// Medien starten NICHT von allein beim Laden, sondern erst nach einem echten
+// Klick auf die Seite. WICHTIG: die Chrome-Standardstufe
+// 'document-user-activation-required' reicht NICHT – Chrome lässt viel besuchte
+// Seiten (hoher Media-Engagement-Index, z. B. YouTube) trotzdem autoplayen.
+// 'user-gesture-required' ignoriert diesen Bonus und verlangt immer eine Geste
+// → YouTube spielt nach dem Neuöffnen von Verti nicht mehr von selbst los
+// (Freddys Wunsch 24.08.2026). Muss vor app-ready gesetzt werden.
+app.commandLine.appendSwitch('autoplay-policy', 'user-gesture-required');
 const BROWSER_ID = 'browser';
 const BROWSER_BAR = 93;    // Tabs + Adresszeile (10% größer)
 const BOOKMARK_BAR = 37;   // Lesezeichenleiste (nur wenn Lesezeichen da sind)
