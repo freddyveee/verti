@@ -126,20 +126,46 @@ const bridge = `(() => {
 // frühere DOM-Injektion still verworfen: JS-Kennung blieb Chrome, Header
 // sagten Firefox → „Dieser Browser oder diese App ist unter Umständen nicht
 // sicher". Apps mit strenger CSP hätte es genauso beim Badge erwischt.
+// ---------- Autoplay-Riegel (Freddys Wunsch 24.08.2026) ----------
+// YouTube & Co. starten Videos beim Laden von selbst - auch nach dem
+// Neuoeffnen von Verti (erschreckt beim stummen Wiederherstellen der Views).
+// Electrons globale autoplay-policy haelt YouTube nicht zuverlaessig auf.
+// Deshalb hier ein harter Riegel in der Seiten-Welt: Medien mit TON duerfen
+// erst abspielen, wenn die Seite eine echte Nutzer-Geste hatte
+// (navigator.userActivation.hasBeenActive). Nach dem ersten Klick spielt alles
+// normal; stumme Vorschauen (GIFs o. AE.) bleiben immer erlaubt.
+const autoplayGuard = `(() => {
+  const beforeGesture = () => { const ua = navigator.userActivation; return ua ? ua.hasBeenActive === false : false; };
+  const audible = (m) => m && !m.muted && m.volume > 0;
+  try {
+    const proto = HTMLMediaElement.prototype, origPlay = proto.play;
+    proto.play = function () {
+      if (beforeGesture() && audible(this)) {
+        try { this.pause(); } catch (e) {}
+        return Promise.reject(new DOMException('Autoplay von Verti blockiert', 'NotAllowedError'));
+      }
+      return origPlay.apply(this, arguments);
+    };
+    document.addEventListener('play', (e) => {
+      if (beforeGesture() && audible(e.target)) { try { e.target.pause(); } catch (err) {} }
+    }, true);
+  } catch (e) {}
+})();`;
+
 function injectViaDom() {
   // Notnagel ohne webFrame: <script> bei document-start (feuert, sobald <html>
   // existiert, vor jedem Seitenskript) – auf CSP-Seiten wirkungslos.
   process.once('document-start', () => {
     try {
       const s = document.createElement('script');
-      s.textContent = uaDisguise + bridge;
+      s.textContent = uaDisguise + autoplayGuard + bridge;
       document.documentElement.appendChild(s);
       s.remove();
     } catch (e) {}
   });
 }
 try {
-  webFrame.executeJavaScript(uaDisguise + bridge).catch(() => {});
+  webFrame.executeJavaScript(uaDisguise + autoplayGuard + bridge).catch(() => {});
 } catch (e) {
   injectViaDom();
 }
