@@ -2,7 +2,7 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.4
+Nächstes Release: 1.1.5
 
 ## Offen
 
@@ -11,9 +11,7 @@ Nächstes Release: 1.1.4
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- Verti Browser (Stufe 2): Neuer-Tab-Seite mit Suchfeld (Logo + Suche), Ladebalken beim Laden, Chrome-Tastenkürzel (Cmd/Strg+T neuer Tab, +W Tab schließen, +L Adresse, +R neu laden), und offene Tabs werden gemerkt und nach dem Neustart wiederhergestellt. (24.08.2026)
-- Verti Browser (Lesezeichen): Stern in der Adressleiste zum Merken/Entfernen, eigene Lesezeichenleiste unter der Adresszeile (erscheint automatisch, sobald Lesezeichen da sind); Klick öffnet, × entfernt. (24.08.2026)
-- Verti Browser (Stufe 1): eigene, vorinstallierte Browser-App mit eigenem Logo (V + Weltkugel im Lila-Look). Echte Tabs (öffnen, schließen, wechseln), Adressleiste mit Web-Suche, Zurück/Vorwärts/Neu-laden – wie ein schlanker Chrome, im Verti-Dark-Look. (24.08.2026)
+- (noch nichts)
 
 ## Blockiert
 
@@ -34,6 +32,13 @@ Nächstes Release: 1.1.4
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.4 (24.08.2026)
+
+- Verti Browser sitzt fix oben in der Sidebar-Ecke, getrennt von den (weiter unten sortierbaren) Apps – auch bei nur wenigen Apps. Nicht verschiebbar, nicht entfernbar. (24.08.2026)
+- Verti Browser (Stufe 2): Neuer-Tab-Seite mit Suchfeld (Logo + Suche), Ladebalken beim Laden, Chrome-Tastenkürzel (Cmd/Strg+T neuer Tab, +W Tab schließen, +L Adresse, +R neu laden), und offene Tabs werden gemerkt und nach dem Neustart wiederhergestellt. (24.08.2026)
+- Verti Browser (Lesezeichen): Stern in der Adressleiste zum Merken/Entfernen, eigene Lesezeichenleiste unter der Adresszeile (erscheint automatisch, sobald Lesezeichen da sind); Klick öffnet, × entfernt. (24.08.2026)
+- Verti Browser (Stufe 1): eigene, vorinstallierte Browser-App mit eigenem Logo (V + Weltkugel im Lila-Look). Echte Tabs (öffnen, schließen, wechseln), Adressleiste mit Web-Suche, Zurück/Vorwärts/Neu-laden – wie ein schlanker Chrome, im Verti-Dark-Look. (24.08.2026)
 
 ### 1.1.3 (23.08.2026)
 
