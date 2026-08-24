@@ -6,8 +6,8 @@ const SIDEBAR_WIDTH = 68;
 const TOP_BAR = 44;
 const FRAME = 8;
 const BROWSER_ID = 'browser';
-const BROWSER_BAR = 84;    // Tabs + Adresszeile
-const BOOKMARK_BAR = 34;   // Lesezeichenleiste (nur wenn Lesezeichen da sind)
+const BROWSER_BAR = 93;    // Tabs + Adresszeile (10% größer)
+const BOOKMARK_BAR = 37;   // Lesezeichenleiste (nur wenn Lesezeichen da sind)
 function browserBarHeight() { return BROWSER_BAR + (state && Array.isArray(state.bookmarks) && state.bookmarks.length ? BOOKMARK_BAR : 0); }
 const isMac = process.platform === 'darwin';
 
