@@ -27,5 +27,9 @@ contextBridge.exposeInMainWorld('verti', {
   setOverlay: (dataUrl, total) => ipcRenderer.send('set-overlay', dataUrl, total),
   onNavState: (cb) => ipcRenderer.on('nav-state', (e, s) => cb(s)),
   onActiveApp: (cb) => ipcRenderer.on('active-app', (e, id) => cb(id)),
+  getSettings: () => ipcRenderer.invoke('get-settings'),
+  setTheme: (t) => ipcRenderer.send('set-theme', t),
+  setExternalLinks: (m) => ipcRenderer.send('set-external-links', m),
+  onTheme: (cb) => ipcRenderer.on('theme', (e, t) => cb(t)),
   onAppsChanged: (cb) => ipcRenderer.on('apps-changed', (e, apps) => cb(apps)),
 });

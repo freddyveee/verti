@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('vertibrowser', {
   suggestOpen: () => ipcRenderer.send('browser:suggest-open'),
   suggestClose: () => ipcRenderer.send('browser:suggest-close'),
   onSuggestions: (cb) => ipcRenderer.on('browser:suggestions', (e, data) => cb(data)),
+  onTheme: (cb) => ipcRenderer.on('theme', (e, t) => cb(t)),
   onTabs: (cb) => ipcRenderer.on('browser:tabs', (e, tabs) => cb(tabs)),
   onState: (cb) => ipcRenderer.on('browser:state', (e, s) => cb(s)),
   onFocusAddress: (cb) => ipcRenderer.on('browser:focus-address', () => cb()),

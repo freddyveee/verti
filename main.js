@@ -93,6 +93,11 @@ const CATALOG = [
   { id: 'facebook', name: 'Facebook', url: 'https://www.facebook.com/' },
   { id: 'reddit', name: 'Reddit', url: 'https://www.reddit.com/' },
   { id: 'pinterest', name: 'Pinterest', url: 'https://www.pinterest.com/' },
+  // Weitere Business-Apps (Freddy 24.08.)
+  { id: 'getresponse', name: 'GetResponse', url: 'https://app.getresponse.com/' },
+  { id: 'weclapp', name: 'weclapp', url: 'https://www.weclapp.com/' },
+  { id: 'fusion', name: 'Autodesk Fusion', url: 'https://fusion.online.autodesk.com/' },
+  { id: 'bambulab', name: 'Bambu Lab', url: 'https://bambulab.com/' },
 ];
 
 const stateFile = () => path.join(app.getPath('userData'), 'window-state.json');
@@ -134,6 +139,7 @@ function loadState() {
     bookmarks: Array.isArray(s.bookmarks) ? s.bookmarks : [], // Lesezeichen
     history: Array.isArray(s.history) ? s.history : [], // Browser-Verlauf
     externalLinks: s.externalLinks === 'system' ? 'system' : 'verti', // externe Links: im Verti-Browser (Standard) oder System-Browser
+    theme: s.theme === 'light' ? 'light' : 'dark', // Darstellung: dunkel (Standard) oder hell
   };
 }
 
@@ -1211,7 +1217,7 @@ function createWindow() {
     ...(isMac
       ? { trafficLightPosition: { x: 18, y: 16 } }
       : { titleBarOverlay: { color: '#22242c', symbolColor: '#ffffff', height: TOP_BAR - 1 } }),
-    backgroundColor: '#22242c',
+    backgroundColor: state.theme === 'light' ? '#e7e5df' : '#22242c',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -1268,6 +1274,7 @@ function createWindow() {
   win.on('hide', () => { if (zoomHud && !zoomHud.isDestroyed()) zoomHud.hide(); });
 
   win.webContents.once('did-finish-load', () => {
+    win.webContents.send('theme', state.theme);
     switchApp(views[state.activeApp] ? state.activeApp : state.apps[0].id);
   });
 }
@@ -1286,7 +1293,7 @@ ipcMain.on('nav-back', navBackActive);
 ipcMain.on('nav-forward', navForwardActive);
 ipcMain.on('nav-home', navHomeActive);
 // Verti-Browser
-ipcMain.on('browser:ready', () => { if (browserTabs.size === 0 && activeId === BROWSER_ID) browserRestoreOrNew(); else sendBrowserUpdate(); sendBrowserBookmarks(); });
+ipcMain.on('browser:ready', () => { if (browserTabs.size === 0 && activeId === BROWSER_ID) browserRestoreOrNew(); else sendBrowserUpdate(); sendBrowserBookmarks(); if (views[BROWSER_ID]) views[BROWSER_ID].webContents.send('theme', state.theme); });
 ipcMain.on('browser:new-tab', () => browserNewTab());
 ipcMain.on('browser:close-tab', (e, key) => browserCloseTab(key));
 ipcMain.on('browser:switch-tab', (e, key) => browserSwitchTab(key));
@@ -1302,6 +1309,15 @@ ipcMain.on('browser:suggest', (e, text) => browserSuggest(text));
 ipcMain.on('browser:suggest-open', () => { if (!browserSuggestOpen) { browserSuggestOpen = true; layoutViews(); } });
 ipcMain.on('browser:suggest-close', () => { if (browserSuggestOpen) { browserSuggestOpen = false; layoutViews(); } });
 ipcMain.handle('get-apps', () => state.apps);
+// ---------- Einstellungen (Theme, externe Links) ----------
+function themeBg() { return state && state.theme === 'light' ? '#e7e5df' : '#22242c'; }
+function broadcastTheme() {
+  if (win && !win.isDestroyed()) { try { win.setBackgroundColor(themeBg()); } catch {} win.webContents.send('theme', state.theme); }
+  if (views[BROWSER_ID] && !views[BROWSER_ID].webContents.isDestroyed()) views[BROWSER_ID].webContents.send('theme', state.theme);
+}
+ipcMain.handle('get-settings', () => ({ theme: (state && state.theme) || 'dark', externalLinks: (state && state.externalLinks) || 'verti' }));
+ipcMain.on('set-theme', (e, t) => { if (!state) return; state.theme = t === 'light' ? 'light' : 'dark'; saveState(); broadcastTheme(); });
+ipcMain.on('set-external-links', (e, m) => { if (!state) return; state.externalLinks = m === 'system' ? 'system' : 'verti'; saveState(); });
 ipcMain.handle('get-app-info', () => ({ version: app.getVersion(), packaged: app.isPackaged }));
 // Die Sidebar fragt nach dem Start einmal nach: Das erste 'active-app' aus
 // switchApp (did-finish-load) kommt, bevor sie ihre Empfänger registriert

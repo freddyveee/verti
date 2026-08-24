@@ -3,12 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <style>
+  :root {
+    --bg: #22242c; --panel: #22242c; --card: rgba(255,255,255,0.05);
+    --text: #ffffff; --text-2: rgba(255,255,255,0.6); --text-faint: rgba(255,255,255,0.22);
+    --hover: rgba(255,255,255,0.08); --active: rgba(255,255,255,0.14); --divider: rgba(255,255,255,0.12);
+    --accent: #9257ff;
+  }
+  :root[data-theme="light"] {
+    --bg: #e7e5df; --panel: #f1efe9; --card: #ffffff;
+    --text: #26262b; --text-2: rgba(0,0,0,0.55); --text-faint: rgba(0,0,0,0.30);
+    --hover: rgba(0,0,0,0.06); --active: rgba(0,0,0,0.10); --divider: rgba(0,0,0,0.14);
+    --accent: #7c3aed;
+  }
   :root { color-scheme: dark; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     width: 100vw;
     height: 100vh;
-    background: #22242c;
+    background: var(--bg);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-user-select: none;
     overflow: hidden;
@@ -27,7 +39,7 @@
     top: 0; left: 0;
     width: 100vw; height: 44px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 15.5px; font-weight: 700; color: #fff;
+    font-size: 15.5px; font-weight: 700; color: var(--text);
     letter-spacing: 0.2px;
     z-index: 10;
     pointer-events: none;
@@ -53,7 +65,7 @@
   /* Lila Update-Hinweis oben rechts, wenn während des Betriebs ein Update kommt */
   .update-pill {
     position: fixed;
-    top: 8px; right: 14px;
+    top: 8px; right: 48px;
     z-index: 12;
     -webkit-app-region: no-drag;
     display: none;
@@ -75,7 +87,7 @@
     50% { box-shadow: 0 3px 20px rgba(131, 71, 255, 0.8); }
   }
   /* Windows: Platz für Minimieren/Maximieren/Schließen rechts */
-  body.win .update-pill { right: 150px; }
+  body.win .update-pill { right: 186px; }
   .nav {
     position: fixed;
     top: 7px;
@@ -91,7 +103,7 @@
     border: none;
     border-radius: 8px;
     background: transparent;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--text-2);
     font-size: 15px;
     cursor: pointer;
     display: flex;
@@ -99,8 +111,8 @@
     justify-content: center;
     transition: background 0.15s;
   }
-  .nav button:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
-  .nav button:disabled { color: rgba(255, 255, 255, 0.22); cursor: default; background: transparent; }
+  .nav button:hover { background: var(--hover); color: var(--text); }
+  .nav button:disabled { color: var(--text-faint); cursor: default; background: transparent; }
   .nav button svg { pointer-events: none; }
   /* Windows: keine Ampel-Buttons links, Navigation rückt an den Rand */
   body.win .nav { left: 12px; }
@@ -118,7 +130,7 @@
   /* Der Verti-Browser sitzt fix oben; die übrigen Apps sind unten und sortierbar */
   #pinned, #apps { display: flex; flex-direction: column; align-items: center; gap: 10px; }
   #apps { margin-top: auto; }
-  .pin-divider { width: 34px; height: 1px; background: rgba(255,255,255,0.10); border-radius: 1px; flex: 0 0 auto; }
+  .pin-divider { width: 34px; height: 1px; background: var(--divider); border-radius: 1px; flex: 0 0 auto; }
   .app-btn {
     width: 46px;
     height: 46px;
@@ -145,8 +157,8 @@
     cursor: grabbing;
   }
   #apps.no-anim .app-btn { transition: none !important; }
-  .app-btn:hover { background: rgba(255, 255, 255, 0.08); }
-  .app-btn.active { background: rgba(255, 255, 255, 0.14); }
+  .app-btn:hover { background: var(--hover); }
+  .app-btn.active { background: var(--active); }
   .app-btn.active::before {
     content: '';
     position: absolute;
@@ -209,7 +221,7 @@
     align-items: center;
     justify-content: center;
     pointer-events: none;
-    box-shadow: 0 0 0 2px #22242c;
+    box-shadow: 0 0 0 2px var(--bg);
   }
   .fallback {
     width: 28px;
@@ -247,7 +259,7 @@
   .library {
     position: fixed;
     inset: 0;
-    background: #22242c;
+    background: var(--panel);
     z-index: 5;
     display: none;
     flex-direction: column;
@@ -256,13 +268,13 @@
   }
   .library.open { display: flex; }
   .library h1 {
-    color: #fff;
+    color: var(--text);
     font-size: 22px;
     font-weight: 600;
     margin-bottom: 4px;
   }
   .library p.sub {
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--text-2);
     font-size: 13px;
     margin-bottom: 24px;
   }
@@ -274,12 +286,33 @@
     height: 32px;
     border-radius: 8px;
     border: none;
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    background: var(--hover);
+    color: var(--text);
     font-size: 16px;
     cursor: pointer;
   }
-  .close-btn:hover { background: rgba(255, 255, 255, 0.16); }
+  .close-btn:hover { background: var(--active); }
+  .gear-btn {
+    position: fixed; top: 7px; right: 12px; z-index: 13; -webkit-app-region: no-drag;
+    width: 30px; height: 30px; border: none; border-radius: 8px; background: transparent;
+    color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .gear-btn:hover { background: var(--hover); color: var(--text); }
+  .gear-btn svg { pointer-events: none; }
+  body.win .gear-btn { right: 150px; }
+  .settings {
+    position: fixed; inset: 0; background: var(--panel); z-index: 6; display: none;
+    flex-direction: column; padding: 60px 40px 30px; overflow-y: auto;
+  }
+  .settings.open { display: flex; }
+  .settings h1 { color: var(--text); font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .settings .sub { color: var(--text-2); font-size: 13px; margin-bottom: 26px; }
+  .setrow { display: flex; align-items: center; justify-content: space-between; gap: 24px; max-width: 640px; padding: 18px 2px; border-top: 1px solid var(--divider); }
+  .setlabel b { color: var(--text); font-size: 15px; font-weight: 600; display: block; }
+  .setlabel span { color: var(--text-2); font-size: 12.5px; }
+  .seg { display: inline-flex; background: var(--hover); border-radius: 10px; padding: 3px; gap: 2px; flex: 0 0 auto; }
+  .seg button { border: none; background: transparent; color: var(--text-2); font-family: inherit; font-size: 13px; padding: 7px 13px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+  .seg button.on { background: var(--accent); color: #fff; }
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -293,8 +326,8 @@
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: var(--card);
+    border: 1px solid var(--divider);
     border-radius: 12px;
     padding: 14px 12px 12px;
     text-align: center;
@@ -302,7 +335,7 @@
   .card img, .card .fallback { width: 30px; height: 30px; }
   .card .info { width: 100%; }
   .card .name {
-    color: #fff;
+    color: var(--text);
     font-size: 12.5px;
     font-weight: 500;
     line-height: 1.3;
@@ -319,7 +352,7 @@
   }
   .card button.add { background: #4a6fd4; color: #fff; }
   .card button.add:hover { background: #5a7fe4; }
-  .card button.remove { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.7); }
+  .card button.remove { background: var(--hover); color: var(--text-2); }
   .card button.remove:hover { background: rgba(220, 80, 80, 0.35); color: #fff; }
   .custom {
     display: flex;
@@ -349,7 +382,7 @@
   }
   .custom button:hover { background: #5a7fe4; }
   h2 {
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--text-2);
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 12px;
@@ -360,6 +393,7 @@
   <div class="drag-region"></div>
   <div class="brandmark">Verti<em>.</em><span class="dev-tag" id="devTag">Dev-Version</span></div>
   <button class="update-pill" id="updatePill" title="Neue Version bereit – klicken für Details">Update verfügbar</button>
+  <button class="gear-btn" id="settingsBtn" title="Einstellungen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8z"/></svg></button>
   <div class="nav">
     <button id="navBack" title="Zurück (Cmd+[)">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 L4 7 L9 12"/></svg>
@@ -390,6 +424,19 @@
     </div>
   </div>
 
+  <div class="settings" id="settings">
+    <button class="close-btn" id="closeSettings" title="Schließen">✕</button>
+    <h1>Einstellungen</h1>
+    <p class="sub">Alles wird automatisch gespeichert.</p>
+    <div class="setrow">
+      <div class="setlabel"><b>Darstellung</b><span>Dunkel oder helles Sandgrau</span></div>
+      <div class="seg" id="segTheme"><button data-v="dark">Dunkel</button><button data-v="light">Hell</button></div>
+    </div>
+    <div class="setrow">
+      <div class="setlabel"><b>Externe Links</b><span>Wo Links aus Apps geöffnet werden</span></div>
+      <div class="seg" id="segLinks"><button data-v="verti">Verti-Browser</button><button data-v="system">System-Browser</button></div>
+    </div>
+  </div>
   <script>
     (async () => {
       let apps = await window.verti.getApps();
@@ -397,6 +444,8 @@
       let badgeCounts = await window.verti.getBadges();
       let audioStates = await window.verti.getAudio();
       const appInfo = await window.verti.getAppInfo();
+      const initSettings = await window.verti.getSettings();
+      if (initSettings.theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
       if (!appInfo.packaged) {
         const devTag = document.getElementById('devTag');
         devTag.title = `Dev-Version ${appInfo.version} aus ~/Projekte/verti`;
@@ -405,6 +454,7 @@
       const appsEl = document.getElementById('apps');
       const catalogEl = document.getElementById('catalog');
       const library = document.getElementById('library');
+      const settingsEl = document.getElementById('settings');
       let activeId = null;
 
       // Icon-Kette: eigenes Icon → Favicon der Subdomain → Favicon der Hauptdomain → Buchstabe.
@@ -653,17 +703,19 @@
       // Vorwärts gibt es in der Bibliothek nicht.
       let navState = { canGoBack: false, canGoForward: false };
       function applyNavState() {
-        const inLibrary = library.classList.contains('open');
+        const inLibrary = library.classList.contains('open') || settingsEl.classList.contains('open');
         navBack.disabled = inLibrary ? false : !navState.canGoBack;
         navForward.disabled = inLibrary ? true : !navState.canGoForward;
       }
       navBack.addEventListener('click', () => {
-        if (library.classList.contains('open')) closeLibrary(true);
+        if (settingsEl.classList.contains('open')) closeSettings(true);
+        else if (library.classList.contains('open')) closeLibrary(true);
         else window.verti.navBack();
       });
       navForward.addEventListener('click', () => window.verti.navForward());
       navHomeBtn.addEventListener('click', () => {
-        if (library.classList.contains('open')) closeLibrary(true);
+        if (settingsEl.classList.contains('open')) closeSettings(true);
+        else if (library.classList.contains('open')) closeLibrary(true);
         else window.verti.navHome();
       });
       window.verti.onNavState((s) => {
@@ -675,6 +727,41 @@
       document.getElementById('closeLib').addEventListener('click', () => closeLibrary(true));
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && library.classList.contains('open')) closeLibrary(true);
+      });
+
+      // ---------- Einstellungen (Zahnrad oben rechts) ----------
+      function applyTheme(t) {
+        if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+        else document.documentElement.removeAttribute('data-theme');
+      }
+      function markSeg(segId, val) {
+        document.querySelectorAll('#' + segId + ' button').forEach((b) => b.classList.toggle('on', b.dataset.v === val));
+      }
+      async function openSettings() {
+        const cur = await window.verti.getSettings();
+        markSeg('segTheme', cur.theme);
+        markSeg('segLinks', cur.externalLinks);
+        library.classList.remove('open');
+        settingsEl.classList.add('open');
+        applyNavState();
+        window.verti.openLibrary(); // App-Views ausblenden, damit das Overlay sichtbar ist
+      }
+      function closeSettings(notify) {
+        settingsEl.classList.remove('open');
+        applyNavState();
+        if (notify) window.verti.closeLibrary();
+      }
+      document.getElementById('settingsBtn').addEventListener('click', openSettings);
+      document.getElementById('closeSettings').addEventListener('click', () => closeSettings(true));
+      document.querySelectorAll('#segTheme button').forEach((b) => b.addEventListener('click', () => {
+        markSeg('segTheme', b.dataset.v); applyTheme(b.dataset.v); window.verti.setTheme(b.dataset.v);
+      }));
+      document.querySelectorAll('#segLinks button').forEach((b) => b.addEventListener('click', () => {
+        markSeg('segLinks', b.dataset.v); window.verti.setExternalLinks(b.dataset.v);
+      }));
+      window.verti.onTheme(applyTheme);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && settingsEl.classList.contains('open')) closeSettings(true);
       });
 
       const customUrl = document.getElementById('customUrl');
@@ -696,6 +783,7 @@
       window.verti.onActiveApp((id) => {
         activeId = id;
         closeLibrary(false);
+        settingsEl.classList.remove('open');
         refreshActive();
       });
       // Das erste 'active-app' kann vor der Registrierung oben gekommen sein
