@@ -787,6 +787,7 @@ function browserNewTab(url) {
   const view = new WebContentsView({ webPreferences: viewWebPreferences() });
   const wc = view.webContents;
   wc.setUserAgent(chromeUserAgent());
+  wc.on('will-prevent-unload', (e) => e.preventDefault());
   wc.setWindowOpenHandler(({ url: u }) => {
     if (isAuthUrl(u)) return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(520, 680) };
     if (u && u !== 'about:blank') browserNewTab(u); // Links / window.open → neuer Tab
@@ -1073,6 +1074,9 @@ function createView(appDef) {
   view.webContents.setUserAgent(chromeUserAgent());
   view.webContents.loadURL(startUrlFor(appDef));
   view.webContents.on('dom-ready', () => pushMuted(appDef.id));
+  // Eine Web-App darf mit ihrem beforeunload nie das Schließen/Beenden von Verti
+  // blockieren (sonst hängt u. a. das Update-quitAndInstall) → immer zulassen
+  view.webContents.on('will-prevent-unload', (e) => e.preventDefault());
   view.webContents.setWindowOpenHandler(windowOpenPolicy(view.webContents));
   view.webContents.on('did-create-window', (child) => adoptChildWindow(child));
   attachMouseNav(view.webContents);
@@ -1702,7 +1706,14 @@ function setupAutoUpdate() {
     // der Neustart ist also schon abgesegnet
     clearDownloadWatchdog();
     sendUpdateState({ mode: 'installing' });
-    setTimeout(() => { quitting = true; autoUpdater.quitAndInstall(); }, 1500);
+    setTimeout(() => {
+      quitting = true;
+      autoUpdater.quitAndInstall();
+      // Sicherheitsnetz: hängt das Beenden doch (z. B. an einer Seite), nach
+      // 10 s hart nachhelfen – der Installer hat die neue Version dann schon
+      // vorbereitet und übernimmt beim Neustart
+      setTimeout(() => { try { app.exit(0); } catch (e) {} }, 10000);
+    }, 1500);
   });
   let lastCheck = 0;
   const throttledCheck = () => {
