@@ -102,6 +102,7 @@
   const content = document.getElementById('content');
   let mode = null;
   let closable = false;
+  let forced = false;
 
   function esc(s) {
     const d = document.createElement('div');
@@ -124,21 +125,26 @@
 
   function render(s) {
     mode = s.mode;
-    closable = ['available', 'celebrate', 'error'].includes(mode);
+    if (typeof s.forced === 'boolean') forced = s.forced;
+    closable = mode === 'celebrate' || (!forced && ['available', 'error'].includes(mode));
 
     if (mode === 'available') {
+      const laterBtn = forced ? '' : `<button class="btn btn-ghost" id="later">Später</button>`;
       content.innerHTML = `
         <div class="emoji">🚀</div>
-        <h1>Update verfügbar</h1>
-        <div class="sub">Verti ${esc(s.version)} ist bereit für dich.</div>
+        <h1>${forced ? 'Update erforderlich' : 'Update verfügbar'}</h1>
+        <div class="sub">${forced
+          ? `Bitte aktualisiere auf Verti ${esc(s.version)}, um weiterzuarbeiten.`
+          : `Verti ${esc(s.version)} ist bereit für dich.`}</div>
         ${notesHtml(s.notes)}
         <div class="buttons">
           <button class="btn btn-primary" id="go">Jetzt aktualisieren</button>
-          <button class="btn btn-ghost" id="later">Später</button>
+          ${laterBtn}
         </div>
         <div class="footnote">Alle Logins und Apps bleiben erhalten.</div>`;
       document.getElementById('go').onclick = () => window.vertiUpdate.action('update');
-      document.getElementById('later').onclick = () => window.vertiUpdate.action('close');
+      const later = document.getElementById('later');
+      if (later) later.onclick = () => window.vertiUpdate.action('close');
     }
 
     if (mode === 'downloading') {
@@ -176,14 +182,23 @@
     }
 
     if (mode === 'error') {
+      const btns = forced
+        ? `<button class="btn btn-primary" id="retry">Erneut versuchen</button>
+           <button class="btn btn-ghost" id="defer">Später weiterarbeiten</button>`
+        : `<button class="btn btn-ghost" id="ok">Schließen</button>`;
       content.innerHTML = `
         <div class="emoji">😕</div>
         <h1>Das hat nicht geklappt</h1>
-        <div class="sub">Der Download ist fehlgeschlagen.<br>Versuch es später einfach noch einmal.</div>
-        <div class="buttons">
-          <button class="btn btn-ghost" id="ok">Schließen</button>
-        </div>`;
-      document.getElementById('ok').onclick = () => window.vertiUpdate.action('close');
+        <div class="sub">Der Download ist fehlgeschlagen.<br>${forced
+          ? 'Versuch es erneut – oder arbeite vorerst weiter, beim nächsten Start fragt Verti wieder.'
+          : 'Versuch es später einfach noch einmal.'}</div>
+        <div class="buttons">${btns}</div>`;
+      if (forced) {
+        document.getElementById('retry').onclick = () => window.vertiUpdate.action('update');
+        document.getElementById('defer').onclick = () => window.vertiUpdate.action('defer');
+      } else {
+        document.getElementById('ok').onclick = () => window.vertiUpdate.action('close');
+      }
     }
   }
 

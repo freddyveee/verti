@@ -1504,6 +1504,14 @@ let updateNotifiedFor = null;
 let pendingUpdate = null;
 let updateDialogOpen = false;
 let updateWin = null;
+let updateForced = false;      // erzwungenes Update: Hauptfenster gesperrt, kein "Später"
+let allowForcedClose = false;  // Notausgang bei Fehler erlaubt das Schließen
+let downloadWatchdog = null;   // fängt einen hängenden Download ab (kein Aussperren)
+function armDownloadWatchdog() {
+  clearDownloadWatchdog();
+  downloadWatchdog = setTimeout(() => { sendUpdateState({ mode: 'error' }); }, 3 * 60 * 1000);
+}
+function clearDownloadWatchdog() { if (downloadWatchdog) { clearTimeout(downloadWatchdog); downloadWatchdog = null; } }
 
 // Lila Update-Popup (update.html). Ein Fenster für alle Zustände:
 // Update-Hinweis mit Release-Notes, Download-Fortschritt, Konfetti nach dem Update.
@@ -1513,6 +1521,8 @@ function openUpdatePopup(payload) {
     return;
   }
   updateDialogOpen = true;
+  updateForced = !!(payload && payload.forced);
+  allowForcedClose = false;
   // Das Popup ist ein Kindfenster des Hauptfensters: ist das nur versteckt
   // (Mac, Schließen = Verstecken), erst wieder zeigen, sonst bleibt es unsichtbar
   if (win && !win.isDestroyed() && !win.isVisible()) win.show();
@@ -1534,8 +1544,17 @@ function openUpdatePopup(payload) {
     fullscreenable: false,
     skipTaskbar: true,
     show: false,
+    alwaysOnTop: updateForced,
     parent: win && !win.isDestroyed() ? win : undefined,
     webPreferences: { preload: path.join(__dirname, 'update-preload.js') },
+  });
+  // Erzwungenes Update: Hauptfenster (und damit alle App-Views) sperren, bis
+  // aktualisiert wurde. Das Popup selbst bleibt bedienbar.
+  if (updateForced && win && !win.isDestroyed()) { try { win.setEnabled(false); } catch (e) {} }
+  updateWin.on('close', (e) => {
+    // Nicht schließbar, solange erzwungen – außer der Nutzer hat den Notausgang
+    // bei einem Fehler bestätigt oder die App wird gerade beendet (Update-Neustart)
+    if (updateForced && !allowForcedClose && !quitting) e.preventDefault();
   });
   updateWin.loadFile('update.html');
   updateWin.webContents.once('did-finish-load', () => {
@@ -1546,6 +1565,10 @@ function openUpdatePopup(payload) {
   updateWin.on('closed', () => {
     updateWin = null;
     updateDialogOpen = false;
+    updateForced = false;
+    allowForcedClose = false;
+    clearDownloadWatchdog();
+    if (win && !win.isDestroyed()) { try { win.setEnabled(true); } catch (e) {} }
   });
 }
 
@@ -1556,11 +1579,20 @@ function sendUpdateState(payload) {
 ipcMain.on('verti-update:action', (_e, action) => {
   if (action === 'update') {
     sendUpdateState({ mode: 'downloading', percent: 0 });
+    if (updateForced) armDownloadWatchdog();
     getAutoUpdater().downloadUpdate().catch(() => {
-      // Beim nächsten 4-Stunden-Check wieder anbieten
+      // Beim nächsten Check wieder anbieten
       updateNotifiedFor = null;
+      clearDownloadWatchdog();
       sendUpdateState({ mode: 'error' });
     });
+    return;
+  }
+  if (action === 'defer') {
+    // Notausgang bei erzwungenem Update, wenn es (z. B. offline) nicht klappt:
+    // Sperre lösen, Popup schließen; beim nächsten Start greift die Sperre erneut
+    allowForcedClose = true;
+    if (updateWin) updateWin.close();
     return;
   }
   if (updateWin) updateWin.close();
@@ -1639,14 +1671,16 @@ function setupAutoUpdate() {
     updateNotifiedFor = info.version;
     // Popup nur kurz nach dem App-Start von selbst öffnen; findet der
     // 4-Stunden-Check mitten in der Arbeit etwas, bleibt nur der Knopf oben
-    if (Date.now() - appStartedAt < 90 * 1000) openUpdatePopup(pendingUpdate);
+    if (Date.now() - appStartedAt < 90 * 1000) openUpdatePopup({ ...pendingUpdate, forced: true });
   });
   autoUpdater.on('download-progress', (p) => {
+    if (updateForced) armDownloadWatchdog();
     sendUpdateState({ mode: 'downloading', percent: p.percent });
   });
   autoUpdater.on('update-downloaded', () => {
     // Download passiert nur nach Klick auf 'Jetzt aktualisieren',
     // der Neustart ist also schon abgesegnet
+    clearDownloadWatchdog();
     sendUpdateState({ mode: 'installing' });
     setTimeout(() => { quitting = true; autoUpdater.quitAndInstall(); }, 1500);
   });
