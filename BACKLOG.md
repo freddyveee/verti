@@ -10,7 +10,7 @@ Nächstes Release: 1.1.7
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (nichts – wandert beim Release hierher)
+- Verti-Browser: die dunkle Leiste (Werkzeugleiste, Tabs, Adressfeld) ist einen Tick heller, damit sich der Browser klarer von dunklen Apps abhebt. (25.08.2026)
 
 ## Blockiert
 
