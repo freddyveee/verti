@@ -10,7 +10,7 @@ Nächstes Release: 1.1.8
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- Autodesk Fusion wieder aus dem Katalog entfernt: Fusion ist im Kern eine Desktop-App und lief nicht als Web-App in Verti. (25.08.2026)
+- Autodesk Fusion und Bambu Lab wieder aus dem Katalog entfernt: Fusion ist im Kern eine Desktop-App, und Bambu Lab war nur die Firmen-Webseite – beides bringt in Verti keinen Mehrwert. (25.08.2026)
 
 ## Blockiert
 

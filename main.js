@@ -105,7 +105,6 @@ const CATALOG = [
   // Weitere Business-Apps (Freddy 24.08.)
   { id: 'getresponse', name: 'GetResponse', url: 'https://app.getresponse.com/' },
   { id: 'weclapp', name: 'weclapp', url: 'https://www.weclapp.com/' },
-  { id: 'bambulab', name: 'Bambu Lab', url: 'https://bambulab.com/' },
 ];
 
 const stateFile = () => path.join(app.getPath('userData'), 'window-state.json');
