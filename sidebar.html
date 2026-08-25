@@ -310,6 +310,7 @@
   .setrow { display: flex; align-items: center; justify-content: space-between; gap: 24px; max-width: 640px; padding: 18px 2px; border-top: 1px solid var(--divider); }
   .setlabel b { color: var(--text); font-size: 15px; font-weight: 600; display: block; }
   .setlabel span { color: var(--text-2); font-size: 12.5px; }
+  .setver { color: var(--text); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
   .seg { display: inline-flex; background: var(--hover); border-radius: 10px; padding: 3px; gap: 2px; flex: 0 0 auto; }
   .seg button { border: none; background: transparent; color: var(--text-2); font-family: inherit; font-size: 13px; padding: 7px 13px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
   .seg button.on { background: var(--accent); color: #fff; }
@@ -436,6 +437,10 @@
       <div class="setlabel"><b>Externe Links</b><span>Wo Links aus Apps geöffnet werden</span></div>
       <div class="seg" id="segLinks"><button data-v="verti">Verti-Browser</button><button data-v="system">System-Browser</button></div>
     </div>
+    <div class="setrow">
+      <div class="setlabel"><b>Version</b><span>Installierte Version von Verti</span></div>
+      <div class="setver" id="settingsVersion"></div>
+    </div>
   </div>
   <script>
     (async () => {
@@ -446,6 +451,8 @@
       const appInfo = await window.verti.getAppInfo();
       const initSettings = await window.verti.getSettings();
       if (initSettings.theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      const sv = document.getElementById('settingsVersion');
+      if (sv) sv.textContent = appInfo.version + (appInfo.packaged ? '' : ' (Dev)');
       if (!appInfo.packaged) {
         const devTag = document.getElementById('devTag');
         devTag.title = `Dev-Version ${appInfo.version} aus ~/Projekte/verti`;
