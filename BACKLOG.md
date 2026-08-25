@@ -10,7 +10,7 @@ Nächstes Release: 1.1.8
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (nichts – wandert beim Release hierher)
+- Autodesk Fusion wieder aus dem Katalog entfernt: Fusion ist im Kern eine Desktop-App und lief nicht als Web-App in Verti. (25.08.2026)
 
 ## Blockiert
 
