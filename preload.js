@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld('verti', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   setTheme: (t) => ipcRenderer.send('set-theme', t),
   setExternalLinks: (m) => ipcRenderer.send('set-external-links', m),
+  setAppMuted: (id, muted) => ipcRenderer.send('set-app-muted', id, muted),
   onTheme: (cb) => ipcRenderer.on('theme', (e, t) => cb(t)),
   onAppsChanged: (cb) => ipcRenderer.on('apps-changed', (e, apps) => cb(apps)),
 });

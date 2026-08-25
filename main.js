@@ -149,6 +149,7 @@ function loadState() {
     history: Array.isArray(s.history) ? s.history : [], // Browser-Verlauf
     externalLinks: s.externalLinks === 'system' ? 'system' : 'verti', // externe Links: im Verti-Browser (Standard) oder System-Browser
     theme: s.theme === 'light' ? 'light' : 'dark', // Darstellung: dunkel (Standard) oder hell
+    mutedApps: Array.isArray(s.mutedApps) ? s.mutedApps.filter((x) => typeof x === 'string') : [], // pro App stummgeschaltet (kein Badge, keine Meldung)
   };
 }
 
@@ -454,12 +455,14 @@ const GOOGLE_AUTH_HOSTS = new Set(['accounts.google.com', 'accounts.youtube.com'
 // webPreferences aller App-Views und der von uns erlaubten Login-Popups.
 // Die Firefox-Kennung reist als Argument mit, damit view-preload.js exakt
 // dieselbe Zeichenkette wie die Header-Tarnung setzt (eine Quelle).
-function viewWebPreferences() {
+function viewWebPreferences(muted) {
+  const args = [`--verti-firefox-ua=${FIREFOX_UA}`];
+  if (muted) args.push('--verti-muted=1');
   return {
     partition: 'persist:apps',
     spellcheck: true,
     preload: path.join(__dirname, 'view-preload.js'),
-    additionalArguments: [`--verti-firefox-ua=${FIREFOX_UA}`],
+    additionalArguments: args,
   };
 }
 
@@ -572,7 +575,9 @@ function parseUnread(id, title) {
   return m ? Math.min(999, parseInt(m[1], 10)) : 0;
 }
 
+function isMuted(id) { return !!(state && Array.isArray(state.mutedApps) && state.mutedApps.includes(id)); }
 function effectiveBadge(id) {
+  if (isMuted(id)) return 0; // stumm: kein Badge
   // Titel-fähige Apps zählen NUR über den Titel (sonst Doppelzählung), alle
   // anderen über die von der Seite gemeldete Zahl, ersatzweise über
   // eingegangene Benachrichtigungen
@@ -1064,9 +1069,10 @@ function attachContextMenu(wc) {
 
 function createView(appDef) {
   if (appDef.id === BROWSER_ID) return createBrowserShell(appDef);
-  const view = new WebContentsView({ webPreferences: viewWebPreferences() });
+  const view = new WebContentsView({ webPreferences: viewWebPreferences(isMuted(appDef.id)) });
   view.webContents.setUserAgent(chromeUserAgent());
   view.webContents.loadURL(startUrlFor(appDef));
+  view.webContents.on('dom-ready', () => pushMuted(appDef.id));
   view.webContents.setWindowOpenHandler(windowOpenPolicy(view.webContents));
   view.webContents.on('did-create-window', (child) => adoptChildWindow(child));
   attachMouseNav(view.webContents);
@@ -1324,9 +1330,23 @@ function broadcastTheme() {
   if (win && !win.isDestroyed()) { try { win.setBackgroundColor(themeBg()); } catch {} win.webContents.send('theme', state.theme); }
   if (views[BROWSER_ID] && !views[BROWSER_ID].webContents.isDestroyed()) views[BROWSER_ID].webContents.send('theme', state.theme);
 }
-ipcMain.handle('get-settings', () => ({ theme: (state && state.theme) || 'dark', externalLinks: (state && state.externalLinks) || 'verti' }));
+ipcMain.handle('get-settings', () => ({ theme: (state && state.theme) || 'dark', externalLinks: (state && state.externalLinks) || 'verti', mutedApps: (state && state.mutedApps) || [] }));
 ipcMain.on('set-theme', (e, t) => { if (!state) return; state.theme = t === 'light' ? 'light' : 'dark'; saveState(); broadcastTheme(); });
 ipcMain.on('set-external-links', (e, m) => { if (!state) return; state.externalLinks = m === 'system' ? 'system' : 'verti'; saveState(); });
+// Stumm-Status an die betroffene View schicken (view-preload unterdrückt dann Meldungen)
+function pushMuted(id) {
+  const v = views[id];
+  if (v && v.webContents && !v.webContents.isDestroyed()) v.webContents.send('verti-muted', isMuted(id));
+}
+ipcMain.on('set-app-muted', (e, id, muted) => {
+  if (!state || !id) return;
+  const set = new Set(Array.isArray(state.mutedApps) ? state.mutedApps : []);
+  if (muted) set.add(id); else set.delete(id);
+  state.mutedApps = [...set];
+  saveState();
+  recomputeBadge(id); // Badge sofort ein-/ausblenden
+  pushMuted(id);
+});
 // Einstellungen: manuell nach Updates suchen (Ergebnis inline in der Seite)
 ipcMain.handle('settings:check-updates', async () => {
   if (!app.isPackaged) return { status: 'dev' };

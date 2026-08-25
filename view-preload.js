@@ -18,6 +18,12 @@ const UA_ARG = '--verti-firefox-ua=';
 const FIREFOX_UA = (process.argv.find((a) => a.startsWith(UA_ARG)) || '').slice(UA_ARG.length)
   || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:154.0) Gecko/20100101 Firefox/154.0';
 
+// Stumm-Status (pro App in den Einstellungen): main.js reicht ihn als Argument
+// herein und aktualisiert ihn live per IPC. Der Wert steht als data-Attribut am
+// <html>, die Notification-Hülle unten liest es bei jeder Meldung.
+const VERTI_MUTED = process.argv.includes('--verti-muted=1');
+const mutedInit = `window.__vertiMutedInit = ${VERTI_MUTED}; try { if (document.documentElement) document.documentElement.setAttribute('data-verti-muted', ${VERTI_MUTED} ? '1' : '0'); } catch (e) {}`;
+
 const uaDisguise = GOOGLE_AUTH_HOSTS.includes(location.host) ? `(() => {
   const def = (prop, value) => {
     try { Object.defineProperty(Navigator.prototype, prop, { get: () => value, configurable: true }); } catch (e) {}
@@ -61,10 +67,19 @@ const bridge = `(() => {
       document.dispatchEvent(new Event('verti-' + name));
     } catch (e) {}
   };
+  // Stumm? Erst das (per IPC live gesetzte) data-Attribut, sonst der Startwert
+  const isMuted = () => {
+    const el = document.documentElement;
+    if (el && el.hasAttribute('data-verti-muted')) return el.getAttribute('data-verti-muted') === '1';
+    return !!window.__vertiMutedInit;
+  };
   // 1. window.Notification
   const O = window.Notification;
   if (O && !O.__vertiPatched) {
     function V(title, opts) {
+      if (isMuted()) {
+        return { close() {}, addEventListener() {}, removeEventListener() {}, onclick: null }; // stumm
+      }
       signal('notify');
       const n = new O(title, opts);
       try { n.addEventListener('click', () => signal('notify-click')); } catch (e) {}
@@ -82,6 +97,7 @@ const bridge = `(() => {
   if (O && SWR && SWR.prototype && !SWR.prototype.__vertiPatched) {
     SWR.prototype.__vertiPatched = true;
     SWR.prototype.showNotification = function (title, opts) {
+      if (isMuted()) return Promise.resolve();
       try {
         const o = Object.assign({}, opts);
         delete o.actions;
@@ -158,14 +174,14 @@ function injectViaDom() {
   process.once('document-start', () => {
     try {
       const s = document.createElement('script');
-      s.textContent = uaDisguise + autoplayGuard + bridge;
+      s.textContent = uaDisguise + mutedInit + autoplayGuard + bridge;
       document.documentElement.appendChild(s);
       s.remove();
     } catch (e) {}
   });
 }
 try {
-  webFrame.executeJavaScript(uaDisguise + autoplayGuard + bridge).catch(() => {});
+  webFrame.executeJavaScript(uaDisguise + mutedInit + autoplayGuard + bridge).catch(() => {});
 } catch (e) {
   injectViaDom();
 }
@@ -179,3 +195,7 @@ const readValue = (name) => {
 document.addEventListener('verti-notify', () => ipcRenderer.send('verti-app-notify'));
 document.addEventListener('verti-notify-click', () => ipcRenderer.send('verti-app-notify-click'));
 document.addEventListener('verti-badge', () => ipcRenderer.send('verti-app-badge', readValue('badge')));
+// Stumm-Status live aus main.js (Einstellungen umgeschaltet)
+ipcRenderer.on('verti-muted', (e, on) => {
+  try { document.documentElement.setAttribute('data-verti-muted', on ? '1' : '0'); } catch (e) {}
+});

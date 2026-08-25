@@ -315,6 +315,15 @@
   .setbtn { border: none; background: var(--hover); color: var(--text); font-family: inherit; font-size: 12.5px; padding: 7px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
   .setbtn:hover { background: var(--active); }
   .setbtn:disabled { opacity: 0.5; cursor: default; }
+  .setsection-title { color: var(--text-2); font-size: 11.5px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; margin: 34px 0 2px; }
+  .notifrow { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 640px; padding: 11px 2px; border-top: 1px solid var(--divider); }
+  .notifrow .nm { color: var(--text); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .switch { position: relative; width: 40px; height: 23px; flex: 0 0 auto; cursor: pointer; }
+  .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .switch .track { position: absolute; inset: 0; background: var(--active); border-radius: 999px; transition: background .15s; }
+  .switch .knob { position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 3px rgba(0,0,0,0.35); }
+  .switch input:checked ~ .track { background: var(--accent); }
+  .switch input:checked ~ .knob { transform: translateX(17px); }
   .seg { display: inline-flex; background: var(--hover); border-radius: 10px; padding: 3px; gap: 2px; flex: 0 0 auto; }
   .seg button { border: none; background: transparent; color: var(--text-2); font-family: inherit; font-size: 13px; padding: 7px 13px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
   .seg button.on { background: var(--accent); color: #fff; }
@@ -445,6 +454,8 @@
       <div class="setlabel"><b>Version</b><span id="updStatus">Installierte Version von Verti</span></div>
       <div class="verwrap"><span class="setver" id="settingsVersion"></span><button class="setbtn" id="checkUpd">Nach Updates suchen</button></div>
     </div>
+    <div class="setsection-title">Benachrichtigungen pro App</div>
+    <div id="notifList"></div>
   </div>
   <script>
     (async () => {
@@ -748,10 +759,27 @@
       function markSeg(segId, val) {
         document.querySelectorAll('#' + segId + ' button').forEach((b) => b.classList.toggle('on', b.dataset.v === val));
       }
+      function renderNotifList(muted) {
+        const list = document.getElementById('notifList');
+        list.innerHTML = '';
+        const mutedSet = new Set(muted || []);
+        for (const app of apps.filter((a) => a.id !== 'browser')) {
+          const row = document.createElement('div'); row.className = 'notifrow';
+          const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = app.name;
+          const sw = document.createElement('label'); sw.className = 'switch';
+          const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !mutedSet.has(app.id);
+          const track = document.createElement('span'); track.className = 'track';
+          const knob = document.createElement('span'); knob.className = 'knob';
+          cb.addEventListener('change', () => window.verti.setAppMuted(app.id, !cb.checked));
+          sw.append(cb, track, knob);
+          row.append(nm, sw); list.appendChild(row);
+        }
+      }
       async function openSettings() {
         const cur = await window.verti.getSettings();
         markSeg('segTheme', cur.theme);
         markSeg('segLinks', cur.externalLinks);
+        renderNotifList(cur.mutedApps);
         library.classList.remove('open');
         settingsEl.classList.add('open');
         resetUpd();
