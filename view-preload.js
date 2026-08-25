@@ -51,7 +51,10 @@ const uaDisguise = GOOGLE_AUTH_HOSTS.includes(location.host) ? `(() => {
 //     ohnehin nicht, der Weg greift also nur für Aufrufe aus der Seite.
 //  3. Favico.js – Zähler im Favicon. Stackfield rechnet in ShowPageTitle()
 //     (sf.utils.js, gelesen 22.08.2026) die echte Ungelesen-Zahl aus und ruft
-//     favicon.badge(n) bzw. favicon.reset(); " " heißt „Punkt ohne Zahl" → 1.
+//     favicon.badge(n) bzw. favicon.reset(). NUR echte Zahlen ergeben ein
+//     Badge; ein nicht-numerischer Wert ist ein reiner Punkt-Indikator (den
+//     Stackfield auch ohne echtes Ungelesenes setzt) → 0, sonst Phantom-1
+//     (25.08.2026 bei Cindy beobachtet: Verti zeigte 1, Chrome-Favicon nichts).
 //     Damit stimmt das Badge exakt und sinkt beim Lesen wieder – unabhängig
 //     von Desktop-Benachrichtigungen. Der Hook ist generisch: jede App, die
 //     Favico.js global lädt (this.Favico = …), bekommt so ein Badge.
@@ -115,7 +118,10 @@ const bridge = `(() => {
     const badge = inst.badge, reset = inst.reset;
     inst.badge = function (n) {
       const c = typeof n === 'number' ? n : parseInt(n, 10);
-      signal('badge', Number.isFinite(c) ? Math.max(0, Math.round(c)) : 1);
+      // Nur echte Zahlen ergeben ein Badge. Ein nicht-numerischer Wert ist ein
+      // reiner Favicon-PUNKT ohne Zähler (Stackfield setzt so einen Punkt auch
+      // ohne echtes Ungelesenes) → 0, sonst erscheint eine Phantom-1.
+      signal('badge', Number.isFinite(c) ? Math.max(0, Math.round(c)) : 0);
       return badge.apply(this, arguments);
     };
     if (typeof reset === 'function') {
