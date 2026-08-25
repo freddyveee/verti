@@ -2,7 +2,7 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.8
+Nächstes Release: 1.1.9
 
 ## Offen
 
@@ -10,7 +10,7 @@ Nächstes Release: 1.1.8
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- Autodesk Fusion und Bambu Lab wieder aus dem Katalog entfernt: Fusion ist im Kern eine Desktop-App, und Bambu Lab war nur die Firmen-Webseite – beides bringt in Verti keinen Mehrwert. (25.08.2026)
+- (nichts – wandert beim Release hierher)
 
 ## Blockiert
 
@@ -30,6 +30,11 @@ Nächstes Release: 1.1.8
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.8 (25.08.2026)
+
+- IMPERIO Tools hat ein neues App-Logo (oranges I-Icon) – in der Sidebar und in der App-Bibliothek. (25.08.2026)
+- Autodesk Fusion und Bambu Lab wieder aus dem Katalog entfernt: Fusion ist im Kern eine Desktop-App, und Bambu Lab war nur die Firmen-Webseite – beides bringt in Verti keinen Mehrwert. (25.08.2026)
 
 ### 1.1.7 (25.08.2026)
 
