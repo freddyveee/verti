@@ -310,7 +310,11 @@
   .setrow { display: flex; align-items: center; justify-content: space-between; gap: 24px; max-width: 640px; padding: 18px 2px; border-top: 1px solid var(--divider); }
   .setlabel b { color: var(--text); font-size: 15px; font-weight: 600; display: block; }
   .setlabel span { color: var(--text-2); font-size: 12.5px; }
-  .setver { color: var(--text); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+  .setver { color: var(--text); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .verwrap { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+  .setbtn { border: none; background: var(--hover); color: var(--text); font-family: inherit; font-size: 12.5px; padding: 7px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+  .setbtn:hover { background: var(--active); }
+  .setbtn:disabled { opacity: 0.5; cursor: default; }
   .seg { display: inline-flex; background: var(--hover); border-radius: 10px; padding: 3px; gap: 2px; flex: 0 0 auto; }
   .seg button { border: none; background: transparent; color: var(--text-2); font-family: inherit; font-size: 13px; padding: 7px 13px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
   .seg button.on { background: var(--accent); color: #fff; }
@@ -438,8 +442,8 @@
       <div class="seg" id="segLinks"><button data-v="verti">Verti-Browser</button><button data-v="system">System-Browser</button></div>
     </div>
     <div class="setrow">
-      <div class="setlabel"><b>Version</b><span>Installierte Version von Verti</span></div>
-      <div class="setver" id="settingsVersion"></div>
+      <div class="setlabel"><b>Version</b><span id="updStatus">Installierte Version von Verti</span></div>
+      <div class="verwrap"><span class="setver" id="settingsVersion"></span><button class="setbtn" id="checkUpd">Nach Updates suchen</button></div>
     </div>
   </div>
   <script>
@@ -750,6 +754,7 @@
         markSeg('segLinks', cur.externalLinks);
         library.classList.remove('open');
         settingsEl.classList.add('open');
+        resetUpd();
         applyNavState();
         window.verti.openLibrary(); // App-Views ausblenden, damit das Overlay sichtbar ist
       }
@@ -767,6 +772,20 @@
         markSeg('segLinks', b.dataset.v); window.verti.setExternalLinks(b.dataset.v);
       }));
       window.verti.onTheme(applyTheme);
+      const checkBtn = document.getElementById('checkUpd');
+      const updStatus = document.getElementById('updStatus');
+      let updMode = 'check';
+      function resetUpd() { updMode = 'check'; checkBtn.textContent = 'Nach Updates suchen'; checkBtn.disabled = false; updStatus.textContent = 'Installierte Version von Verti'; }
+      checkBtn.addEventListener('click', async () => {
+        if (updMode === 'update') { window.verti.openUpdatePopup(); return; }
+        checkBtn.disabled = true; updStatus.textContent = 'Suche nach Updates…';
+        const r = await window.verti.checkUpdates();
+        checkBtn.disabled = false;
+        if (r.status === 'available') { updStatus.textContent = 'Update ' + r.version + ' verfügbar'; checkBtn.textContent = 'Jetzt aktualisieren'; updMode = 'update'; }
+        else if (r.status === 'dev') updStatus.textContent = 'Update-Suche nur in der installierten App';
+        else if (r.status === 'current') updStatus.textContent = 'Du hast die neueste Version';
+        else updStatus.textContent = 'Suche fehlgeschlagen – später erneut versuchen';
+      });
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && settingsEl.classList.contains('open')) closeSettings(true);
       });

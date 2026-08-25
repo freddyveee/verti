@@ -1327,6 +1327,17 @@ function broadcastTheme() {
 ipcMain.handle('get-settings', () => ({ theme: (state && state.theme) || 'dark', externalLinks: (state && state.externalLinks) || 'verti' }));
 ipcMain.on('set-theme', (e, t) => { if (!state) return; state.theme = t === 'light' ? 'light' : 'dark'; saveState(); broadcastTheme(); });
 ipcMain.on('set-external-links', (e, m) => { if (!state) return; state.externalLinks = m === 'system' ? 'system' : 'verti'; saveState(); });
+// Einstellungen: manuell nach Updates suchen (Ergebnis inline in der Seite)
+ipcMain.handle('settings:check-updates', async () => {
+  if (!app.isPackaged) return { status: 'dev' };
+  try {
+    updateNotifiedFor = null; // Popup darf danach wieder erscheinen
+    const r = await getAutoUpdater().checkForUpdates();
+    const v = r && r.updateInfo && r.updateInfo.version;
+    if (v && isNewerVersion(v, app.getVersion())) return { status: 'available', version: v };
+    return { status: 'current', version: app.getVersion() };
+  } catch { return { status: 'error' }; }
+});
 ipcMain.handle('get-app-info', () => ({ version: app.getVersion(), packaged: app.isPackaged }));
 // Die Sidebar fragt nach dem Start einmal nach: Das erste 'active-app' aus
 // switchApp (did-finish-load) kommt, bevor sie ihre Empfänger registriert

@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('verti', {
   getPendingUpdate: () => ipcRenderer.invoke('get-pending-update'),
   onUpdatePill: (cb) => ipcRenderer.on('update-pill', (e, v) => cb(v)),
   openUpdatePopup: () => ipcRenderer.send('open-update-popup'),
+  checkUpdates: () => ipcRenderer.invoke('settings:check-updates'),
   onBadges: (cb) => ipcRenderer.on('badges', (e, b) => cb(b)),
   onAudio: (cb) => ipcRenderer.on('audio', (e, a) => cb(a)),
   setOverlay: (dataUrl, total) => ipcRenderer.send('set-overlay', dataUrl, total),
