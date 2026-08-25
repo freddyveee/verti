@@ -2,13 +2,11 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.6
+Nächstes Release: 1.1.7
 
 ## Offen
 
-- Updates erzwingen: Wenn ein Update bereitsteht, zusätzlich zum Button oben rechts ein BLOCKIERENDES Popup, das die Arbeit sperrt, bis aktualisiert wurde („Update erforderlich", einzige Aktion: Jetzt aktualisieren). Grund: Mitarbeiter schieben Updates tagelang auf. Wichtig: Fallback, falls ein Update mal fehlschlägt oder hängt – nicht dauerhaft aussperren (z. B. Blockade greift erst beim nächsten Start, plus „Erneut versuchen"). (24.08.2026)
 - Verti Browser – Stufe 3 (Stufen 1 und 2 sind fertig, s. unten): Chrome-Extensions – eigene „Erweiterungen"-Seite + Installieren/Aktualisieren aus dem Web Store (`session.loadExtension`); machbar (Shift macht es vor), Grenze ist nur die Kompatibilität einzelner Erweiterungen. (24.08.2026)
-- Einstellungsseite ausbauen: Zahnrad + Grundgerüst stehen (Darstellung + externe Links, s. unten). Noch offen: (b) Anzeige der aktuellen Versionsnummer, (c) Update-Bereich wie aus Software gewohnt (nach Updates suchen, sehen ob man aktuell ist, aktualisieren), (d) Benachrichtigungen einstellen: global und pro App an/aus (dort landet dann auch das Stummschalten pro App aus den Ideen). (24.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
@@ -22,7 +20,6 @@ Nächstes Release: 1.1.6
 
 - Symbol in der Mac-Menüleiste mit Ungelesen-Zahl und Schnellzugriff auf die Apps.
 - Globales Tastenkürzel (z. B. Ctrl+Leertaste), das Verti aus jeder App heraus nach vorn holt und wieder wegschaltet.
-- Pro App stumm schalten (keine Badges, keine Benachrichtigungen), per Rechtsklick aufs Icon.
 - Windows: Schließen minimiert in die Taskleiste statt zu beenden.
 - Mehrere Konten derselben App (zwei WhatsApp, zwei Google-Konten).
 
@@ -33,6 +30,12 @@ Nächstes Release: 1.1.6
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.6 (25.08.2026)
+
+- Einstellungen zeigen jetzt die installierte Versionsnummer und haben einen Knopf „Nach Updates suchen" (meldet: neueste Version, Update verfügbar oder Suche fehlgeschlagen; bei verfügbarem Update direkt „Jetzt aktualisieren"). (25.08.2026)
+- Updates werden erzwungen: Steht beim Start ein Update bereit, blockiert ein Pflicht-Popup die Arbeit, bis aktualisiert wurde – kein „Später". Sicherer Notausgang: klappt das Update mal nicht (z. B. offline), gibt es „Erneut versuchen" und „Später weiterarbeiten" (beim nächsten Start fragt Verti wieder), niemand wird dauerhaft ausgesperrt. (25.08.2026)
+- Benachrichtigungen pro App: In den Einstellungen lässt sich jede App einzeln stummschalten – dann kommen von ihr weder ein Badge noch Meldungen. (25.08.2026)
 
 ### 1.1.5 (24.08.2026)
 
