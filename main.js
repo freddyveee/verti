@@ -531,8 +531,10 @@ function layoutViews() {
 function switchApp(id) {
   if (!views[id]) return;
   libraryOpen = false;
+  const prevActive = activeId;
   activeId = id;
-  clearBadge(id); // Öffnen = gelesen; Titel-Apps setzen sich per Titel gleich neu
+  clearBadge(id); // Öffnen = gelesen (das Ausblenden regelt effectiveBadge)
+  if (prevActive && prevActive !== id) recomputeBadge(prevActive); // verlassene App → Titel-Badge ggf. wieder zeigen
   for (const [vid, view] of Object.entries(views)) {
     view.setVisible(vid === id);
   }
@@ -581,7 +583,13 @@ function effectiveBadge(id) {
   // Titel-fähige Apps zählen NUR über den Titel (sonst Doppelzählung), alle
   // anderen über die von der Seite gemeldete Zahl, ersatzweise über
   // eingegangene Benachrichtigungen
-  if (TITLE_BADGE_APPS.has(id)) return titleCounts[id] || 0;
+  if (TITLE_BADGE_APPS.has(id)) {
+    // Offen UND sichtbar = gesehen → am aktiven App-Icon kein Badge. Im
+    // Hintergrund (oder wenn das Fenster versteckt ist) zeigt der Titel-Zähler
+    // das Badge – so verschwindet es nicht dauerhaft beim Öffnen.
+    if (id === activeId && win && !win.isDestroyed() && win.isVisible() && !win.isMinimized()) return 0;
+    return titleCounts[id] || 0;
+  }
   if (pageCounts[id] !== undefined) return pageCounts[id];
   return notifCounts[id] || 0;
 }
@@ -614,7 +622,11 @@ function setPageBadge(id, count) {
 }
 
 function clearBadge(id) {
-  titleCounts[id] = 0;
+  // Titel-Apps: der Seitentitel ist maßgeblich, nicht „geöffnet = gelesen".
+  // Sonst verschwindet das Badge beim Öffnen und kommt nicht zurück, wenn die
+  // App ihren Titel nicht erneut meldet (WhatsApp-Bug bei Cindy). Das
+  // Ausblenden am offenen Icon regelt effectiveBadge über activeId/Sichtbarkeit.
+  if (!TITLE_BADGE_APPS.has(id)) titleCounts[id] = 0;
   notifCounts[id] = 0;
   recomputeBadge(id);
 }
@@ -1290,7 +1302,7 @@ function createWindow() {
   // Fenster kommt zurück → die aktive App gilt als geöffnet (wie beim
   // App-Wechsel: Öffnen = gelesen)
   win.on('show', () => { if (activeId) clearBadge(activeId); });
-  win.on('hide', () => { if (zoomHud && !zoomHud.isDestroyed()) zoomHud.hide(); });
+  win.on('hide', () => { if (zoomHud && !zoomHud.isDestroyed()) zoomHud.hide(); if (activeId) recomputeBadge(activeId); });
 
   win.webContents.once('did-finish-load', () => {
     win.webContents.send('theme', state.theme);

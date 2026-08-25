@@ -10,6 +10,7 @@ Nächstes Release: 1.1.7
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- Fehler behoben: Das Badge einer Titel-App (z. B. WhatsApp) konnte nach dem Öffnen verschwinden und kam nicht zurück. Jetzt zeigt Verti zuverlässig die echte Ungelesen-Zahl: am gerade offenen Icon ausgeblendet, im Hintergrund wieder sichtbar. (25.08.2026)
 - Fehler behoben: Beim Installieren eines Updates konnte sich Verti aufhängen (eine Web-App blockierte mit einem Seite-verlassen-Dialog das Beenden). Verti ignoriert solche Blockaden jetzt, plus ein Sicherheitsnetz. (25.08.2026)
 - Fehler behoben: Stackfield zeigte manchmal eine Phantom-1, obwohl nichts ungelesen war (ein reiner Favicon-Punkt wurde als 1 gezählt). Jetzt ergeben nur echte Zahlen ein Badge. (25.08.2026)
 - Verti-Browser: die dunkle Leiste (Werkzeugleiste, Tabs, Adressfeld) ist einen Tick heller, damit sich der Browser klarer von dunklen Apps abhebt. (25.08.2026)
