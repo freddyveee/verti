@@ -461,6 +461,7 @@
     (async () => {
       let apps = await window.verti.getApps();
       const catalog = await window.verti.getCatalog();
+      const catOrder = await window.verti.getCategoryOrder();
       let badgeCounts = await window.verti.getBadges();
       let audioStates = await window.verti.getAudio();
       const appInfo = await window.verti.getAppInfo();
@@ -682,14 +683,16 @@
         catalogEl.innerHTML = '';
         const installedIds = new Set(apps.map((a) => a.id));
         const extras = apps.filter((a) => !catalog.some((c) => c.id === a.id));
-        const sections = [
-          ['IMPERIO Apps', catalog.filter((c) => c.imperio)],
-          ['Weitere Apps', [...catalog.filter((c) => !c.imperio), ...extras]],
-        ];
-        for (const [title, items] of sections) {
-          if (!items.length) continue;
+        // nach Kategorie gruppieren; selbst hinzugefügte Apps unter „Weitere"
+        const byCat = {};
+        for (const c of catalog) { const k = c.category || 'Weitere'; (byCat[k] = byCat[k] || []).push(c); }
+        for (const e of extras) (byCat['Weitere'] = byCat['Weitere'] || []).push(e);
+        const order = [...catOrder, ...Object.keys(byCat).filter((k) => !catOrder.includes(k)).sort()];
+        for (const cat of order) {
+          const items = byCat[cat];
+          if (!items || !items.length) continue;
           const h = document.createElement('h2');
-          h.textContent = title;
+          h.textContent = cat;
           catalogEl.appendChild(h);
           const grid = document.createElement('div');
           grid.className = 'grid';

@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('verti', {
   getActiveApp: () => ipcRenderer.invoke('get-active-app'),
   getAppInfo: () => ipcRenderer.invoke('get-app-info'),
   getCatalog: () => ipcRenderer.invoke('get-catalog'),
+  getCategoryOrder: () => ipcRenderer.invoke('get-category-order'),
   switchApp: (id) => ipcRenderer.send('switch-app', id),
   reloadApp: (id) => ipcRenderer.send('reload-app', id),
   addApp: (appDef) => ipcRenderer.send('add-app', appDef),

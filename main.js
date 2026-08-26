@@ -58,6 +58,22 @@ const DEFAULT_APPS = [
 // IMPERIO-Standard-Apps erscheinen in der Bibliothek in einem eigenen Bereich oben
 const IMPERIO_IDS = ['browser', 'calendar', 'stackfield', 'claude', 'chatgpt', 'imperio-tools', 'gdrive'];
 
+// App-Bibliothek nach Themen sortiert. Reihenfolge der Kategorien + Zuordnung
+// je App-id. Neue Kategorien (z. B. „Banking") erscheinen automatisch, sobald
+// eine App diese category bekommt. Nicht gelistete Apps landen unter „Weitere".
+const CATEGORY_ORDER = ['IMPERIO', 'KI', 'Kommunikation', 'Produktivität', 'Google', 'Design & Entwicklung', 'Business', 'Unterhaltung', 'Soziales'];
+const CATEGORIES = {
+  browser: 'IMPERIO', 'imperio-tools': 'IMPERIO',
+  chatgpt: 'KI', claude: 'KI', gemini: 'KI', perplexity: 'KI', deepl: 'KI',
+  whatsapp: 'Kommunikation', telegram: 'Kommunikation', slack: 'Kommunikation', teams: 'Kommunikation', discord: 'Kommunikation', messenger: 'Kommunikation', zoom: 'Kommunikation', meet: 'Kommunikation', gmail: 'Kommunikation',
+  calendar: 'Produktivität', todoist: 'Produktivität', stackfield: 'Produktivität', notion: 'Produktivität', trello: 'Produktivität', asana: 'Produktivität', airtable: 'Produktivität', miro: 'Produktivität', office: 'Produktivität', dropbox: 'Produktivität',
+  gdrive: 'Google', gdocs: 'Google', gsheets: 'Google', gmaps: 'Google', gphotos: 'Google',
+  figma: 'Design & Entwicklung', canva: 'Design & Entwicklung', github: 'Design & Entwicklung',
+  weclapp: 'Business', getresponse: 'Business',
+  youtube: 'Unterhaltung', spotify: 'Unterhaltung',
+  x: 'Soziales', linkedin: 'Soziales', instagram: 'Soziales', facebook: 'Soziales', reddit: 'Soziales', pinterest: 'Soziales',
+};
+
 const CATALOG = [
   ...DEFAULT_APPS,
   { id: 'imperio-tools', name: 'IMPERIO Tools', url: 'https://imperio-tools.netlify.app/', icon: 'icons/imperio-tools.png' },
@@ -1389,7 +1405,8 @@ ipcMain.handle('get-active-app', () => {
   if (activeId) sendNavStateFor(activeId);
   return activeId;
 });
-ipcMain.handle('get-catalog', () => CATALOG.map((c) => ({ ...c, imperio: IMPERIO_IDS.includes(c.id) })));
+ipcMain.handle('get-catalog', () => CATALOG.map((c) => ({ ...c, imperio: IMPERIO_IDS.includes(c.id), category: CATEGORIES[c.id] || 'Weitere' })));
+ipcMain.handle('get-category-order', () => CATEGORY_ORDER);
 ipcMain.on('open-library', () => setLibrary(true));
 ipcMain.on('close-library', closeLibrary);
 
