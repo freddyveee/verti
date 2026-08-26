@@ -10,7 +10,8 @@ Nächstes Release: 1.1.9
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (nichts – wandert beim Release hierher)
+- Fehler behoben: Öffnet eine App ein neues Fenster/Tab zur selben App (z. B. ChatGPT „neue Unterhaltung"), bleibt es jetzt in Verti, statt im externen Browser aufzugehen. Echte externe Links gehen weiter in den Browser. (25.08.2026)
+- Download-Ton: Bei fertigem Download spielt jetzt ein „Speicher"-Ton statt des Standard-Mitteilungstons (aktuell „Pop", leicht änderbar). (25.08.2026)
 
 ## Blockiert
 

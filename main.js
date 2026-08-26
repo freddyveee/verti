@@ -378,7 +378,13 @@ function windowOpenPolicy(openerContents) {
       openerContents.loadURL(url);
       return { action: 'deny' };
     }
-    if (disposition === 'new-window' && isInstalledAppUrl(url)) {
+    // Neue Fenster/Tabs zur SELBEN App (gleicher Ursprung wie der Opener) oder
+    // zu einer anderen installierten App bleiben IN Verti (eigenes Fenster),
+    // statt im externen Browser zu landen – z. B. ChatGPT „neue Unterhaltung",
+    // die als neues Fenster aufgeht.
+    let sameApp = false;
+    try { sameApp = !!url && new URL(url).origin === new URL(openerContents.getURL()).origin; } catch {}
+    if (sameApp || (disposition === 'new-window' && isInstalledAppUrl(url))) {
       return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(1100, 800) };
     }
     browserOpenExternal(url);
@@ -991,6 +997,7 @@ function browserRestoreOrNew() {
 }
 
 // ---------- Downloads ----------
+const DOWNLOAD_SOUND = 'Pop'; // Ton bei fertigem Download (macOS-Warnton-Name); leicht änderbar
 // Ohne Nachfrage in den Downloads-Ordner (Freddys Wunsch 22.08.2026), danach eine
 // Mitteilung; Klick darauf zeigt die Datei im Finder/Explorer. Gleichnamige
 // Dateien bekommen „(2)", „(3)" … Gilt für App-Views und Login-/App-Popups.
@@ -1001,9 +1008,11 @@ function uniqueFileName(dir, name) {
   for (let i = 2; fs.existsSync(path.join(dir, candidate)); i++) candidate = `${base} (${i})${ext}`;
   return candidate;
 }
-function notify(title, body, onClick) {
+// sound (nur macOS): Name eines System-Warntons (System-Einstellungen › Ton ›
+// Warnton), z. B. 'Pop', 'Glass', 'Blow', 'Bottle', 'Submarine', 'Tink'.
+function notify(title, body, onClick, sound) {
   if (!Notification.isSupported()) return;
-  const n = new Notification({ title, body });
+  const n = new Notification({ title, body, ...(isMac && sound ? { sound } : {}) });
   if (onClick) n.on('click', onClick);
   n.show();
 }
@@ -1016,7 +1025,7 @@ function setupDownloads(ses) {
     item.once('done', (ev, result) => {
       if (result === 'completed') {
         if (isMac && app.dock) app.dock.downloadFinished(target);
-        notify('Download fertig', name, () => shell.showItemInFolder(target));
+        notify('Download fertig', name, () => shell.showItemInFolder(target), DOWNLOAD_SOUND);
       } else if (result === 'interrupted') {
         notify('Download abgebrochen', name);
       }
