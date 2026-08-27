@@ -2,7 +2,7 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.9
+Nächstes Release: 1.1.10
 
 ## Offen
 
@@ -10,11 +10,7 @@ Nächstes Release: 1.1.9
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- App-Bibliothek: Suchfeld oben (filtert live über alle Kategorien) und je Kategorie erst 6 Apps, den Rest per Mehr-sehen-Button (Shift-Stil). (25.08.2026)
-- App-Katalog massiv erweitert (nach Vorbild von Shift): 170 neue Apps, jetzt 214 in 16 Kategorien – KI, Kommunikation, Produktivität, Cloud-Speicher, Developer-Tools, Design, Arbeit & Business, Banking & Finanzen, Unterhaltung, Soziales, News & Wetter, Lernen, Shopping, Reise, Gesundheit & Fitness. Nischen-Apps weiter per eigener URL. (25.08.2026)
-- App-Bibliothek nach Kategorien sortiert: IMPERIO, KI, Kommunikation, Produktivität, Google, Design & Entwicklung, Business, Unterhaltung, Soziales. Jede App gehört zu einer Kategorie; neue Kategorien (z. B. Banking) erscheinen automatisch, sobald eine App sie bekommt, selbst hinzugefügte Seiten landen unter „Weitere". (25.08.2026)
-- Fehler behoben: Öffnet eine App ein neues Fenster/Tab zur selben App (z. B. ChatGPT „neue Unterhaltung"), bleibt es jetzt in Verti, statt im externen Browser aufzugehen. Echte externe Links gehen weiter in den Browser. (25.08.2026)
-- Download-Ton: Bei fertigem Download spielt jetzt ein „Speicher"-Ton statt des Standard-Mitteilungstons (aktuell „Submarine", leicht änderbar). (25.08.2026)
+- (nichts – wandert beim Release hierher)
 
 ## Blockiert
 
@@ -34,6 +30,14 @@ Nächstes Release: 1.1.9
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.9 (25.08.2026)
+
+- App-Bibliothek: Suchfeld oben (filtert live über alle Kategorien) und je Kategorie erst 6 Apps, den Rest per Mehr-sehen-Button (Shift-Stil). (25.08.2026)
+- App-Katalog massiv erweitert (nach Vorbild von Shift): 170 neue Apps, jetzt 214 in 16 Kategorien – KI, Kommunikation, Produktivität, Cloud-Speicher, Developer-Tools, Design, Arbeit & Business, Banking & Finanzen, Unterhaltung, Soziales, News & Wetter, Lernen, Shopping, Reise, Gesundheit & Fitness. Nischen-Apps weiter per eigener URL. (25.08.2026)
+- App-Bibliothek nach Kategorien sortiert: IMPERIO, KI, Kommunikation, Produktivität, Google, Design & Entwicklung, Business, Unterhaltung, Soziales. Jede App gehört zu einer Kategorie; neue Kategorien (z. B. Banking) erscheinen automatisch, sobald eine App sie bekommt, selbst hinzugefügte Seiten landen unter „Weitere". (25.08.2026)
+- Fehler behoben: Öffnet eine App ein neues Fenster/Tab zur selben App (z. B. ChatGPT „neue Unterhaltung"), bleibt es jetzt in Verti, statt im externen Browser aufzugehen. Echte externe Links gehen weiter in den Browser. (25.08.2026)
+- Download-Ton: Bei fertigem Download spielt jetzt ein „Speicher"-Ton statt des Standard-Mitteilungstons (aktuell „Submarine", leicht änderbar). (25.08.2026)
 
 ### 1.1.8 (25.08.2026)
 
