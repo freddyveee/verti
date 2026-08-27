@@ -327,6 +327,12 @@
   .seg { display: inline-flex; background: var(--hover); border-radius: 10px; padding: 3px; gap: 2px; flex: 0 0 auto; }
   .seg button { border: none; background: transparent; color: var(--text-2); font-family: inherit; font-size: 13px; padding: 7px 13px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
   .seg button.on { background: var(--accent); color: #fff; }
+  .app-search { width: 100%; max-width: 640px; box-sizing: border-box; margin-bottom: 22px; padding: 11px 14px; font-family: inherit; font-size: 14px; border-radius: 10px; border: 1px solid var(--divider); background: var(--card); color: var(--text); outline: none; }
+  .app-search:focus { border-color: var(--accent); }
+  .app-search::placeholder { color: var(--text-2); }
+  .more-btn { margin: 2px 0 8px; border: none; background: transparent; color: var(--accent); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 2px; }
+  .more-btn:hover { text-decoration: underline; }
+  .no-hits { color: var(--text-2); font-size: 14px; padding: 8px 2px; }
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -430,6 +436,7 @@
     <button class="close-btn" id="closeLib" title="Schließen">✕</button>
     <h1>App-Bibliothek</h1>
     <p class="sub">Apps hinzufügen oder entfernen. Alles wird automatisch gespeichert.</p>
+    <input id="appSearch" class="app-search" type="text" placeholder="Apps durchsuchen …" spellcheck="false">
     <div id="catalog"></div>
     <h2>Eigene App per URL</h2>
     <div class="custom">
@@ -679,6 +686,9 @@
         return card;
       }
 
+      let libQuery = '';
+      const expandedCats = new Set();
+      const CAT_LIMIT = 6; // je Kategorie erst so viele, Rest per „Mehr sehen"
       function renderCatalog() {
         catalogEl.innerHTML = '';
         const installedIds = new Set(apps.map((a) => a.id));
@@ -688,24 +698,48 @@
         for (const c of catalog) { const k = c.category || 'Weitere'; (byCat[k] = byCat[k] || []).push(c); }
         for (const e of extras) (byCat['Weitere'] = byCat['Weitere'] || []).push(e);
         const order = [...catOrder, ...Object.keys(byCat).filter((k) => !catOrder.includes(k)).sort()];
+        const q = libQuery.trim().toLowerCase();
         for (const cat of order) {
-          const items = byCat[cat];
+          let items = byCat[cat];
           if (!items || !items.length) continue;
+          if (q) items = items.filter((a) => a.name.toLowerCase().includes(q));
+          if (!items.length) continue;
           const h = document.createElement('h2');
           h.textContent = cat;
           catalogEl.appendChild(h);
           const grid = document.createElement('div');
           grid.className = 'grid';
-          for (const item of items) grid.appendChild(makeCard(item, installedIds));
+          const expanded = !!q || expandedCats.has(cat); // beim Suchen alles zeigen
+          const shown = expanded ? items : items.slice(0, CAT_LIMIT);
+          for (const item of shown) grid.appendChild(makeCard(item, installedIds));
           catalogEl.appendChild(grid);
+          if (!q && items.length > CAT_LIMIT) {
+            const btn = document.createElement('button');
+            btn.className = 'more-btn';
+            btn.textContent = expandedCats.has(cat) ? 'Weniger anzeigen' : ('Mehr sehen (' + (items.length - CAT_LIMIT) + ')');
+            btn.addEventListener('click', () => {
+              if (expandedCats.has(cat)) expandedCats.delete(cat); else expandedCats.add(cat);
+              renderCatalog();
+            });
+            catalogEl.appendChild(btn);
+          }
+        }
+        if (q && !catalogEl.children.length) {
+          const nh = document.createElement('div'); nh.className = 'no-hits';
+          nh.textContent = 'Keine App gefunden.'; catalogEl.appendChild(nh);
         }
       }
 
       function openLibrary() {
+        libQuery = '';
+        expandedCats.clear();
+        const se = document.getElementById('appSearch');
+        if (se) se.value = '';
         renderCatalog();
         library.classList.add('open');
         applyNavState();
         window.verti.openLibrary();
+        setTimeout(() => { const s = document.getElementById('appSearch'); if (s) s.focus(); }, 60);
       }
       function closeLibrary(notify) {
         library.classList.remove('open');
@@ -749,6 +783,7 @@
       });
 
       document.getElementById('plus').addEventListener('click', openLibrary);
+      document.getElementById('appSearch').addEventListener('input', (e) => { libQuery = e.target.value; renderCatalog(); });
       document.getElementById('closeLib').addEventListener('click', () => closeLibrary(true));
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && library.classList.contains('open')) closeLibrary(true);
