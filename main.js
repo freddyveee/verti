@@ -1190,7 +1190,7 @@ function browserRestoreOrNew() {
 }
 
 // ---------- Downloads ----------
-const DOWNLOAD_SOUND = 'Pop'; // Ton bei fertigem Download (macOS-Warnton-Name); leicht änderbar
+const DOWNLOAD_SOUND = 'Submarine'; // Ton bei fertigem Download (macOS-Warnton-Name); leicht änderbar
 // Ohne Nachfrage in den Downloads-Ordner (Freddys Wunsch 22.08.2026), danach eine
 // Mitteilung; Klick darauf zeigt die Datei im Finder/Explorer. Gleichnamige
 // Dateien bekommen „(2)", „(3)" … Gilt für App-Views und Login-/App-Popups.

@@ -13,7 +13,7 @@ Nächstes Release: 1.1.9
 - App-Katalog massiv erweitert (nach Vorbild von Shift): 170 neue Apps, jetzt 214 in 16 Kategorien – KI, Kommunikation, Produktivität, Cloud-Speicher, Developer-Tools, Design, Arbeit & Business, Banking & Finanzen, Unterhaltung, Soziales, News & Wetter, Lernen, Shopping, Reise, Gesundheit & Fitness. Nischen-Apps weiter per eigener URL. (25.08.2026)
 - App-Bibliothek nach Kategorien sortiert: IMPERIO, KI, Kommunikation, Produktivität, Google, Design & Entwicklung, Business, Unterhaltung, Soziales. Jede App gehört zu einer Kategorie; neue Kategorien (z. B. Banking) erscheinen automatisch, sobald eine App sie bekommt, selbst hinzugefügte Seiten landen unter „Weitere". (25.08.2026)
 - Fehler behoben: Öffnet eine App ein neues Fenster/Tab zur selben App (z. B. ChatGPT „neue Unterhaltung"), bleibt es jetzt in Verti, statt im externen Browser aufzugehen. Echte externe Links gehen weiter in den Browser. (25.08.2026)
-- Download-Ton: Bei fertigem Download spielt jetzt ein „Speicher"-Ton statt des Standard-Mitteilungstons (aktuell „Pop", leicht änderbar). (25.08.2026)
+- Download-Ton: Bei fertigem Download spielt jetzt ein „Speicher"-Ton statt des Standard-Mitteilungstons (aktuell „Submarine", leicht änderbar). (25.08.2026)
 
 ## Blockiert
 
@@ -49,7 +49,7 @@ Nächstes Release: 1.1.9
 ### 1.1.6 (25.08.2026)
 
 - Einstellungen zeigen jetzt die installierte Versionsnummer und haben einen Knopf „Nach Updates suchen" (meldet: neueste Version, Update verfügbar oder Suche fehlgeschlagen; bei verfügbarem Update direkt „Jetzt aktualisieren"). (25.08.2026)
-- Updates werden erzwungen: Steht beim Start ein Update bereit, blockiert ein Pflicht-Popup die Arbeit, bis aktualisiert wurde – kein „Später". Sicherer Notausgang: klappt das Update mal nicht (z. B. offline), gibt es „Erneut versuchen" und „Später weiterarbeiten" (beim nächsten Start fragt Verti wieder), niemand wird dauerhaft ausgesperrt. (25.08.2026)
+- Updates werden erzwungen: Steht beim Start ein Update bereit, blockiert ein Pflicht-Submarineup die Arbeit, bis aktualisiert wurde – kein „Später". Sicherer Notausgang: klappt das Update mal nicht (z. B. offline), gibt es „Erneut versuchen" und „Später weiterarbeiten" (beim nächsten Start fragt Verti wieder), niemand wird dauerhaft ausgesperrt. (25.08.2026)
 - Benachrichtigungen pro App: In den Einstellungen lässt sich jede App einzeln stummschalten – dann kommen von ihr weder ein Badge noch Meldungen. (25.08.2026)
 
 ### 1.1.5 (24.08.2026)
@@ -100,6 +100,6 @@ Nächstes Release: 1.1.9
 
 ### 1.0.19 (22.08.2026)
 
-- Google-Login repariert (Firefox-Tarnung per webFrame, Preload auch in Popups).
+- Google-Login repariert (Firefox-Tarnung per webFrame, Preload auch in Submarineups).
 - Todoist startet in „Demnächst", Notion geht direkt in die App.
 - Nur eine Verti-Instanz pro Profil (Single-Instance-Sperre).
