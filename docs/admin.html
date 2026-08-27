@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Verti · Verbesserungen</title>
+<link rel="icon" href="icons/verti.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #0b0813; --bg2: #131020; --card: rgba(255,255,255,0.04);
+    --card2: rgba(255,255,255,0.06); --border: rgba(255,255,255,0.10);
+    --accent: #9257ff; --accent2: #b78aff; --text: #f2f0fa;
+    --muted: rgba(235,232,250,0.60); --faint: rgba(235,232,250,0.38);
+    --ok: #35c07f;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%) fixed;
+    color: var(--text); min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 40px 22px 80px; }
+
+  /* Kopf */
+  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
+  .head h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.2px; }
+  .head h1 .dot { color: var(--accent2); }
+  .sub { color: var(--muted); font-size: 13.5px; margin: 4px 0 22px; }
+  .toolbar { display: flex; align-items: center; gap: 8px; }
+  .seg { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
+  .seg button { border: none; background: transparent; color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 600; padding: 6px 13px; border-radius: 7px; cursor: pointer; }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .iconbtn { border: 1px solid var(--border); background: var(--card); color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 9px; cursor: pointer; }
+  .iconbtn:hover { color: var(--text); border-color: var(--accent); }
+
+  .count { color: var(--faint); font-size: 12.5px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; margin: 0 0 12px; }
+
+  /* Karten */
+  .list { display: flex; flex-direction: column; gap: 12px; }
+  .fb { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; transition: opacity .2s; }
+  .fb.done { opacity: 0.5; }
+  .fb .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+  .fb .topic { font-size: 16px; font-weight: 650; line-height: 1.3; }
+  .fb.done .topic { text-decoration: line-through; text-decoration-color: var(--faint); }
+  .fb .desc { color: rgba(235,232,250,0.86); font-size: 14px; line-height: 1.5; margin: 8px 0 12px; white-space: pre-wrap; word-break: break-word; }
+  .fb .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--faint); font-size: 12px; }
+  .fb .meta b { color: var(--muted); font-weight: 600; }
+  /* Haken */
+  .check { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; cursor: pointer; user-select: none; color: var(--muted); font-size: 12.5px; font-weight: 600; }
+  .check input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .check .box { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .check input:checked ~ .box { background: var(--ok); border-color: var(--ok); }
+  .check .box svg { opacity: 0; }
+  .check input:checked ~ .box svg { opacity: 1; }
+
+  .empty { text-align: center; color: var(--faint); padding: 60px 0; font-size: 14px; }
+  .msg { color: #ff8a87; font-size: 13px; min-height: 18px; margin-top: 10px; }
+
+  /* Login */
+  .login { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 22px; background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%); }
+  .login.show { display: flex; }
+  .login .card { width: 360px; max-width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 30px 26px; }
+  .login h2 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
+  .login p { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
+  .login label { display: block; color: var(--muted); font-size: 12px; font-weight: 600; margin: 14px 0 6px; }
+  .login input { width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; }
+  .login input:focus { border-color: var(--accent); }
+  .btn { width: 100%; margin-top: 22px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-family: inherit; font-size: 14px; font-weight: 650; padding: 12px; cursor: pointer; }
+  .btn:hover { background: #a06bff; }
+  .btn:disabled { opacity: 0.55; cursor: default; }
+  #app { display: none; }
+  #app.show { display: block; }
+</style>
+</head>
+<body>
+  <!-- Login -->
+  <div class="login" id="login">
+    <div class="card">
+      <h2>Verbesserungen</h2>
+      <p>Bitte anmelden, um die Vorschläge zu sehen.</p>
+      <form id="loginForm">
+        <label for="email">E-Mail</label>
+        <input id="email" type="email" autocomplete="username" required>
+        <label for="pw">Passwort</label>
+        <input id="pw" type="password" autocomplete="current-password" required>
+        <button class="btn" id="loginBtn" type="submit">Anmelden</button>
+        <div class="msg" id="loginMsg"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Panel -->
+  <div id="app">
+    <div class="wrap">
+      <div class="head">
+        <div>
+          <h1>Verbesserungen<span class="dot">.</span></h1>
+        </div>
+        <div class="toolbar">
+          <div class="seg">
+            <button id="segOpen" class="on" data-f="offen">Offen</button>
+            <button id="segAll" data-f="alle">Alle</button>
+          </div>
+          <button class="iconbtn" id="refreshBtn" title="Neu laden">Aktualisieren</button>
+          <button class="iconbtn" id="logoutBtn" title="Abmelden">Abmelden</button>
+        </div>
+      </div>
+      <p class="sub">Vorschläge deiner Mitarbeiter aus Verti.</p>
+      <div class="count" id="count"></div>
+      <div class="list" id="list"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://dganalwiakzgrskkvrvs.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnYW5hbHdpYWt6Z3Jza2t2cnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NTU1NzksImV4cCI6MjEwMzQzMTU3OX0.tpCNNNLkWgbKoVAbeQ66VdfG6TxnndOUF1d_E4d8iTk';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const loginEl = document.getElementById('login');
+    const appEl = document.getElementById('app');
+    const listEl = document.getElementById('list');
+    const countEl = document.getElementById('count');
+    const loginMsg = document.getElementById('loginMsg');
+    let filter = 'offen';
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+    function fmtDate(s) { try { return new Date(s).toLocaleString('de-DE', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }); } catch (_) { return s || ''; } }
+
+    async function showAuthedOrLogin() {
+      const { data } = await sb.auth.getSession();
+      if (data && data.session) { loginEl.classList.remove('show'); appEl.classList.add('show'); load(); }
+      else { appEl.classList.remove('show'); loginEl.classList.add('show'); }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('loginBtn');
+      loginMsg.textContent = ''; btn.disabled = true; btn.textContent = 'Anmelden …';
+      const { error } = await sb.auth.signInWithPassword({
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('pw').value,
+      });
+      btn.disabled = false; btn.textContent = 'Anmelden';
+      if (error) { loginMsg.textContent = 'Anmeldung fehlgeschlagen.'; return; }
+      showAuthedOrLogin();
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => { await sb.auth.signOut(); showAuthedOrLogin(); });
+    document.getElementById('refreshBtn').addEventListener('click', load);
+    document.getElementById('segOpen').addEventListener('click', () => setFilter('offen'));
+    document.getElementById('segAll').addEventListener('click', () => setFilter('alle'));
+
+    function setFilter(f) {
+      filter = f;
+      document.getElementById('segOpen').classList.toggle('on', f === 'offen');
+      document.getElementById('segAll').classList.toggle('on', f === 'alle');
+      load();
+    }
+
+    async function load() {
+      listEl.innerHTML = '';
+      countEl.textContent = 'Lädt …';
+      let q = sb.from('feedback').select('*').order('created_at', { ascending: false });
+      if (filter === 'offen') q = q.eq('status', 'offen');
+      const { data, error } = await q;
+      if (error) { countEl.textContent = ''; listEl.innerHTML = '<div class="empty">Konnte nicht laden: ' + esc(error.message) + '</div>'; return; }
+      if (!data.length) { countEl.textContent = ''; listEl.innerHTML = '<div class="empty">' + (filter === 'offen' ? 'Keine offenen Vorschläge. 🎉' : 'Noch keine Vorschläge.') + '</div>'; return; }
+      countEl.textContent = data.length + (filter === 'offen' ? ' offen' : ' gesamt');
+      for (const r of data) listEl.appendChild(card(r));
+    }
+
+    function card(r) {
+      const done = r.status === 'erledigt';
+      const el = document.createElement('div');
+      el.className = 'fb' + (done ? ' done' : '');
+      const meta = [];
+      if (r.sender) meta.push('<b>' + esc(r.sender) + '</b>');
+      if (r.app) meta.push('in ' + esc(r.app));
+      meta.push(fmtDate(r.created_at));
+      if (r.version) meta.push('v' + esc(r.version));
+      if (r.device) meta.push(esc(r.device));
+      el.innerHTML =
+        '<div class="top">' +
+          '<div class="topic">' + esc(r.topic) + '</div>' +
+          '<label class="check"><input type="checkbox"' + (done ? ' checked' : '') + '>' +
+            '<span>erledigt</span>' +
+            '<span class="box"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>' +
+          '</label>' +
+        '</div>' +
+        '<div class="desc">' + esc(r.description) + '</div>' +
+        '<div class="meta">' + meta.join('<span style="opacity:.4">·</span>') + '</div>';
+      const cb = el.querySelector('input');
+      cb.addEventListener('change', async () => {
+        const newStatus = cb.checked ? 'erledigt' : 'offen';
+        cb.disabled = true;
+        const { error } = await sb.from('feedback').update({ status: newStatus }).eq('id', r.id);
+        cb.disabled = false;
+        if (error) { cb.checked = !cb.checked; return; }
+        r.status = newStatus;
+        if (filter === 'offen' && newStatus === 'erledigt') { el.style.opacity = '0'; setTimeout(load, 250); }
+        else { el.classList.toggle('done', newStatus === 'erledigt'); }
+      });
+      return el;
+    }
+
+    showAuthedOrLogin();
+  </script>
+</body>
+</html>

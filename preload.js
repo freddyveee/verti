@@ -35,4 +35,5 @@ contextBridge.exposeInMainWorld('verti', {
   setAppMuted: (id, muted) => ipcRenderer.send('set-app-muted', id, muted),
   onTheme: (cb) => ipcRenderer.on('theme', (e, t) => cb(t)),
   onAppsChanged: (cb) => ipcRenderer.on('apps-changed', (e, apps) => cb(apps)),
+  sendFeedback: (payload) => ipcRenderer.invoke('feedback:send', payload),
 });

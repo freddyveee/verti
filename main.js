@@ -1599,6 +1599,52 @@ ipcMain.handle('settings:check-updates', async () => {
   } catch { return { status: 'error' }; }
 });
 ipcMain.handle('get-app-info', () => ({ version: app.getVersion(), packaged: app.isPackaged }));
+
+// ---------- „Verbesserungen": Feedback landet in Supabase ----------
+// Der anon-Key ist öffentlich unkritisch (nur INSERT per Row-Level-Security);
+// Lesen/Abhaken kann nur der eingeloggte Admin im Panel.
+const SUPABASE_URL = 'https://dganalwiakzgrskkvrvs.supabase.co';        // z.B. https://xxxx.supabase.co
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnYW5hbHdpYWt6Z3Jza2t2cnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NTU1NzksImV4cCI6MjEwMzQzMTU3OX0.tpCNNNLkWgbKoVAbeQ66VdfG6TxnndOUF1d_E4d8iTk';
+ipcMain.handle('feedback:send', async (e, payload) => {
+  try {
+    const topic = String((payload && payload.topic) || '').trim().slice(0, 200);
+    const description = String((payload && payload.description) || '').trim().slice(0, 4000);
+    const sender = String((payload && payload.sender) || '').trim().slice(0, 120);
+    if (!topic || !description) return { ok: false, error: 'Bitte Thema und Vorschlag ausfüllen.' };
+    if (!/^https?:\/\//.test(SUPABASE_URL)) return { ok: false, error: 'Feedback ist noch nicht eingerichtet.' };
+    let osUser = '', host = '';
+    try { osUser = require('os').userInfo().username || ''; } catch (_) {}
+    try { host = require('os').hostname() || ''; } catch (_) {}
+    const row = {
+      topic, description,
+      sender: sender || osUser || null,
+      app: activeId || null,
+      device: [host, process.platform].filter(Boolean).join(' / ') || null,
+      version: app.getVersion(),
+    };
+    const bodyStr = JSON.stringify(row);
+    const u = new URL(SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/feedback');
+    const res = await new Promise((resolve, reject) => {
+      const req = https.request({
+        method: 'POST', hostname: u.hostname, port: 443, path: u.pathname + u.search,
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(bodyStr),
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Prefer': 'return=minimal',
+        },
+      }, (r) => { let d = ''; r.on('data', (c) => (d += c)); r.on('end', () => resolve({ status: r.statusCode, body: d })); });
+      req.on('error', reject);
+      req.setTimeout(15000, () => req.destroy(new Error('Zeitüberschreitung')));
+      req.write(bodyStr); req.end();
+    });
+    if (res.status >= 200 && res.status < 300) return { ok: true };
+    return { ok: false, error: 'Konnte nicht senden (HTTP ' + res.status + ').' };
+  } catch (err) {
+    return { ok: false, error: (err && err.message) || 'Netzwerkfehler.' };
+  }
+});
 // Die Sidebar fragt nach dem Start einmal nach: Das erste 'active-app' aus
 // switchApp (did-finish-load) kommt, bevor sie ihre Empfänger registriert
 // hat, und verpuffte → kein Icon war markiert, bis man klickte (bis 1.0.20).
