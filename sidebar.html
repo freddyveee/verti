@@ -65,7 +65,7 @@
   /* Lila Update-Hinweis oben rechts, wenn während des Betriebs ein Update kommt */
   .update-pill {
     position: fixed;
-    top: 8px; right: 64px;
+    top: 8px; right: 200px;
     z-index: 12;
     -webkit-app-region: no-drag;
     display: none;
@@ -87,7 +87,7 @@
     50% { box-shadow: 0 3px 20px rgba(131, 71, 255, 0.8); }
   }
   /* Windows: Platz für Minimieren/Maximieren/Schließen rechts */
-  body.win .update-pill { right: 186px; }
+  body.win .update-pill { right: 330px; }
   .nav {
     position: fixed;
     top: 7px;
@@ -301,14 +301,14 @@
   .gear-btn svg { pointer-events: none; }
   body.win .gear-btn { right: 150px; }
   .feedback-btn {
-    position: fixed; top: 8px; left: 90px; z-index: 13; -webkit-app-region: no-drag;
-    display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px;
+    position: fixed; top: 9px; right: 62px; z-index: 13; -webkit-app-region: no-drag;
+    display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px;
     border: none; border-radius: 8px; background: var(--hover); color: var(--text-2);
     font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
   }
   .feedback-btn:hover { background: var(--active); color: var(--text); }
   .feedback-btn svg { pointer-events: none; }
-  body.win .feedback-btn { left: 12px; }
+  body.win .feedback-btn { right: 188px; }
   .fbmodal { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); }
   .fbmodal.open { display: flex; }
   .fbcard { width: 420px; max-width: calc(100vw - 48px); background: var(--panel); border: 1px solid var(--divider); border-radius: 14px; padding: 22px 22px 18px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }

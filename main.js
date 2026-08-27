@@ -1591,7 +1591,7 @@ ipcMain.on('set-app-muted', (e, id, muted) => {
 ipcMain.handle('settings:check-updates', async () => {
   if (!app.isPackaged) return { status: 'dev' };
   try {
-    updateNotifiedFor = null; // Popup darf danach wieder erscheinen
+    updateNotifiedFor = null; updateForcedShownFor = null; // Popup/Zwang danach wieder
     const r = await getAutoUpdater().checkForUpdates();
     const v = r && r.updateInfo && r.updateInfo.version;
     if (v && isNewerVersion(v, app.getVersion())) return { status: 'available', version: v };
@@ -1813,6 +1813,7 @@ let updateDialogOpen = false;
 let updateWin = null;
 let updateForced = false;      // erzwungenes Update: Hauptfenster gesperrt, kein "Später"
 let allowForcedClose = false;  // Notausgang bei Fehler erlaubt das Schließen
+let updateForcedShownFor = null; // erzwungenes Popup je Version nur einmal pro App-Lauf
 let downloadWatchdog = null;   // fängt einen hängenden Download ab (kein Aussperren)
 function armDownloadWatchdog() {
   clearDownloadWatchdog();
@@ -1877,6 +1878,19 @@ function openUpdatePopup(payload) {
     clearDownloadWatchdog();
     if (win && !win.isDestroyed()) { try { win.setEnabled(true); } catch (e) {} }
   });
+}
+
+// Erzwungenes Update: das blockierende Popup erscheint, sobald ein Update
+// vorliegt UND das Fenster sichtbar ist – nicht mehr nur in den ersten 90 s nach
+// Prozessstart. (Auf dem Mac läuft Verti durch, das Fenster wird beim Schließen
+// nur versteckt, darum kam das erzwungene Popup früher praktisch nie.) Je Version
+// nur einmal pro App-Lauf; beim nächsten Nach-vorn-Holen greift es erneut.
+function maybeForceUpdate() {
+  if (!pendingUpdate || updateDialogOpen) return;
+  if (updateForcedShownFor === pendingUpdate.version) return;
+  if (!win || win.isDestroyed() || !win.isVisible() || win.isMinimized()) return;
+  updateForcedShownFor = pendingUpdate.version;
+  openUpdatePopup({ ...pendingUpdate, forced: true });
 }
 
 function sendUpdateState(payload) {
@@ -1973,12 +1987,7 @@ function setupAutoUpdate() {
   autoUpdater.on('update-available', (info) => {
     pendingUpdate = { mode: 'available', version: info.version, notes: releaseNotesText(info.releaseNotes) };
     if (win && !win.isDestroyed()) win.webContents.send('update-pill', pendingUpdate.version);
-    // 'Später' respektieren: pro Version nur einmal je App-Lauf melden
-    if (updateDialogOpen || info.version === updateNotifiedFor) return;
-    updateNotifiedFor = info.version;
-    // Popup nur kurz nach dem App-Start von selbst öffnen; findet der
-    // 4-Stunden-Check mitten in der Arbeit etwas, bleibt nur der Knopf oben
-    if (Date.now() - appStartedAt < 90 * 1000) openUpdatePopup({ ...pendingUpdate, forced: true });
+    maybeForceUpdate();
   });
   autoUpdater.on('download-progress', (p) => {
     if (updateForced) armDownloadWatchdog();
@@ -2006,7 +2015,13 @@ function setupAutoUpdate() {
   };
   throttledCheck();
   setInterval(throttledCheck, UPDATE_CHECK_INTERVAL);
-  if (win && !win.isDestroyed()) win.on('focus', throttledCheck);
+  if (win && !win.isDestroyed()) {
+    // Beim Nach-vorn-Holen (Mac: Fenster war nur versteckt) neu prüfen und ein
+    // wartendes Update sofort erzwingen
+    win.on('focus', () => { throttledCheck(); maybeForceUpdate(); });
+    win.on('show', maybeForceUpdate);
+    win.on('restore', maybeForceUpdate);
+  }
 }
 
 async function checkForUpdatesManually() {
@@ -2017,7 +2032,7 @@ async function checkForUpdatesManually() {
   const autoUpdater = getAutoUpdater();
   try {
     // Update-Popup auch dann wieder zeigen, wenn es schon mal kam
-    updateNotifiedFor = null;
+    updateNotifiedFor = null; updateForcedShownFor = null;
     const result = await autoUpdater.checkForUpdates();
     const v = result?.updateInfo?.version;
     if (!v || !isNewerVersion(v, app.getVersion())) {
