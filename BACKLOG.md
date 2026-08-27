@@ -2,15 +2,11 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.10
+Nächstes Release: 1.1.11
 
 ## Offen
 
 - Verti Browser – Stufe 3 (Stufen 1 und 2 sind fertig, s. unten): Chrome-Extensions – eigene „Erweiterungen"-Seite + Installieren/Aktualisieren aus dem Web Store (`session.loadExtension`); machbar (Shift macht es vor), Grenze ist nur die Kompatibilität einzelner Erweiterungen. (24.08.2026)
-- Schwarzer Bildschirm nach dem Aufwachen aus dem Ruhezustand: Apps laden sich beim Aufwachen automatisch neu (sichtbare App sofort, restliche beim nächsten Öffnen), kein manuelles Refreshen mehr. (27.08.2026)
-- Update-Download-Cache wird beim Start aufgeräumt, damit sich alte Installer nicht auf der Platte ansammeln. (27.08.2026)
-- App-Bibliothek: „Mehr sehen" pro Kategorie klarer positionieren (in die Kategorie-Überschrift) und sanft aufklappen statt ruckartig. (27.08.2026)
-- „Verbesserungen"-Button in der Top-Bar: Popup-Kontaktformular (Thema + Beschreibung), damit Mitarbeiter Optimierungswünsche direkt melden, ohne dass Freddy zu jedem hinlaufen muss. (27.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
@@ -34,6 +30,13 @@ Nächstes Release: 1.1.10
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.10 (27.08.2026)
+
+- Kein schwarzer/kaputter Bildschirm mehr nach dem Ruhezustand: Apps laden sich beim Aufwachen automatisch neu (die sichtbare sofort, die übrigen beim nächsten Öffnen). (27.08.2026)
+- „Verbesserung"-Button oben in der Leiste: Mitarbeiter melden Wünsche direkt über ein kleines Popup-Formular (Thema + Vorschlag), landet bei Freddy im Admin-Panel. (27.08.2026)
+- App-Bibliothek: „Mehr sehen" sitzt jetzt klar in der Kategorie-Überschrift („Alle N zeigen") und klappt sanft auf statt ruckartig. (27.08.2026)
+- Update-Download-Cache wird beim Start aufgeräumt, damit sich keine alten Installer auf der Platte ansammeln. (27.08.2026)
 
 ### 1.1.9 (25.08.2026)
 
