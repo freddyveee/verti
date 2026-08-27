@@ -49,7 +49,7 @@ Nächstes Release: 1.1.9
 ### 1.1.6 (25.08.2026)
 
 - Einstellungen zeigen jetzt die installierte Versionsnummer und haben einen Knopf „Nach Updates suchen" (meldet: neueste Version, Update verfügbar oder Suche fehlgeschlagen; bei verfügbarem Update direkt „Jetzt aktualisieren"). (25.08.2026)
-- Updates werden erzwungen: Steht beim Start ein Update bereit, blockiert ein Pflicht-Submarineup die Arbeit, bis aktualisiert wurde – kein „Später". Sicherer Notausgang: klappt das Update mal nicht (z. B. offline), gibt es „Erneut versuchen" und „Später weiterarbeiten" (beim nächsten Start fragt Verti wieder), niemand wird dauerhaft ausgesperrt. (25.08.2026)
+- Updates werden erzwungen: Steht beim Start ein Update bereit, blockiert ein Pflicht-Popup die Arbeit, bis aktualisiert wurde – kein „Später". Sicherer Notausgang: klappt das Update mal nicht (z. B. offline), gibt es „Erneut versuchen" und „Später weiterarbeiten" (beim nächsten Start fragt Verti wieder), niemand wird dauerhaft ausgesperrt. (25.08.2026)
 - Benachrichtigungen pro App: In den Einstellungen lässt sich jede App einzeln stummschalten – dann kommen von ihr weder ein Badge noch Meldungen. (25.08.2026)
 
 ### 1.1.5 (24.08.2026)
@@ -100,6 +100,6 @@ Nächstes Release: 1.1.9
 
 ### 1.0.19 (22.08.2026)
 
-- Google-Login repariert (Firefox-Tarnung per webFrame, Preload auch in Submarineups).
+- Google-Login repariert (Firefox-Tarnung per webFrame, Preload auch in Popups).
 - Todoist startet in „Demnächst", Notion geht direkt in die App.
 - Nur eine Verti-Instanz pro Profil (Single-Instance-Sperre).
