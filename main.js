@@ -1,4 +1,4 @@
-const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog, nativeImage, desktopCapturer, clipboard, Notification } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog, nativeImage, desktopCapturer, clipboard, Notification, powerMonitor } = require('electron');
 const path = require('path');
 const https = require('https');
 const fs = require('fs');
@@ -725,6 +725,23 @@ function layoutViews() {
   layoutBrowserTabs();
 }
 
+// Nach Systemschlaf sind die WebContentsViews oft schwarz (Chromium verliert die
+// GPU-/Compositor-Fläche). Betroffene Ansichten werden markiert und beim nächsten
+// Anzeigen neu geladen – wie ein manueller Refresh, nur automatisch.
+const staleViews = new Set();
+const staleBrowserTabs = new Set();
+function reloadWc(wc) { try { if (wc && !wc.isDestroyed()) wc.reload(); } catch (e) {} }
+// electron-updater sammelt heruntergeladene Installer unter <cache>/verti-updater
+// und räumt sie nicht selbst weg. Beim Start (dann läuft kein Download) entfernen.
+function cleanupUpdateCache() {
+  try {
+    const base = app.getPath('cache');
+    for (const nm of new Set(['verti-updater', app.getName() + '-updater', app.getName().toLowerCase() + '-updater'])) {
+      const dir = path.join(base, nm);
+      if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
+    }
+  } catch (e) {}
+}
 function switchApp(id) {
   if (!views[id]) return;
   libraryOpen = false;
@@ -732,10 +749,16 @@ function switchApp(id) {
   activeId = id;
   clearBadge(id); // Öffnen = gelesen (das Ausblenden regelt effectiveBadge)
   if (prevActive && prevActive !== id) recomputeBadge(prevActive); // verlassene App → Titel-Badge ggf. wieder zeigen
+  if (id === BROWSER_ID) {
+    if (browserActive && staleBrowserTabs.delete(browserActive)) reloadWc(browserTabs.get(browserActive) && browserTabs.get(browserActive).webContents);
+  } else if (staleViews.delete(id)) {
+    reloadWc(views[id].webContents); // nach Aufwachen einmal neu laden
+  }
   for (const [vid, view] of Object.entries(views)) {
     view.setVisible(vid === id);
   }
   layoutViews();
+  if (id !== BROWSER_ID && views[id]) { try { views[id].webContents.invalidate(); } catch (e) {} } // Todoist & Co.: veralteten/halben Anstrich nach dem Anzeigen auffrischen
   if (id === BROWSER_ID && browserTabs.size === 0) browserRestoreOrNew();
   if (id !== BROWSER_ID && browserSuggestOpen) browserSuggestOpen = false;
   browserApplyVisibility();
@@ -1044,6 +1067,7 @@ function browserCloseTab(key) {
 function browserSwitchTab(key) {
   if (!browserTabs.has(key)) return;
   browserActive = key;
+  if (staleBrowserTabs.delete(key)) reloadWc(browserTabs.get(key) && browserTabs.get(key).webContents);
   browserApplyVisibility();
   const av = browserTabs.get(key);
   if (av) { try { av.webContents.focus(); } catch {} }
@@ -1983,6 +2007,18 @@ app.whenReady().then(async () => {
   createWindow();
   buildMenu();
   setupAutoUpdate();
+  cleanupUpdateCache();
+  powerMonitor.on('resume', () => {
+    // Aufwachen aus dem Schlaf: alle Ansichten als „muss neu laden" markieren,
+    // die gerade sichtbare sofort neu laden, die übrigen beim nächsten Öffnen.
+    for (const vid of Object.keys(views)) if (vid !== BROWSER_ID) staleViews.add(vid);
+    for (const k of browserTabs.keys()) staleBrowserTabs.add(k);
+    if (activeId === BROWSER_ID) {
+      if (browserActive && staleBrowserTabs.delete(browserActive)) reloadWc(browserTabs.get(browserActive) && browserTabs.get(browserActive).webContents);
+    } else if (activeId && staleViews.delete(activeId)) {
+      reloadWc(views[activeId] && views[activeId].webContents);
+    }
+  });
   if (justUpdated) {
     // Kurz warten, bis das Hauptfenster steht, dann Konfetti
     setTimeout(() => openUpdatePopup({ mode: 'celebrate', version: app.getVersion() }), 900);

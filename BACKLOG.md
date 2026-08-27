@@ -7,6 +7,10 @@ Nächstes Release: 1.1.10
 ## Offen
 
 - Verti Browser – Stufe 3 (Stufen 1 und 2 sind fertig, s. unten): Chrome-Extensions – eigene „Erweiterungen"-Seite + Installieren/Aktualisieren aus dem Web Store (`session.loadExtension`); machbar (Shift macht es vor), Grenze ist nur die Kompatibilität einzelner Erweiterungen. (24.08.2026)
+- Schwarzer Bildschirm nach dem Aufwachen aus dem Ruhezustand: Apps laden sich beim Aufwachen automatisch neu (sichtbare App sofort, restliche beim nächsten Öffnen), kein manuelles Refreshen mehr. (27.08.2026)
+- Update-Download-Cache wird beim Start aufgeräumt, damit sich alte Installer nicht auf der Platte ansammeln. (27.08.2026)
+- App-Bibliothek: „Mehr sehen" pro Kategorie klarer positionieren (in die Kategorie-Überschrift) und sanft aufklappen statt ruckartig. (27.08.2026)
+- „Verbesserungen"-Button in der Top-Bar: Popup-Kontaktformular (Thema + Beschreibung), damit Mitarbeiter Optimierungswünsche direkt melden, ohne dass Freddy zu jedem hinlaufen muss. (27.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
