@@ -11,7 +11,8 @@ Nächstes Release: 1.1.14
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- Google-Anmeldung repariert: Auf Googles Anmeldeseiten lief seit dem 22.08. zusätzlicher Verti-Code mit (Badge-Brücke, Autoplay-Riegel, Stummschaltung), der Standard-Funktionen der Seite überschreibt – Google wertet das als manipulierten Browser und lehnt die Anmeldung ab. Jetzt läuft dort nur noch die Browser-Kennung, sonst nichts. Nachweis: die letzte funktionierende Anmeldung (22.08., 12:45) lief genau in diesem Zustand. **Muss mit einem echten Konto gegengetestet werden.** (28.08.2026)
+- **Google-Anmeldung repariert (bestätigt).** Neue Google-Konten ließen sich seit dem 22.08. nicht mehr anmelden („Dieser Browser oder diese App ist unter Umständen nicht sicher"). Ursache war nicht Google, sondern Verti selbst: Auf Googles Anmeldeseiten lief zusätzlicher Verti-Code mit (Badge-Brücke, Autoplay-Riegel, Stummschaltung), der Standard-Funktionen der Seite überschreibt – Google wertet das als manipulierten Browser. Dort läuft jetzt nur noch die Browser-Kennung, sonst nichts; in allen anderen Apps bleiben Badges, Meldungen und Autoplay-Riegel unverändert. Mit Sarahs echtem Konto gegengetestet: Anmeldung läuft durch, Google Kalender ist drin. (28.08.2026)
+- Hinweis für den Support: Google fragt bei der Anmeldung teils nach einem **Passkey**, den Electron nicht kann. Ausweg auf der Google-Seite: „Andere Option wählen" → Passwort. (28.08.2026)
 
 ## Blockiert
 
