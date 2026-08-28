@@ -38,6 +38,7 @@ const FIREFOX_UA = `Mozilla/5.0 (${isMac ? 'Macintosh; Intel Mac OS X 10.15' : '
 const isGoogleAuthUrl = (url) => { try { return ['accounts.google.com', 'accounts.youtube.com'].includes(new URL(url).host); } catch { return false; } };
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a));
 const disguise = MODE !== 'chrome';
 
 setTimeout(() => { log('Zeitüberschreitung, Abbruch'); app.exit(2); }, 75000);
@@ -82,6 +83,19 @@ app.whenReady().then(async () => {
   wc.setUserAgent(chromeUserAgent());
   wc.on('did-navigate', (_e, url) => log('Seite:', url.slice(0, 120)));
 
+  // WARM=1: Profil erst "einlaufen" lassen (google.com besuchen, NID-Cookie holen),
+  // bevor die Anmeldung startet. Grund: Die Sonde loescht ihr Profil sonst bei jedem
+  // Lauf und tritt Google als voellig unbeschriebenes Blatt gegenueber — Freddys
+  // erfolgreiche Anmeldung am 22.08.2026 lief dagegen in einem seit Tagen benutzten
+  // Profil. Zusammen mit KEEP_PROFILE=1 laesst sich so testen, ob die Profil-Frische
+  // der Ablehnungsgrund ist.
+  if (process.env.WARM) {
+    log('Waerme das Profil auf (google.com)…');
+    await wc.loadURL('https://www.google.com/?hl=de').catch(() => {});
+    await sleep(rnd(3000, 5000));
+    const n = await wc.executeJavaScript('document.cookie.length').catch(() => 0);
+    log('Profil aufgewaermt, Cookie-Zeichen sichtbar:', n);
+  }
   await wc.loadURL(MODE === 'timing' ? PROBE_URL : LOGIN_URL).catch((e) => log('Laden fehlgeschlagen:', e.message));
   await sleep(MODE === 'timing' ? 500 : 3500);
   log('JS-Kennung:', await wc.executeJavaScript('JSON.stringify({ua: navigator.userAgent, vendor: navigator.vendor, productSub: navigator.productSub, oscpu: navigator.oscpu, buildID: navigator.buildID, chrome: (("chrome" in window) ? typeof window.chrome : "weg"), userAgentData: String(navigator.userAgentData)})'));
@@ -89,12 +103,32 @@ app.whenReady().then(async () => {
   if (MODE !== 'timing') {
     const field = `document.querySelector('#identifierId, input[type=email]')`;
     if (await wc.executeJavaScript(`!!${field}`) && !process.env.NO_SUBMIT) {
-      await wc.executeJavaScript(`${field}.focus()`);
-      await sleep(300);
-      await wc.insertText(EMAIL);
-      await sleep(400);
+      // WICHTIG: menschlich eingeben, nicht per insertText. Ein Schlag-auf-einmal
+      // eingefuegter Text ohne Mausbewegung und ohne Tipprhythmus ist fuer Googles
+      // Bot-Erkennung ein eigenes Warnsignal — die Sonde wuerde dann ablehnen, wo
+      // ein echter Mensch in der App durchkommt (Messfehler statt Messung).
+      const box = JSON.parse(await wc.executeJavaScript(
+        `(() => { const r = ${field}.getBoundingClientRect(); return JSON.stringify({x: Math.round(r.left + r.width/2), y: Math.round(r.top + r.height/2)}); })()`));
+      log('Tippe wie ein Mensch in das Feld bei', box.x + ',' + box.y);
+      // Maus hinbewegen und klicken (erzeugt echte Nutzer-Geste)
+      for (let i = 1; i <= 10; i++) {
+        wc.sendInputEvent({ type: 'mouseMove', x: box.x - 120 + i * 12, y: box.y - 60 + i * 6 });
+        await sleep(rnd(12, 35));
+      }
+      wc.sendInputEvent({ type: 'mouseDown', x: box.x, y: box.y, button: 'left', clickCount: 1 });
+      await sleep(rnd(45, 95));
+      wc.sendInputEvent({ type: 'mouseUp', x: box.x, y: box.y, button: 'left', clickCount: 1 });
+      await sleep(rnd(250, 500));
+      // Zeichen fuer Zeichen mit unregelmaessigem Rhythmus
+      for (const ch of EMAIL) {
+        wc.sendInputEvent({ type: 'keyDown', keyCode: ch });
+        wc.sendInputEvent({ type: 'char', keyCode: ch });
+        wc.sendInputEvent({ type: 'keyUp', keyCode: ch });
+        await sleep(rnd(55, 190));
+      }
+      await sleep(rnd(500, 1100));
       for (const type of ['keyDown', 'char', 'keyUp']) wc.sendInputEvent({ type, keyCode: 'Return' });
-      await sleep(6000);
+      await sleep(7000);
     } else {
       log('Kein E-Mail-Feld oder NO_SUBMIT gesetzt');
     }
