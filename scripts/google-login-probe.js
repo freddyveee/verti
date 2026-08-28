@@ -84,7 +84,7 @@ app.whenReady().then(async () => {
 
   await wc.loadURL(MODE === 'timing' ? PROBE_URL : LOGIN_URL).catch((e) => log('Laden fehlgeschlagen:', e.message));
   await sleep(MODE === 'timing' ? 500 : 3500);
-  log('JS-Kennung:', await wc.executeJavaScript('JSON.stringify({ua: navigator.userAgent, vendor: navigator.vendor, userAgentData: String(navigator.userAgentData), erstesSkriptSah: window.__first || null})'));
+  log('JS-Kennung:', await wc.executeJavaScript('JSON.stringify({ua: navigator.userAgent, vendor: navigator.vendor, productSub: navigator.productSub, oscpu: navigator.oscpu, buildID: navigator.buildID, chrome: (("chrome" in window) ? typeof window.chrome : "weg"), userAgentData: String(navigator.userAgentData)})'));
 
   if (MODE !== 'timing') {
     const field = `document.querySelector('#identifierId, input[type=email]')`;

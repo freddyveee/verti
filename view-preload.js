@@ -32,6 +32,13 @@ const uaDisguise = GOOGLE_AUTH_HOSTS.includes(location.host) ? `(() => {
   def('appVersion', ${JSON.stringify(process.platform === 'darwin' ? '5.0 (Macintosh)' : '5.0 (Windows)')}); // so knapp meldet es Firefox
   def('vendor', '');           // Firefox meldet einen leeren vendor
   def('userAgentData', undefined); // Client Hints kennt Firefox nicht
+  // Tieferer Fingerabdruck: bei ECHTEN Konten prüft Google mehr als den UA und
+  // erkennt sonst Chromium trotz Firefox-UA (Ablehnung erst NACH der E-Mail,
+  // vor dem Passwort). Diese Merkmale verraten Chromium am deutlichsten:
+  def('productSub', '20100101');   // Firefox-Konstante; Chrome wäre 20030107
+  def('oscpu', ${JSON.stringify(process.platform === 'darwin' ? 'Intel Mac OS X 10.15' : 'Windows NT 10.0; Win64; x64')}); // nur Firefox hat oscpu
+  def('buildID', '20181001000000'); // Firefox meldet eine eingefrorene buildID
+  try { if (!delete window.chrome) Object.defineProperty(window, 'chrome', { get: () => undefined, configurable: true }); } catch (e) {} // echtes Firefox hat kein window.chrome
 })();` : '';
 
 // ---------- Brücke Seite → Verti: Badges, Meldungen, Klicks ----------
