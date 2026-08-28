@@ -1844,7 +1844,9 @@ function openUpdatePopup(payload) {
   if (updateForced && cb) {
     bounds = { x: cb.x, y: cb.y, width: cb.width, height: cb.height };
   } else {
-    const width = 440, height = 600;
+    // Fenster großzügiger als die Karte (400 breit), damit der weiche Schatten
+    // ringsum ausläuft statt am Fensterrand hart abgeschnitten zu werden
+    const width = 560, height = 720;
     bounds = cb
       ? { x: Math.round(cb.x + (cb.width - width) / 2), y: Math.round(cb.y + (cb.height - height) / 2), width, height }
       : { width, height };
