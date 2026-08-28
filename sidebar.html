@@ -870,18 +870,20 @@
       // Vorwärts gibt es in der Bibliothek nicht.
       let navState = { canGoBack: false, canGoForward: false };
       function applyNavState() {
-        const inLibrary = library.classList.contains('open') || settingsEl.classList.contains('open');
+        const inLibrary = library.classList.contains('open') || settingsEl.classList.contains('open') || document.getElementById('feedback').classList.contains('open');
         navBack.disabled = inLibrary ? false : !navState.canGoBack;
         navForward.disabled = inLibrary ? true : !navState.canGoForward;
       }
       navBack.addEventListener('click', () => {
-        if (settingsEl.classList.contains('open')) closeSettings(true);
+        if (document.getElementById('feedback').classList.contains('open')) closeFeedback();
+        else if (settingsEl.classList.contains('open')) closeSettings(true);
         else if (library.classList.contains('open')) closeLibrary(true);
         else window.verti.navBack();
       });
       navForward.addEventListener('click', () => window.verti.navForward());
       navHomeBtn.addEventListener('click', () => {
-        if (settingsEl.classList.contains('open')) closeSettings(true);
+        if (document.getElementById('feedback').classList.contains('open')) closeFeedback();
+        else if (settingsEl.classList.contains('open')) closeSettings(true);
         else if (library.classList.contains('open')) closeLibrary(true);
         else window.verti.navHome();
       });
@@ -905,9 +907,15 @@
         fbStatus.className = 'fbstatus'; fbStatus.textContent = '';
         fbSend.disabled = false; fbSend.textContent = 'Absenden';
         fbModal.classList.add('open');
+        window.verti.openLibrary(); // App-Views ausblenden, sonst liegt das Formular dahinter
+        applyNavState();
         setTimeout(() => fbTopic.focus(), 50);
       }
-      function closeFeedback() { fbModal.classList.remove('open'); }
+      function closeFeedback() {
+        fbModal.classList.remove('open');
+        window.verti.closeLibrary();
+        applyNavState();
+      }
       async function submitFeedback() {
         const topic = fbTopic.value.trim();
         const description = fbText.value.trim();
