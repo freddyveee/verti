@@ -7,10 +7,11 @@ Nächstes Release: 1.1.14
 ## Offen
 
 - Verti Browser – Stufe 3 (Stufen 1 und 2 sind fertig, s. unten): Chrome-Extensions – eigene „Erweiterungen"-Seite + Installieren/Aktualisieren aus dem Web Store (`session.loadExtension`); machbar (Shift macht es vor), Grenze ist nur die Kompatibilität einzelner Erweiterungen. (24.08.2026)
+- Onboarding beim ersten Start (Shift-Stil, wird gerade anhand von Shift zusammengetragen): mehrstufiger Ersteinrichtungs-Assistent. Schritt 1: Bedingungen zustimmen + „Verti als Standardbrowser" + „Daten aus vorhandenem Browser importieren". Schritt 2: eigene Frage „Verti als Standardbrowser nutzen oder aktuellen Browser (Chrome/Safari) behalten?". Schritt 3: Apps auswählen und hinzufügen – nutzt Vertis vorhandenen App-Katalog; Vorschläge aus dem Browser-Verlauf, die meistgenutzten schon angehakt, „Ohne Apps überspringen" möglich. Abschluss: „Browser ist fertig"-Screen mit optionalem Konto/Sync (Spaces, Apps, Tabs, Lesezeichen, Verlauf geräteübergreifend; „Später erinnern"/„Jetzt syncen") – Login des Shift-Kontos läuft über Google/Apple/Microsoft als OAuth-Partner (nicht zu verwechseln mit eingebettetem Google-Login). Das Sync/Konto selbst ist unser zurückgestelltes Account-System, s. „Verschoben". (28.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (nichts – wandert beim Release hierher)
+- Google-Anmeldung repariert: Auf Googles Anmeldeseiten lief seit dem 22.08. zusätzlicher Verti-Code mit (Badge-Brücke, Autoplay-Riegel, Stummschaltung), der Standard-Funktionen der Seite überschreibt – Google wertet das als manipulierten Browser und lehnt die Anmeldung ab. Jetzt läuft dort nur noch die Browser-Kennung, sonst nichts. Nachweis: die letzte funktionierende Anmeldung (22.08., 12:45) lief genau in diesem Zustand. **Muss mit einem echten Konto gegengetestet werden.** (28.08.2026)
 
 ## Blockiert
 
@@ -22,6 +23,7 @@ Nächstes Release: 1.1.14
 - Globales Tastenkürzel (z. B. Ctrl+Leertaste), das Verti aus jeder App heraus nach vorn holt und wieder wegschaltet.
 - Windows: Schließen minimiert in die Taskleiste statt zu beenden.
 - Mehrere Konten derselben App (zwei WhatsApp, zwei Google-Konten).
+- Spaces/Profile (Shift-Stil): getrennte Bereiche mit je eigenen Apps und eigener Suche, beim Onboarding evtl. aus vorhandenen Browser-Profilen vorbefüllt. Achtung: importierte Profile liefern nur Name/Lesezeichen, KEINE eingeloggte Google-Sitzung (hängt am Google-Login-Problem, s. GOOGLE-LOGIN-STATUS.md). (28.08.2026)
 
 ## Verschoben / verworfen
 

@@ -12,6 +12,8 @@ const { ipcRenderer, webFrame } = require('electron');
 // JS-Seite jetzt HIER im Preload: rein lesende Property-Overrides, kein
 // einziger Navigations-Eingriff.
 const GOOGLE_AUTH_HOSTS = ['accounts.google.com', 'accounts.youtube.com'];
+// Auf Googles Anmeldeseiten läuft NUR die Tarnung, sonst nichts (siehe unten).
+const ON_GOOGLE_AUTH = GOOGLE_AUTH_HOSTS.includes(location.host);
 // Dieselbe Kennung wie die Header-Tarnung: main.js reicht sie per
 // additionalArguments herein (eine Quelle, kein Abgleich zweier Dateien).
 const UA_ARG = '--verti-firefox-ua=';
@@ -24,7 +26,7 @@ const FIREFOX_UA = (process.argv.find((a) => a.startsWith(UA_ARG)) || '').slice(
 const VERTI_MUTED = process.argv.includes('--verti-muted=1');
 const mutedInit = `window.__vertiMutedInit = ${VERTI_MUTED}; try { if (document.documentElement) document.documentElement.setAttribute('data-verti-muted', ${VERTI_MUTED} ? '1' : '0'); } catch (e) {}`;
 
-const uaDisguise = GOOGLE_AUTH_HOSTS.includes(location.host) ? `(() => {
+const uaDisguise = ON_GOOGLE_AUTH ? `(() => {
   const def = (prop, value) => {
     try { Object.defineProperty(Navigator.prototype, prop, { get: () => value, configurable: true }); } catch (e) {}
   };
@@ -181,20 +183,34 @@ const autoplayGuard = `(() => {
   } catch (e) {}
 })();`;
 
+// WICHTIG (28.08.2026, forensisch belegt): Auf Googles Anmeldeseiten läuft NUR
+// die Tarnung — KEINE Brücke, KEIN Autoplay-Riegel. Grund: Diese Skripte
+// überschreiben Standard-Funktionen der Seite (window.Notification,
+// ServiceWorkerRegistration.showNotification, HTMLMediaElement.prototype.play,
+// window.Favico). Genau das wertet Googles Anmelde-Prüfung als manipulierten
+// Browser und lehnt den Login ab („nicht sicher", rrk=46) — die Tarnung selbst
+// ist dann egal. Nachweis: Am 22.08.2026 um 10:45 UTC gelang eine frische
+// Anmeldung mit echtem Konto (Cookie-Zeitstempel im Profil); zu dem Zeitpunkt
+// enthielt dieses Preload NUR die Tarnung. Erst danach kamen Favico-Hook
+// (22.08. 14:03 UTC), Autoplay-Riegel (24.08.) und Stumm-Schaltung dazu — und
+// seitdem scheitern frische Anmeldungen. Auf der Anmeldeseite braucht es
+// Badges/Meldungen/Autoplay ohnehin nicht.
+const pageScript = ON_GOOGLE_AUTH ? uaDisguise : mutedInit + autoplayGuard + bridge;
+
 function injectViaDom() {
   // Notnagel ohne webFrame: <script> bei document-start (feuert, sobald <html>
   // existiert, vor jedem Seitenskript) – auf CSP-Seiten wirkungslos.
   process.once('document-start', () => {
     try {
       const s = document.createElement('script');
-      s.textContent = uaDisguise + mutedInit + autoplayGuard + bridge;
+      s.textContent = pageScript;
       document.documentElement.appendChild(s);
       s.remove();
     } catch (e) {}
   });
 }
 try {
-  webFrame.executeJavaScript(uaDisguise + mutedInit + autoplayGuard + bridge).catch(() => {});
+  webFrame.executeJavaScript(pageScript).catch(() => {});
 } catch (e) {
   injectViaDom();
 }
