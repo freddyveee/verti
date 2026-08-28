@@ -2,7 +2,7 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.13
+Nächstes Release: 1.1.14
 
 ## Offen
 
@@ -30,6 +30,12 @@ Nächstes Release: 1.1.13
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.13 (28.08.2026)
+
+- Der „Verbesserung"-Knopf funktioniert jetzt zuverlässig: Das Formular öffnete sich vorher unsichtbar hinter der geöffneten App und schien „tot". (28.08.2026)
+- App-Icon war in kleinen Größen verpixelt/kaputt (auch das Icon der Installationsdatei) – jetzt scharfe, saubere Icons für Mac und Windows. (28.08.2026)
+- Update-Hinweis: der Schatten des kleinen Popups läuft jetzt weich aus statt mit harter Kante. (28.08.2026)
 
 ### 1.1.12 (28.08.2026)
 
