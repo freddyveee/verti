@@ -1834,17 +1834,25 @@ function openUpdatePopup(payload) {
   // Das Popup ist ein Kindfenster des Hauptfensters: ist das nur versteckt
   // (Mac, Schließen = Verstecken), erst wieder zeigen, sonst bleibt es unsichtbar
   if (win && !win.isDestroyed() && !win.isVisible()) win.show();
-  const width = 440;
-  const height = 600;
-  const b = win && !win.isDestroyed() ? win.getBounds() : null;
+  // Erzwungen: das Popup deckt das GANZE Fenster ab (dunkler Schleier + Karte,
+  // in update.html) und fängt alle Klicks ab -> die Apps dahinter sind blockiert,
+  // OHNE das Hauptfenster per setEnabled zu sperren. Genau dieses Sperren erzeugte
+  // auf macOS den weißen Schleier und machte das Popup selbst unbedienbar. Sonst:
+  // kleine Karte mittig.
+  const cb = win && !win.isDestroyed() ? win.getContentBounds() : null;
+  let bounds;
+  if (updateForced && cb) {
+    bounds = { x: cb.x, y: cb.y, width: cb.width, height: cb.height };
+  } else {
+    const width = 440, height = 600;
+    bounds = cb
+      ? { x: Math.round(cb.x + (cb.width - width) / 2), y: Math.round(cb.y + (cb.height - height) / 2), width, height }
+      : { width, height };
+  }
   updateWin = new BrowserWindow({
-    ...(b ? { x: Math.round(b.x + (b.width - width) / 2), y: Math.round(b.y + (b.height - height) / 2) } : {}),
-    width,
-    height,
+    ...bounds,
     frame: false,
     transparent: true,
-    // Kein System-Fensterschatten: der zeichnet sonst einen grauen Rahmen
-    // um das (unsichtbare) Fensterrechteck; die Karte hat ihren eigenen Schatten
     hasShadow: false,
     resizable: false,
     maximizable: false,
@@ -1853,12 +1861,11 @@ function openUpdatePopup(payload) {
     skipTaskbar: true,
     show: false,
     alwaysOnTop: updateForced,
-    parent: win && !win.isDestroyed() ? win : undefined,
+    // Erzwungen KEIN parent: macOS koppelt ein Kindfenster an den gesperrten
+    // Zustand des Elternfensters (auch wenn wir nicht mehr setEnabled nutzen).
+    parent: (win && !win.isDestroyed() && !updateForced) ? win : undefined,
     webPreferences: { preload: path.join(__dirname, 'update-preload.js') },
   });
-  // Erzwungenes Update: Hauptfenster (und damit alle App-Views) sperren, bis
-  // aktualisiert wurde. Das Popup selbst bleibt bedienbar.
-  if (updateForced && win && !win.isDestroyed()) { try { win.setEnabled(false); } catch (e) {} }
   updateWin.on('close', (e) => {
     // Nicht schließbar, solange erzwungen – außer der Nutzer hat den Notausgang
     // bei einem Fehler bestätigt oder die App wird gerade beendet (Update-Neustart)

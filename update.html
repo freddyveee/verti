@@ -11,6 +11,10 @@
     -webkit-user-select: none; user-select: none;
     -webkit-font-smoothing: antialiased;
   }
+  /* Erzwungenes Update: dunkler Vollbild-Schleier, deckt die Apps dahinter ab
+     und fängt Klicks ab (das Fenster ist dann fensterfüllend, s. main.js) */
+  body.forced { background: rgba(10, 8, 18, 0.90); }
+  body.forced .card { -webkit-app-region: no-drag; }
   .card {
     position: relative;
     width: 400px;
@@ -126,6 +130,7 @@
   function render(s) {
     mode = s.mode;
     if (typeof s.forced === 'boolean') forced = s.forced;
+    document.body.classList.toggle('forced', forced);
     closable = mode === 'celebrate' || (!forced && ['available', 'error'].includes(mode));
 
     if (mode === 'available') {

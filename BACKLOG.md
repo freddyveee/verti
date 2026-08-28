@@ -2,7 +2,7 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.12
+Nächstes Release: 1.1.13
 
 ## Offen
 
@@ -31,10 +31,10 @@ Nächstes Release: 1.1.12
 
 ## Veröffentlicht
 
-### 1.1.11 (28.08.2026)
+### 1.1.12 (28.08.2026)
 
 - Fehler behoben: Der neue „Verbesserung"-Knopf lag auf den Navigationspfeilen und ließ sich nicht anklicken. Er sitzt jetzt sauber oben rechts neben dem Zahnrad und öffnet das Formular zuverlässig. (28.08.2026)
-- Updates werden jetzt wirklich erzwungen: Sobald ein Update bereitliegt, erscheint das Pflicht-Popup, sobald Verti im Vordergrund ist – auch wenn die App (wie auf dem Mac üblich) tagelang durchläuft. Vorher blieb es oft beim bloßen Update-Knopf. (28.08.2026)
+- Updates werden jetzt wirklich erzwungen: Sobald ein Update bereitliegt und Verti im Vordergrund ist, dunkelt ein Pflicht-Popup die App ab, bis man aktualisiert – auch wenn Verti (wie auf dem Mac üblich) tagelang durchläuft. Vorher blieb es oft beim bloßen Update-Knopf. (28.08.2026)
 
 ### 1.1.10 (27.08.2026)
 
