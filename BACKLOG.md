@@ -21,7 +21,7 @@ Nächstes Release: 1.1.16
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- Automatischer Katalog-Durchlauf (): prüft alle 209 Apps in rund 15 Minuten und meldet, welche nicht mehr laden. Hat sofort Calendly (404) gefunden. Läuft nicht mit im Programm, ist ein Werkzeug für uns. (29.08.2026)
+- Automatischer Katalog-Durchlauf (`scripts/catalog-sweep.js`): prüft alle 209 Apps in rund 15 Minuten und meldet, welche nicht mehr laden. Hat sofort Calendly (404) gefunden. Läuft nicht mit im Programm, ist ein Werkzeug für uns. (29.08.2026)
 - Admin-Panel für die Verbesserungs-Meldungen ist jetzt aus Verti erreichbar: Zahnrad → Einstellungen → „Admin-Panel öffnen", geht im Verti-Browser auf. Nur auf Freddys Rechnern sichtbar. Einmal bei Supabase anmelden, danach bleibt die Anmeldung erhalten. (29.08.2026)
 - Das Update-Fenster blieb liegen, wenn man Verti verschob – der dunkle Schleier war dann vom Fenster abgekoppelt. Es folgt jetzt beim Verschieben und beim Ändern der Größe. (29.08.2026)
 
