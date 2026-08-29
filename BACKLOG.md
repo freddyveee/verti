@@ -8,7 +8,6 @@ Nächstes Release: 1.1.16
 
 ### Qualitätssicherung für den Verkauf (29.08.2026)
 
-- Katalog-Durchlauf `scripts/catalog-sweep.js`: lädt alle 209 Katalog-Apps nacheinander ohne Login und meldet Kaputtes – Umleitung auf „Browser nicht unterstützt"/`signin/rejected`, HTTP-Status ab 400, `did-fail-load` (Fehlercode -3 rausfiltern, der kommt bei jeder normalen Umleitung), weiße Seite, Marker-Texte. Konsolenfehler NICHT als Alarm nutzen, die wirft jede große Web-App im Normalbetrieb. Nachts laufen lassen, Bericht am Morgen. Hätte den Google-Bruch am selben Tag gemeldet. (29.08.2026)
 - `windowOpenPolicy` als Testtabelle absichern: die Funktion ist bereits rein (details rein, Entscheidung raus), also mit `node:test` etwa 15 Fälle durchspielen (disposition × features × Auth/gleiche App/fremd × postBody). Hätte den Canva-Fehler in Sekunden gefangen. (29.08.2026)
 - Kompatibilitäts-Seite `scripts/kompatibilitaets-check.html`: eine lokale Seite, die alle Berührungsflächen zwischen Verti und beliebigen Web-Apps aktiv durchspielt (Fenster öffnen, Benachrichtigungen, Downloads, Medien, Zwischenablage, Upload, Berechtigungen, Zoom/Breite) und grün/rot zeigt. Danach ist der Vor-Release-Test ein einziger Seitenaufruf, auch nach jedem Electron-Update. (29.08.2026)
 - Tote Views heilen nicht: Verti hat KEINE Handler für `did-fail-load`, `render-process-gone` und `unresponsive` (geprüft: 0 Treffer). Nach Renderer-Absturz oder Netzabriss bleibt eine App weiß, bis der Nutzer es selbst merkt. Automatisch neu laden mit Hinweis. (29.08.2026)
@@ -22,6 +21,7 @@ Nächstes Release: 1.1.16
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- Automatischer Katalog-Durchlauf (): prüft alle 209 Apps in rund 15 Minuten und meldet, welche nicht mehr laden. Hat sofort Calendly (404) gefunden. Läuft nicht mit im Programm, ist ein Werkzeug für uns. (29.08.2026)
 - Admin-Panel für die Verbesserungs-Meldungen ist jetzt aus Verti erreichbar: Zahnrad → Einstellungen → „Admin-Panel öffnen", geht im Verti-Browser auf. Nur auf Freddys Rechnern sichtbar. Einmal bei Supabase anmelden, danach bleibt die Anmeldung erhalten. (29.08.2026)
 - Das Update-Fenster blieb liegen, wenn man Verti verschob – der dunkle Schleier war dann vom Fenster abgekoppelt. Es folgt jetzt beim Verschieben und beim Ändern der Größe. (29.08.2026)
 
