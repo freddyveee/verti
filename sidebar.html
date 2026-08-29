@@ -495,6 +495,10 @@
       <div class="setlabel"><b>Version</b><span id="updStatus">Installierte Version von Verti</span></div>
       <div class="verwrap"><span class="setver" id="settingsVersion"></span><button class="setbtn" id="checkUpd">Nach Updates suchen</button></div>
     </div>
+    <div class="setrow" id="adminRow" style="display:none">
+      <div class="setlabel"><b>Verbesserungen</b><span>Meldungen aus dem Team ansehen</span></div>
+      <div class="verwrap"><button class="setbtn" id="openAdmin">Admin-Panel öffnen</button></div>
+    </div>
     <div class="setsection-title">Benachrichtigungen pro App</div>
     <div id="notifList"></div>
   </div>
@@ -526,6 +530,12 @@
       if (initSettings.theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
       const sv = document.getElementById('settingsVersion');
       if (sv) sv.textContent = appInfo.version + (appInfo.packaged ? '' : ' (Dev)');
+      if (appInfo.admin) {
+        const ar = document.getElementById('adminRow');
+        if (ar) ar.style.display = '';
+        const ab = document.getElementById('openAdmin');
+        if (ab) ab.addEventListener('click', () => window.verti.openAdmin());
+      }
       if (!appInfo.packaged) {
         const devTag = document.getElementById('devTag');
         devTag.title = `Dev-Version ${appInfo.version} aus ~/Projekte/verti`;

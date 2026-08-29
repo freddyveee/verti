@@ -36,4 +36,5 @@ contextBridge.exposeInMainWorld('verti', {
   onTheme: (cb) => ipcRenderer.on('theme', (e, t) => cb(t)),
   onAppsChanged: (cb) => ipcRenderer.on('apps-changed', (e, apps) => cb(apps)),
   sendFeedback: (payload) => ipcRenderer.invoke('feedback:send', payload),
+  openAdmin: () => ipcRenderer.send('open-admin'),
 });

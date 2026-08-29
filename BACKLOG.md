@@ -22,6 +22,7 @@ Nächstes Release: 1.1.16
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- Admin-Panel für die Verbesserungs-Meldungen ist jetzt aus Verti erreichbar: Zahnrad → Einstellungen → „Admin-Panel öffnen", geht im Verti-Browser auf. Nur auf Freddys Rechnern sichtbar. Einmal bei Supabase anmelden, danach bleibt die Anmeldung erhalten. (29.08.2026)
 - Das Update-Fenster blieb liegen, wenn man Verti verschob – der dunkle Schleier war dann vom Fenster abgekoppelt. Es folgt jetzt beim Verschieben und beim Ändern der Größe. (29.08.2026)
 
 ## Blockiert

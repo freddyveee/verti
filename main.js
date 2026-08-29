@@ -1639,7 +1639,25 @@ ipcMain.handle('settings:check-updates', async () => {
     return { status: 'current', version: app.getVersion() };
   } catch { return { status: 'error' }; }
 });
-ipcMain.handle('get-app-info', () => ({ version: app.getVersion(), packaged: app.isPackaged }));
+// Das Admin-Panel (Verbesserungs-Meldungen) ist nur fuer Freddy gedacht und
+// erscheint deshalb nur auf SEINEN Rechnern in den Einstellungen. Kein
+// Sicherheitsmerkmal - das Panel selbst verlangt eine echte Anmeldung -,
+// sondern nur, damit Mitarbeiter den Eintrag gar nicht erst sehen.
+const ADMIN_PANEL_URL = 'https://freddyveee.github.io/verti/admin.html';
+function istAdminRechner() {
+  if (process.env.VERTI_ADMIN === '1') return true;
+  try {
+    return /frederic|freddy/i.test(require('os').hostname() || '');
+  } catch (e) {
+    return false;
+  }
+}
+ipcMain.handle('get-app-info', () => ({ version: app.getVersion(), packaged: app.isPackaged, admin: istAdminRechner() }));
+ipcMain.on('open-admin', () => {
+  if (!istAdminRechner()) return;
+  switchApp(BROWSER_ID);
+  browserNewTab(ADMIN_PANEL_URL);
+});
 
 // ---------- „Verbesserungen": Feedback landet in Supabase ----------
 // Der anon-Key ist öffentlich unkritisch (nur INSERT per Row-Level-Security);
