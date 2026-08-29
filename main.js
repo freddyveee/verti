@@ -556,28 +556,57 @@ function popupWindowOptions(width, height) {
   };
 }
 
+// Will die Seite WIRKLICH ein eigenes Fenster, oder nur „mach das woanders auf"?
+// Chromium meldet echte Skript-Popups als 'new-window'; ein target=_blank-Link
+// oder window.open OHNE Fenstermaße kommt als 'foreground-tab'/'default' an —
+// das ist ein Tab-Wunsch, kein Fenster-Wunsch.
+// Wichtig: Die vier Ja-Fälle MÜSSEN ein echtes Fenster bekommen, sonst gehen
+// OAuth-Flows kaputt (sie brauchen das zurückgegebene Fensterobjekt, reden per
+// window.opener mit der Ursprungsseite und schließen sich selbst per
+// window.close()) bzw. ginge bei einem POST der Formularinhalt verloren.
+function wantsRealWindow({ url, disposition, features, postBody }) {
+  if (!url || url === 'about:blank') return true;  // OAuth startet oft leer
+  if (disposition === 'new-window') return true;   // echtes Skript-Popup
+  if (features && String(features).trim()) return true; // window.open mit Maßen
+  if (postBody) return true;                       // <form target=_blank>: loadURL kann den POST nicht ersetzen
+  return false;
+}
+
 // Eine gemeinsame Fenster-Policy für Views UND deren Popups: Auth bleibt in
 // der App, App-Popouts bleiben in der App, alles andere geht in den Browser
 function windowOpenPolicy(openerContents) {
-  return ({ url, disposition }) => {
+  return (details) => {
+    const { url, disposition } = details;
+    if (!app.isPackaged) {
+      console.log('[fenster]', disposition, 'features=' + JSON.stringify(details.features || ''),
+        'post=' + !!details.postBody, String(url).slice(0, 90));
+    }
     if (isAuthUrl(url)) {
-      // Skript-Popups (window.open mit Fenstermaßen, disposition 'new-window')
-      // melden sich beim Opener zurück und schließen sich selbst → kleines Fenster.
-      // Normale Login-Links (target=_blank) dagegen in der Ansicht selbst laden,
-      // dort geht es nach dem Login im Dienst weiter.
-      if (disposition === 'new-window' || !url || url === 'about:blank') {
+      // Skript-Popups melden sich beim Opener zurück und schließen sich selbst
+      // → kleines Fenster. Normale Login-Links (target=_blank) dagegen in der
+      // Ansicht selbst laden, dort geht es nach dem Login im Dienst weiter.
+      if (wantsRealWindow(details)) {
         return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(520, 680) };
       }
       openerContents.loadURL(url);
       return { action: 'deny' };
     }
     // Neue Fenster/Tabs zur SELBEN App (gleicher Ursprung wie der Opener) oder
-    // zu einer anderen installierten App bleiben IN Verti (eigenes Fenster),
-    // statt im externen Browser zu landen – z. B. ChatGPT „neue Unterhaltung",
-    // die als neues Fenster aufgeht.
+    // zu einer anderen installierten App bleiben IN Verti statt im externen
+    // Browser. Ein reiner Tab-Wunsch wird dabei IN der bestehenden Ansicht
+    // geöffnet (Canva „Im Editor öffnen" bekam sonst ein zweites Fenster);
+    // nur echte Skript-Popups erhalten ein eigenes Fenster (z. B. ChatGPT
+    // „neue Unterhaltung", die per window.open mit Maßen aufgeht).
     let sameApp = false;
     try { sameApp = !!url && new URL(url).origin === new URL(openerContents.getURL()).origin; } catch {}
-    if (sameApp || (disposition === 'new-window' && isInstalledAppUrl(url))) {
+    if (sameApp) {
+      if (wantsRealWindow(details)) {
+        return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(1100, 800) };
+      }
+      openerContents.loadURL(url);
+      return { action: 'deny' };
+    }
+    if (disposition === 'new-window' && isInstalledAppUrl(url)) {
       return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(1100, 800) };
     }
     browserOpenExternal(url);
@@ -1788,6 +1817,21 @@ function buildMenu() {
         },
         { type: 'separator' },
         { role: 'togglefullscreen' },
+        // Entwicklerwerkzeuge für die gerade sichtbare App bzw. den Browser-Tab.
+        // Ohne die war jeder Fehler INNERHALB einer Web-App blind zu suchen
+        // (Ursachensuche ging nur über eigens gebaute Sonden). Bewusst mit
+        // Tastenkürzel und sichtbar im Menü, damit auch Mitarbeiter bei einer
+        // Rückmeldung schnell Konsole/Netzwerk zeigen können.
+        {
+          label: 'Entwicklerwerkzeuge',
+          accelerator: isMac ? 'Alt+Cmd+I' : 'Ctrl+Shift+I',
+          click: () => {
+            const wc = activeWebContents();
+            if (!wc || wc.isDestroyed()) return;
+            if (wc.isDevToolsOpened()) wc.closeDevTools();
+            else wc.openDevTools({ mode: 'detach' });
+          },
+        },
       ],
     },
     // Windows: kein 'close'-Role im Fenstermenü, sonst beendet Strg+W die komplette App
