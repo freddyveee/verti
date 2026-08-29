@@ -11,7 +11,8 @@ Nächstes Release: 1.1.15
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (nichts – wandert beim Release hierher)
+- Canva „Im Editor öffnen" riss ein zweites Fenster auf, statt in der Canva-Ansicht zu bleiben. Verti unterscheidet jetzt sauber, ob eine Seite wirklich ein eigenes Fenster will (echtes Popup, Login-Fenster, Formular-Versand) oder nur „mach das auf" meint – Letzteres öffnet in der bestehenden Ansicht. Betrifft alle Apps, nicht nur Canva. (29.08.2026)
+- Entwicklerwerkzeuge unter „Ansicht" (Alt+Cmd+I bzw. Strg+Shift+I) für die gerade sichtbare App. Bisher gab es sie nirgends, dadurch war jeder Fehler innerhalb einer Web-App nur über eigens gebaute Sonden zu untersuchen. (29.08.2026)
 
 ## Blockiert
 
