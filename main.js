@@ -1929,13 +1929,43 @@ function openUpdatePopup(payload) {
     // bei einem Fehler bestätigt oder die App wird gerade beendet (Update-Neustart)
     if (updateForced && !allowForcedClose && !quitting) e.preventDefault();
   });
+  // Ohne Elternfenster (s.o.) wandert das Popup NICHT mit, wenn man Verti
+  // verschiebt oder in der Größe ändert – der dunkle Schleier blieb dann an der
+  // alten Stelle liegen und war vom Fenster abgekoppelt (29.08.2026 beobachtet,
+  // Verti wurde während des Ladens verschoben). Deshalb von Hand nachführen.
+  const folgeFenster = () => {
+    if (!updateWin || updateWin.isDestroyed() || !win || win.isDestroyed()) return;
+    const b = win.getContentBounds();
+    try {
+      if (updateForced) {
+        updateWin.setBounds({ x: b.x, y: b.y, width: b.width, height: b.height });
+      } else {
+        const s = updateWin.getBounds();
+        updateWin.setBounds({
+          x: Math.round(b.x + (b.width - s.width) / 2),
+          y: Math.round(b.y + (b.height - s.height) / 2),
+          width: s.width, height: s.height,
+        });
+      }
+    } catch (e) {}
+  };
+  if (win && !win.isDestroyed()) {
+    win.on('move', folgeFenster);
+    win.on('resize', folgeFenster);
+  }
+
   updateWin.loadFile('update.html');
   updateWin.webContents.once('did-finish-load', () => {
     if (!updateWin) return;
     updateWin.webContents.send('verti-update:state', payload);
+    folgeFenster(); // Fenster kann während des Ladens verschoben worden sein
     updateWin.show();
   });
   updateWin.on('closed', () => {
+    if (win && !win.isDestroyed()) {
+      win.off('move', folgeFenster);
+      win.off('resize', folgeFenster);
+    }
     updateWin = null;
     updateDialogOpen = false;
     updateForced = false;

@@ -22,7 +22,7 @@ Nächstes Release: 1.1.16
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (nichts – wandert beim Release hierher)
+- Das Update-Fenster blieb liegen, wenn man Verti verschob – der dunkle Schleier war dann vom Fenster abgekoppelt. Es folgt jetzt beim Verschieben und beim Ändern der Größe. (29.08.2026)
 
 ## Blockiert
 
