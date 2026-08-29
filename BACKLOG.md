@@ -2,7 +2,7 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.16
+Nächstes Release: 1.1.17
 
 ## Offen
 
@@ -18,12 +18,7 @@ Nächstes Release: 1.1.16
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- Rechtschreibprüfung spricht jetzt Deutsch. Vorher war sie zwar an, prüfte aber gegen Englisch – in jeder App standen rote Wellen unter korrektem Deutsch. (29.08.2026)
-- Meeting- und Telefon-Links funktionieren: Zoom, Teams, Webex, Slack, Kalender-Abos, tel: und sms: wurden vorher still verworfen und passierten einfach nichts. (29.08.2026)
-- Abgestürzte oder nicht geladene Apps laden sich jetzt einmal automatisch neu, statt weiß stehen zu bleiben, bis man es selbst merkt. (29.08.2026)
-- Automatischer Katalog-Durchlauf (`scripts/catalog-sweep.js`): prüft alle 209 Apps in rund 15 Minuten und meldet, welche nicht mehr laden. Hat sofort Calendly (404) gefunden. Läuft nicht mit im Programm, ist ein Werkzeug für uns. (29.08.2026)
-- Admin-Panel für die Verbesserungs-Meldungen ist jetzt aus Verti erreichbar: Zahnrad → Einstellungen → „Admin-Panel öffnen", geht im Verti-Browser auf. Nur auf Freddys Rechnern sichtbar. Einmal bei Supabase anmelden, danach bleibt die Anmeldung erhalten. (29.08.2026)
-- Das Update-Fenster blieb liegen, wenn man Verti verschob – der dunkle Schleier war dann vom Fenster abgekoppelt. Es folgt jetzt beim Verschieben und beim Ändern der Größe. (29.08.2026)
+- (nichts – wandert beim Release hierher)
 
 ## Blockiert
 
@@ -44,6 +39,15 @@ Nächstes Release: 1.1.16
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.16 (29.08.2026)
+
+- Rechtschreibprüfung spricht jetzt Deutsch. Vorher war sie zwar an, prüfte aber gegen Englisch – in jeder App standen rote Wellen unter korrektem Deutsch. (29.08.2026)
+- Meeting- und Telefon-Links funktionieren: Zoom, Teams, Webex, Slack, Kalender-Abos, tel: und sms: wurden vorher still verworfen und passierten einfach nichts. (29.08.2026)
+- Abgestürzte oder nicht geladene Apps laden sich jetzt einmal automatisch neu, statt weiß stehen zu bleiben, bis man es selbst merkt. (29.08.2026)
+- Automatischer Katalog-Durchlauf (`scripts/catalog-sweep.js`): prüft alle 209 Apps in rund 15 Minuten und meldet, welche nicht mehr laden. Hat sofort Calendly (404) gefunden. Läuft nicht mit im Programm, ist ein Werkzeug für uns. (29.08.2026)
+- Admin-Panel für die Verbesserungs-Meldungen ist jetzt aus Verti erreichbar: Zahnrad → Einstellungen → „Admin-Panel öffnen", geht im Verti-Browser auf. Nur auf Freddys Rechnern sichtbar. Einmal bei Supabase anmelden, danach bleibt die Anmeldung erhalten. (29.08.2026)
+- Das Update-Fenster blieb liegen, wenn man Verti verschob – der dunkle Schleier war dann vom Fenster abgekoppelt. Es folgt jetzt beim Verschieben und beim Ändern der Größe. (29.08.2026)
 
 ### 1.1.15 (29.08.2026)
 
