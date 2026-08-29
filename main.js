@@ -687,6 +687,18 @@ function viewWebPreferences(muted) {
   return {
     partition: 'persist:apps',
     spellcheck: true,
+    // Versteckte Views NICHT drosseln. Chromium drosselt normalerweise alles,
+    // was nicht sichtbar ist (Timer nach ~5 Min auf 1x/Minute) — in Verti sind
+    // aber IMMER alle Apps bis auf eine versteckt, und genau die sollen
+    // weiterlaufen: Badges und Benachrichtigungen (WhatsApp, Stackfield) hängen
+    // daran, und eine abgerissene Verbindung kann sich sonst nicht mehr selbst
+    // erholen (Verdacht beim ChatGPT-Hänger: Wiederverbinden lief gedrosselt
+    // nicht mehr, die Seite blieb im Zustand „antwortet noch" stehen und nahm
+    // deshalb keine neue Nachricht mehr an).
+    // Nebenwirkung (bekannt, Electron #42378): lange versteckte Views können
+    // beim Zurückschalten weiß bleiben — dagegen läuft bereits das
+    // webContents.invalidate() beim App-Wechsel.
+    backgroundThrottling: false,
     preload: path.join(__dirname, 'view-preload.js'),
     additionalArguments: args,
   };
