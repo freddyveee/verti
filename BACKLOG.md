@@ -10,9 +10,6 @@ Nächstes Release: 1.1.16
 
 - `windowOpenPolicy` als Testtabelle absichern: die Funktion ist bereits rein (details rein, Entscheidung raus), also mit `node:test` etwa 15 Fälle durchspielen (disposition × features × Auth/gleiche App/fremd × postBody). Hätte den Canva-Fehler in Sekunden gefangen. (29.08.2026)
 - Kompatibilitäts-Seite `scripts/kompatibilitaets-check.html`: eine lokale Seite, die alle Berührungsflächen zwischen Verti und beliebigen Web-Apps aktiv durchspielt (Fenster öffnen, Benachrichtigungen, Downloads, Medien, Zwischenablage, Upload, Berechtigungen, Zoom/Breite) und grün/rot zeigt. Danach ist der Vor-Release-Test ein einziger Seitenaufruf, auch nach jedem Electron-Update. (29.08.2026)
-- Tote Views heilen nicht: Verti hat KEINE Handler für `did-fail-load`, `render-process-gone` und `unresponsive` (geprüft: 0 Treffer). Nach Renderer-Absturz oder Netzabriss bleibt eine App weiß, bis der Nutzer es selbst merkt. Automatisch neu laden mit Hinweis. (29.08.2026)
-- Rechtschreibprüfung ist an (`spellcheck: true`), aber es wird nie eine Sprache gesetzt (`setSpellCheckerLanguages` fehlt) – deutsche Nutzer sehen in jeder App rote Wellen unter korrektem Deutsch. Einzeiler. (29.08.2026)
-- Deep-Links sterben still: `openExternally` lässt nur `http/https/mailto` durch, also gehen `zoommtg:`, `msteams:`, `slack:`, `webcal:` verloren – obwohl Kalender und Teams im Katalog sind. Erlaubte Protokolle erweitern. (29.08.2026)
 - App-Kennzeichnung im Katalog: „geprüft" (kleine Liste, mit sichtbarem Datum „geprüft am"), „unterstützt" (lädt im automatischen Durchlauf) und „experimentell". Die Stufe beschreibt UNSERE Zusage, nicht die Qualität der fremden App. Kein Wettbewerber zeigt so etwas – echtes Unterscheidungsmerkmal beim Verkauf. (29.08.2026)
 - „Diese App funktioniert nicht"-Meldung im Rechtsklick jeder Sidebar-App, mit einem Pflichtfeld: „Geht es in deinem normalen Browser? ja/nein/nicht probiert". Dieses eine Feld trennt Verti-Fehler von Änderungen beim App-Anbieter und macht 209 Apps überhaupt erst handhabbar. Baut auf dem vorhandenen Verbesserung-Knopf und Supabase-Panel auf. (29.08.2026)
 
@@ -21,6 +18,9 @@ Nächstes Release: 1.1.16
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- Rechtschreibprüfung spricht jetzt Deutsch. Vorher war sie zwar an, prüfte aber gegen Englisch – in jeder App standen rote Wellen unter korrektem Deutsch. (29.08.2026)
+- Meeting- und Telefon-Links funktionieren: Zoom, Teams, Webex, Slack, Kalender-Abos, tel: und sms: wurden vorher still verworfen und passierten einfach nichts. (29.08.2026)
+- Abgestürzte oder nicht geladene Apps laden sich jetzt einmal automatisch neu, statt weiß stehen zu bleiben, bis man es selbst merkt. (29.08.2026)
 - Automatischer Katalog-Durchlauf (`scripts/catalog-sweep.js`): prüft alle 209 Apps in rund 15 Minuten und meldet, welche nicht mehr laden. Hat sofort Calendly (404) gefunden. Läuft nicht mit im Programm, ist ein Werkzeug für uns. (29.08.2026)
 - Admin-Panel für die Verbesserungs-Meldungen ist jetzt aus Verti erreichbar: Zahnrad → Einstellungen → „Admin-Panel öffnen", geht im Verti-Browser auf. Nur auf Freddys Rechnern sichtbar. Einmal bei Supabase anmelden, danach bleibt die Anmeldung erhalten. (29.08.2026)
 - Das Update-Fenster blieb liegen, wenn man Verti verschob – der dunkle Schleier war dann vom Fenster abgekoppelt. Es folgt jetzt beim Verschieben und beim Ändern der Größe. (29.08.2026)

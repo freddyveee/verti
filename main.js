@@ -520,7 +520,22 @@ function openExternally(url) {
   } catch {
     return;
   }
-  if (['http:', 'https:', 'mailto:'].includes(u.protocol)) shell.openExternal(url);
+  // Neben Web und Mail auch die Protokolle der Apps durchlassen, die in Vertis
+  // Katalog stehen: Meeting-Links (Zoom, Teams, Webex), Telefon/SMS und
+  // Kalender-Abos starben vorher still, obwohl Kalender und Teams eingebaut
+  // sind. Bewusst eine feste Liste - file://, UNC-Pfade und beliebige eigene
+  // Protokolle aus Webinhalt bleiben draussen (shell.openExternal ist
+  // ShellExecute und wuerde sonst Programme starten).
+  const ERLAUBT = [
+    'http:', 'https:', 'mailto:', 'tel:', 'sms:', 'facetime:',
+    'webcal:',                                   // Kalender-Abo
+    'zoommtg:', 'zoomus:',                       // Zoom
+    'msteams:',                                  // Microsoft Teams
+    'slack:',                                    // Slack
+    'webex:', 'wbx:',                            // Webex
+    'spotify:',                                  // Spotify
+  ];
+  if (ERLAUBT.includes(u.protocol)) shell.openExternal(url);
 }
 
 // Popouts einer installierten App (z.B. Gmail "In neuem Fenster verfassen")
@@ -1363,6 +1378,29 @@ function createView(appDef) {
     setAudio(appDef.id, on);
   });
   view.webContents.on('did-finish-load', () => applyZoom(appDef.id));
+  // Selbstheilung: stuerzt der Renderer ab oder scheitert das Laden, blieb die
+  // App bisher einfach weiss stehen, bis jemand es selbst merkte (Verti hatte
+  // gar keine Behandlung dafuer). Jetzt einmal automatisch neu laden, mit
+  // etwas Abstand; nur EIN Versuch je Zwischenfall, damit eine dauerhaft
+  // kaputte Seite keine Endlosschleife dreht.
+  let heiltGerade = false;
+  const heile = (grund) => {
+    if (heiltGerade) return;
+    heiltGerade = true;
+    setTimeout(() => {
+      try {
+        if (!view.webContents.isDestroyed()) view.webContents.reload();
+      } catch (e) {}
+      setTimeout(() => { heiltGerade = false; }, 30000); // Sperre wieder loesen
+    }, 1500);
+  };
+  view.webContents.on('render-process-gone', (_e, d) => {
+    if (d && d.reason !== 'clean-exit') heile(d.reason);
+  });
+  view.webContents.on('did-fail-load', (_e, code, desc, url, isMain) => {
+    // -3 (ABORTED) ist normal bei jeder Weiterleitung, kein Fehler
+    if (isMain && code !== -3) heile(code + ' ' + desc);
+  });
   const tweaks = APP_TWEAKS[appDef.id];
   if (tweaks) {
     view.webContents.on('dom-ready', () => {
@@ -1485,6 +1523,18 @@ function createWindow() {
 
   const ses = session.fromPartition('persist:apps');
   ses.setUserAgent(chromeUserAgent());
+  // Rechtschreibpruefung war zwar an (spellcheck: true), aber ohne gesetzte
+  // Sprache pruefte Chromium gegen Englisch - deutsche Nutzer sahen in JEDER
+  // App rote Wellen unter korrektem Deutsch.
+  // Gemessen (29.08.2026, Electron 43/macOS): Chromium normalisiert die Liste
+  // auf "de" und nutzt auf dem Mac die System-Rechtschreibpruefung; unter
+  // Windows greift die Liste direkt. Deshalb einfach Deutsch + Englisch
+  // anfragen und die Verfuegbarkeit vorher pruefen, damit nichts wirft.
+  try {
+    const da = ses.availableSpellCheckerLanguages || [];
+    const wunsch = ['de-DE', 'en-US'].filter((l) => da.includes(l));
+    if (wunsch.length) ses.setSpellCheckerLanguages(wunsch);
+  } catch (e) {}
   applyGoogleAuthDisguise(ses);
   // Login-Popups laufen teils in der Default-Session, bevor sie adoptiert werden
   applyGoogleAuthDisguise(session.defaultSession);
