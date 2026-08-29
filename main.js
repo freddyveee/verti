@@ -153,7 +153,7 @@ const CATALOG = [
   { id: 'jira', name: 'Jira', url: 'https://www.atlassian.com/software/jira' },
   { id: 'confluence', name: 'Confluence', url: 'https://www.atlassian.com/software/confluence' },
   { id: 'coda', name: 'Coda', url: 'https://coda.io/' },
-  { id: 'calendly', name: 'Calendly', url: 'https://calendly.com/app/' },
+  { id: 'calendly', name: 'Calendly', url: 'https://calendly.com/event_types/user/me' },
   { id: 'zapier', name: 'Zapier', url: 'https://zapier.com/app/dashboard' },
   { id: 'make', name: 'Make', url: 'https://www.make.com/' },
   { id: 'smartsheet', name: 'Smartsheet', url: 'https://app.smartsheet.com/' },
