@@ -13,6 +13,7 @@ Nächstes Release: 1.1.15
 
 - Canva „Im Editor öffnen" riss ein zweites Fenster auf, statt in der Canva-Ansicht zu bleiben. Verti unterscheidet jetzt sauber, ob eine Seite wirklich ein eigenes Fenster will (echtes Popup, Login-Fenster, Formular-Versand) oder nur „mach das auf" meint – Letzteres öffnet in der bestehenden Ansicht. Betrifft alle Apps, nicht nur Canva. (29.08.2026)
 - Entwicklerwerkzeuge unter „Ansicht" (Alt+Cmd+I bzw. Strg+Shift+I) für die gerade sichtbare App. Bisher gab es sie nirgends, dadurch war jeder Fehler innerhalb einer Web-App nur über eigens gebaute Sonden zu untersuchen. (29.08.2026)
+- Apps im Hintergrund laufen jetzt ungebremst weiter. Verti versteckt immer alle Apps bis auf eine, und Chromium drosselt versteckte Seiten – dadurch konnten abgerissene Verbindungen sich nicht mehr selbst erholen. Bester Erklärungsansatz für den ChatGPT-Hänger (Enter schickt nichts mehr ab, Text bleibt im Feld stehen); hilft außerdem Badges und Benachrichtigungen im Hintergrund. **Noch nicht bewiesen – beobachten, ob der Hänger wiederkommt.** (29.08.2026)
 
 ## Blockiert
 
