@@ -1726,7 +1726,24 @@ ipcMain.handle('get-active-app', () => {
   if (activeId) sendNavStateFor(activeId);
   return activeId;
 });
-ipcMain.handle('get-catalog', () => CATALOG.map((c) => ({ ...c, imperio: IMPERIO_IDS.includes(c.id), category: CATEGORIES[c.id] || 'Weitere' })));
+// App-Kennzeichnung: die Stufe beschreibt UNSERE Zusage, nicht die Qualitaet
+// der fremden App. "geprueft" = von Hand durchgespielt (Anmeldung, Kern-
+// funktion, Badges), mit sichtbarem Datum. Alles andere gilt als
+// "unterstuetzt": laedt im automatischen Katalog-Durchlauf, mehr versprechen
+// wir nicht. "experimentell" = bekannt wackelig.
+// Bewusst eine eigene Datei, damit sich die Liste ohne Code-Aenderung pflegen
+// laesst. Faellt sie aus, gilt einfach ueberall "unterstuetzt".
+let APP_STATUS = { geprueft: {}, experimentell: [] };
+try {
+  const roh = JSON.parse(fs.readFileSync(path.join(__dirname, 'app-status.json'), 'utf8'));
+  APP_STATUS = { geprueft: roh.geprueft || {}, experimentell: roh.experimentell || [] };
+} catch (e) {}
+function appStatus(id) {
+  if (APP_STATUS.experimentell.includes(id)) return { stufe: 'experimentell' };
+  if (APP_STATUS.geprueft[id]) return { stufe: 'geprueft', datum: APP_STATUS.geprueft[id] };
+  return { stufe: 'unterstuetzt' };
+}
+ipcMain.handle('get-catalog', () => CATALOG.map((c) => ({ ...c, imperio: IMPERIO_IDS.includes(c.id), category: CATEGORIES[c.id] || 'Weitere', ...appStatus(c.id) })));
 ipcMain.handle('get-category-order', () => CATEGORY_ORDER);
 ipcMain.on('open-library', () => setLibrary(true));
 ipcMain.on('close-library', closeLibrary);

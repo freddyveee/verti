@@ -72,6 +72,7 @@
     },
     "files": [
       "main.js",
+      "app-status.json",
       "window-policy.js",
       "preload.js",
       "sidebar.html",

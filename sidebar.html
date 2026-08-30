@@ -353,6 +353,12 @@
   .seg { display: inline-flex; background: var(--hover); border-radius: 10px; padding: 3px; gap: 2px; flex: 0 0 auto; }
   .seg button { border: none; background: transparent; color: var(--text-2); font-family: inherit; font-size: 13px; padding: 7px 13px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
   .seg button.on { background: var(--accent); color: #fff; }
+  /* App-Kennzeichnung: beschreibt UNSERE Zusage, nicht die Qualitaet der App */
+  .stufe { display: inline-block; margin-top: 3px; font-size: 10.5px; font-weight: 700;
+    letter-spacing: .3px; border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+  .stufe.geprueft { color: #1f9d55; background: rgba(31,157,85,.14); }
+  .stufe.experimentell { color: #d97706; background: rgba(217,119,6,.16); }
+  .stufe.unterstuetzt { color: var(--text-2); background: rgba(128,128,128,.14); }
   .app-search { width: 100%; max-width: 640px; box-sizing: border-box; margin-bottom: 22px; padding: 11px 14px; font-family: inherit; font-size: 14px; border-radius: 10px; border: 1px solid var(--divider); background: var(--card); color: var(--text); outline: none; }
   .app-search:focus { border-color: var(--accent); }
   .app-search::placeholder { color: var(--text-2); }
@@ -741,6 +747,21 @@
         name.className = 'name';
         name.textContent = item.name;
         info.appendChild(name);
+        if (item.stufe) {
+          const st = document.createElement('span');
+          st.className = 'stufe ' + item.stufe;
+          if (item.stufe === 'geprueft') {
+            st.textContent = 'Geprüft';
+            st.title = 'Von uns durchgespielt am ' + (item.datum || '?') + ' (Anmeldung, Kernfunktion, Badges).';
+          } else if (item.stufe === 'experimentell') {
+            st.textContent = 'Experimentell';
+            st.title = 'Bekannt wackelig – kann jederzeit klemmen.';
+          } else {
+            st.textContent = 'Unterstützt';
+            st.title = 'Lädt im automatischen Durchlauf. Wir prüfen sie nicht einzeln von Hand.';
+          }
+          info.appendChild(st);
+        }
         card.appendChild(info);
         const btn = document.createElement('button');
         if (installedIds.has(item.id)) {

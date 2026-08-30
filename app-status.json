@@ -1,0 +1,10 @@
+{
+  "_hinweis": "Die Stufe beschreibt UNSERE Zusage, nicht die Qualität der fremden App. Hier NUR eintragen, was wirklich von Hand durchgespielt wurde: anmelden, Kernfunktion benutzen, Badges prüfen. Alles, was hier nicht steht, gilt als 'unterstuetzt' - es lädt im automatischen Katalog-Durchlauf, mehr versprechen wir nicht. 'experimentell' = bekannt wackelig.",
+  "geprueft": {
+    "calendar": "2026-08-28",
+    "gdrive": "2026-08-28",
+    "canva": "2026-08-29",
+    "chatgpt": "2026-08-29"
+  },
+  "experimentell": []
+}
