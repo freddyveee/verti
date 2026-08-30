@@ -38,4 +38,5 @@ contextBridge.exposeInMainWorld('verti', {
   sendFeedback: (payload) => ipcRenderer.invoke('feedback:send', payload),
   openAdmin: () => ipcRenderer.send('open-admin'),
   openCompatCheck: () => ipcRenderer.send('open-compat-check'),
+  onReportAppProblem: (cb) => ipcRenderer.on('report-app-problem', (e, a) => cb(a)),
 });

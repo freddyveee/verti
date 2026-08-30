@@ -506,8 +506,16 @@
   <div class="fbmodal" id="feedback">
     <div class="fbcard">
       <button class="fbclose" id="fbClose" title="Schliessen">✕</button>
-      <h2>Verbesserung vorschlagen</h2>
-      <p class="fbsub">Was koennen wir an Verti besser machen? Geht direkt an Freddy.</p>
+      <h2 id="fbTitel">Verbesserung vorschlagen</h2>
+      <p class="fbsub" id="fbSub">Was koennen wir an Verti besser machen? Geht direkt an Freddy.</p>
+      <div id="fbBrowserFrage" style="display:none">
+        <label>Geht es in deinem normalen Browser (Chrome, Safari)?</label>
+        <div class="seg" id="fbSegBrowser" style="margin:2px 0 12px">
+          <button type="button" data-v="ja">Ja, dort geht es</button>
+          <button type="button" data-v="nein">Nein, auch nicht</button>
+          <button type="button" data-v="unbekannt">Nicht probiert</button>
+        </div>
+      </div>
       <label for="fbTopic">Thema</label>
       <input id="fbTopic" type="text" maxlength="200" placeholder="Worum geht es?" spellcheck="false">
       <label for="fbText">Dein Vorschlag</label>
@@ -915,14 +923,42 @@
       const fbName = document.getElementById('fbName');
       const fbStatus = document.getElementById('fbStatus');
       const fbSend = document.getElementById('fbSend');
-      function openFeedback() {
+      // Zwei Modi im selben Formular: 'verbesserung' (Standard) und 'stoerung'
+      // (aus dem Rechtsklick einer App). Bei einer Stoerung ist die Frage nach
+      // dem normalen Browser PFLICHT - genau diese eine Antwort trennt einen
+      // Verti-Fehler von einer Aenderung beim App-Anbieter.
+      let fbModus = 'verbesserung';
+      let fbBrowserAntwort = '';
+      const fbTitel = document.getElementById('fbTitel');
+      const fbSub = document.getElementById('fbSub');
+      const fbFrage = document.getElementById('fbBrowserFrage');
+      const fbSeg = document.getElementById('fbSegBrowser');
+      fbSeg.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+        fbBrowserAntwort = b.dataset.v;
+        fbSeg.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+      }));
+      function openFeedback(modus, appDef) {
+        fbModus = modus === 'stoerung' ? 'stoerung' : 'verbesserung';
+        fbBrowserAntwort = '';
+        fbSeg.querySelectorAll('button').forEach((x) => x.classList.remove('on'));
+        if (fbModus === 'stoerung') {
+          fbTitel.textContent = 'Diese App funktioniert nicht';
+          fbSub.textContent = 'Beschreib kurz, was passiert. Geht direkt an Freddy.';
+          fbFrage.style.display = '';
+          fbTopic.value = appDef && appDef.name ? appDef.name : '';
+        } else {
+          fbTitel.textContent = 'Verbesserung vorschlagen';
+          fbSub.textContent = 'Was koennen wir an Verti besser machen? Geht direkt an Freddy.';
+          fbFrage.style.display = 'none';
+        }
         fbStatus.className = 'fbstatus'; fbStatus.textContent = '';
         fbSend.disabled = false; fbSend.textContent = 'Absenden';
         fbModal.classList.add('open');
         window.verti.openLibrary(); // App-Views ausblenden, sonst liegt das Formular dahinter
         applyNavState();
-        setTimeout(() => fbTopic.focus(), 50);
+        setTimeout(() => (fbModus === 'stoerung' ? fbText : fbTopic).focus(), 50);
       }
+      window.verti.onReportAppProblem((appDef) => openFeedback('stoerung', appDef));
       function closeFeedback() {
         fbModal.classList.remove('open');
         window.verti.closeLibrary();
@@ -931,10 +967,22 @@
       async function submitFeedback() {
         const topic = fbTopic.value.trim();
         const description = fbText.value.trim();
-        if (!topic || !description) { fbStatus.className = 'fbstatus err'; fbStatus.textContent = 'Bitte Thema und Vorschlag ausfuellen.'; return; }
+        if (!topic || !description) { fbStatus.className = 'fbstatus err'; fbStatus.textContent = 'Bitte Thema und Beschreibung ausfuellen.'; return; }
+        if (fbModus === 'stoerung' && !fbBrowserAntwort) {
+          fbStatus.className = 'fbstatus err';
+          fbStatus.textContent = 'Bitte beantworte, ob es im normalen Browser geht.';
+          return;
+        }
         fbSend.disabled = true; fbSend.textContent = 'Sende \u2026'; fbStatus.className = 'fbstatus'; fbStatus.textContent = '';
         try {
-          const res = await window.verti.sendFeedback({ topic, description, sender: fbName.value.trim() });
+          // Die Zusatzinfos wandern in Thema/Beschreibung, damit keine
+          // Datenbank-Aenderung noetig ist. Eigene Spalten waeren spaeter schoener.
+          const antwortText = { ja: 'JA - im normalen Browser geht es', nein: 'NEIN - auch im normalen Browser nicht', unbekannt: 'nicht probiert' }[fbBrowserAntwort];
+          const res = await window.verti.sendFeedback({
+            topic: fbModus === 'stoerung' ? 'Stoerung: ' + topic : topic,
+            description: fbModus === 'stoerung' ? 'Im normalen Browser: ' + antwortText + '\n\n' + description : description,
+            sender: fbName.value.trim(),
+          });
           if (res && res.ok) {
             fbStatus.className = 'fbstatus ok'; fbStatus.textContent = 'Danke! Ist angekommen.';
             fbTopic.value = ''; fbText.value = ''; fbName.value = '';
@@ -948,7 +996,7 @@
           fbStatus.className = 'fbstatus err'; fbStatus.textContent = 'Konnte nicht senden.';
         }
       }
-      document.getElementById('feedbackBtn').addEventListener('click', openFeedback);
+      document.getElementById('feedbackBtn').addEventListener('click', () => openFeedback('verbesserung'));
       document.getElementById('fbClose').addEventListener('click', closeFeedback);
       fbModal.addEventListener('click', (e) => { if (e.target === fbModal) closeFeedback(); });
       fbSend.addEventListener('click', submitFeedback);

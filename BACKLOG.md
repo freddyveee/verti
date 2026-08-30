@@ -9,13 +9,13 @@ Nächstes Release: 1.1.17
 ### Qualitätssicherung für den Verkauf (29.08.2026)
 
 - App-Kennzeichnung im Katalog: „geprüft" (kleine Liste, mit sichtbarem Datum „geprüft am"), „unterstützt" (lädt im automatischen Durchlauf) und „experimentell". Die Stufe beschreibt UNSERE Zusage, nicht die Qualität der fremden App. Kein Wettbewerber zeigt so etwas – echtes Unterscheidungsmerkmal beim Verkauf. (29.08.2026)
-- „Diese App funktioniert nicht"-Meldung im Rechtsklick jeder Sidebar-App, mit einem Pflichtfeld: „Geht es in deinem normalen Browser? ja/nein/nicht probiert". Dieses eine Feld trennt Verti-Fehler von Änderungen beim App-Anbieter und macht 209 Apps überhaupt erst handhabbar. Baut auf dem vorhandenen Verbesserung-Knopf und Supabase-Panel auf. (29.08.2026)
 
 - Verti Browser – Stufe 3 (Stufen 1 und 2 sind fertig, s. unten): Chrome-Extensions – eigene „Erweiterungen"-Seite + Installieren/Aktualisieren aus dem Web Store (`session.loadExtension`); machbar (Shift macht es vor), Grenze ist nur die Kompatibilität einzelner Erweiterungen. (24.08.2026)
 - Onboarding beim ersten Start (Shift-Stil, wird gerade anhand von Shift zusammengetragen): mehrstufiger Ersteinrichtungs-Assistent. Schritt 1: Bedingungen zustimmen + „Verti als Standardbrowser" + „Daten aus vorhandenem Browser importieren". Schritt 2: eigene Frage „Verti als Standardbrowser nutzen oder aktuellen Browser (Chrome/Safari) behalten?". Schritt 3: Apps auswählen und hinzufügen – nutzt Vertis vorhandenen App-Katalog; Vorschläge aus dem Browser-Verlauf, die meistgenutzten schon angehakt, „Ohne Apps überspringen" möglich. Abschluss: „Browser ist fertig"-Screen mit optionalem Konto/Sync (Spaces, Apps, Tabs, Lesezeichen, Verlauf geräteübergreifend; „Später erinnern"/„Jetzt syncen") – Login des Shift-Kontos läuft über Google/Apple/Microsoft als OAuth-Partner (nicht zu verwechseln mit eingebettetem Google-Login). Das Sync/Konto selbst ist unser zurückgestelltes Account-System, s. „Verschoben". (28.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- Störungsmeldung pro App: Rechtsklick auf ein Sidebar-Icon → „Diese App funktioniert nicht …". Das Formular ist mit dem App-Namen vorbelegt und stellt eine Pflichtfrage: „Geht es in deinem normalen Browser?" Diese eine Antwort trennt einen Verti-Fehler von einer Änderung beim App-Anbieter – ohne sie landet jede fremde Web-App-Änderung bei uns. Meldung geht wie bisher ins Admin-Panel. (31.08.2026)
 - Kompatibilitäts-Check: eine Seite mit 25 Prüfpunkten, die alle Berührungsflächen zwischen Verti und beliebigen Web-Apps durchspielt (Fenster öffnen, Meldungen, Downloads, Medien, Anmeldung inkl. Passkeys, Zwischenablage, Darstellung, Meeting-Links). Zahnrad → Einstellungen → „Kompatibilität prüfen". Damit ist der Test vor einem Release ein einziger Seitenaufruf statt Handarbeit – besonders nach jedem Electron-Update. (31.08.2026)
 - Die Fenster-Regel (öffnet sich etwas als Tab in der Ansicht oder als eigenes Fenster?) ist jetzt durch eine Testtabelle mit 16 Fällen abgesichert, `npm test`. Genau dort saß der Canva-Fehler. Dabei aufgefallen und behoben: das ausgelagerte Modul fehlte in der Paket-Liste, die gebaute App wäre nicht gestartet. (29.08.2026)
 
@@ -24,6 +24,8 @@ Nächstes Release: 1.1.17
 - (nichts)
 
 ## Ideen, noch nicht entschieden
+
+- Störungsmeldungen: eigene Datenbank-Spalten für „geht im Browser" und App-Kennung statt sie in Thema/Beschreibung zu schreiben. Dann liesse sich im Admin-Panel danach filtern und die Upstream-Quote messen. (31.08.2026)
 
 - Symbol in der Mac-Menüleiste mit Ungelesen-Zahl und Schnellzugriff auf die Apps.
 - Globales Tastenkürzel (z. B. Ctrl+Leertaste), das Verti aus jeder App heraus nach vorn holt und wieder wegschaltet.

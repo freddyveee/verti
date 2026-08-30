@@ -1795,6 +1795,15 @@ ipcMain.on('app-context-menu', (e, id) => {
     { type: 'separator' },
     { label: 'Neu laden', click: () => views[id] && views[id].webContents.reload() },
     { label: 'Zur Startseite', click: () => navHome(id) },
+    { type: 'separator' },
+    // Stoerungsmeldung pro App. Wichtig ist die Pflichtfrage im Formular
+    // ("Geht es in deinem normalen Browser?"): sie trennt einen Verti-Fehler
+    // von einer Aenderung beim App-Anbieter und macht 209 Apps ueberhaupt
+    // erst handhabbar - sonst landet jede fremde Web-App-Aenderung bei uns.
+    {
+      label: 'Diese App funktioniert nicht \u2026',
+      click: () => win && win.webContents.send('report-app-problem', { id, name: appDef.name }),
+    },
     {
       label: 'Entfernen',
       enabled: state.apps.length > 1 && id !== BROWSER_ID,
