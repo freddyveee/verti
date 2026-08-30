@@ -8,7 +8,6 @@ Nächstes Release: 1.1.17
 
 ### Qualitätssicherung für den Verkauf (29.08.2026)
 
-- `windowOpenPolicy` als Testtabelle absichern: die Funktion ist bereits rein (details rein, Entscheidung raus), also mit `node:test` etwa 15 Fälle durchspielen (disposition × features × Auth/gleiche App/fremd × postBody). Hätte den Canva-Fehler in Sekunden gefangen. (29.08.2026)
 - Kompatibilitäts-Seite `scripts/kompatibilitaets-check.html`: eine lokale Seite, die alle Berührungsflächen zwischen Verti und beliebigen Web-Apps aktiv durchspielt (Fenster öffnen, Benachrichtigungen, Downloads, Medien, Zwischenablage, Upload, Berechtigungen, Zoom/Breite) und grün/rot zeigt. Danach ist der Vor-Release-Test ein einziger Seitenaufruf, auch nach jedem Electron-Update. (29.08.2026)
 - App-Kennzeichnung im Katalog: „geprüft" (kleine Liste, mit sichtbarem Datum „geprüft am"), „unterstützt" (lädt im automatischen Durchlauf) und „experimentell". Die Stufe beschreibt UNSERE Zusage, nicht die Qualität der fremden App. Kein Wettbewerber zeigt so etwas – echtes Unterscheidungsmerkmal beim Verkauf. (29.08.2026)
 - „Diese App funktioniert nicht"-Meldung im Rechtsklick jeder Sidebar-App, mit einem Pflichtfeld: „Geht es in deinem normalen Browser? ja/nein/nicht probiert". Dieses eine Feld trennt Verti-Fehler von Änderungen beim App-Anbieter und macht 209 Apps überhaupt erst handhabbar. Baut auf dem vorhandenen Verbesserung-Knopf und Supabase-Panel auf. (29.08.2026)
@@ -18,7 +17,7 @@ Nächstes Release: 1.1.17
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (nichts – wandert beim Release hierher)
+- Die Fenster-Regel (öffnet sich etwas als Tab in der Ansicht oder als eigenes Fenster?) ist jetzt durch eine Testtabelle mit 16 Fällen abgesichert, `npm test`. Genau dort saß der Canva-Fehler. Dabei aufgefallen und behoben: das ausgelagerte Modul fehlte in der Paket-Liste, die gebaute App wäre nicht gestartet. (29.08.2026)
 
 ## Blockiert
 
