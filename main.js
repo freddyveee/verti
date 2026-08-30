@@ -1,5 +1,6 @@
 const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog, nativeImage, desktopCapturer, clipboard, Notification, powerMonitor } = require('electron');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const { makeWindowOpenPolicy } = require('./window-policy');
 const https = require('https');
 const fs = require('fs');
@@ -1661,6 +1662,16 @@ ipcMain.on('open-admin', () => {
   if (!istAdminRechner()) return;
   switchApp(BROWSER_ID);
   browserNewTab(ADMIN_PANEL_URL);
+});
+// Kompatibilitaets-Check: eine lokale Seite, die alle Beruehrungsflaechen
+// zwischen Verti und beliebigen Web-Apps durchspielt (Fenster, Meldungen,
+// Downloads, Medien, Anmeldung, Zwischenablage, Darstellung, Deep-Links).
+// Vor jedem Release einmal oeffnen, besonders nach einem Electron-Update -
+// dann sieht man in Minuten, welche Flaeche sich verschoben hat.
+ipcMain.on('open-compat-check', () => {
+  if (!istAdminRechner()) return;
+  switchApp(BROWSER_ID);
+  browserNewTab(pathToFileURL(path.join(__dirname, 'kompatibilitaets-check.html')).href);
 });
 
 // ---------- „Verbesserungen": Feedback landet in Supabase ----------

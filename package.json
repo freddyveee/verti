@@ -75,6 +75,7 @@
       "window-policy.js",
       "preload.js",
       "sidebar.html",
+      "kompatibilitaets-check.html",
       "update.html",
       "update-preload.js",
       "view-preload.js",

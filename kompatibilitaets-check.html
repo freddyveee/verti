@@ -1,0 +1,240 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Verti Kompatibilitäts-Check</title>
+<!--
+  Prüft alle Berührungsflächen zwischen Verti und einer beliebigen Web-App.
+  Grundgedanke: Wir testen NICHT 209 Apps, sondern die gut zwei Dutzend Stellen,
+  an denen der Wrapper mit IRGENDEINER Web-App in Berührung kommt. Sind die grün,
+  funktionieren Apps standardmäßig - denn Verti hat fast keinen App-spezifischen
+  Code (209 Apps, 1 Sonderfall, 0 Wenn-App-X-Verzweigungen, Stand 29.08.2026).
+  Vor jedem Release einmal öffnen, besonders nach einem Electron-Update.
+-->
+<style>
+  :root {
+    --ground:#f5f4f9; --surface:#fff; --ink:#1e1d28; --muted:#6e6b82; --line:#e4e1ee;
+    --accent:#7c3aed; --ok:#1f9d55; --warn:#d97706; --bad:#dc2626;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme=light]) {
+    --ground:#1a1b22; --surface:#22242c; --ink:#f2f1f7; --muted:#9a98ad; --line:#34363f;
+    --accent:#b78aff; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171;
+  }}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+  .page{max-width:780px;margin:0 auto;padding:32px 20px 64px}
+  h1{font-size:26px;font-weight:800;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 20px}
+  .zaehler{display:flex;gap:8px;margin:0 0 20px;flex-wrap:wrap}
+  .z{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-weight:700;font-variant-numeric:tabular-nums}
+  .z.ok{color:var(--ok)} .z.warn{color:var(--warn)} .z.bad{color:var(--bad)}
+  .gruppe{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:0 0 14px;overflow:hidden}
+  .gtitel{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);padding:12px 16px 6px}
+  .zeile{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:start;padding:9px 16px;border-top:1px solid var(--line)}
+  .p{width:14px;height:14px;border-radius:50%;margin-top:4px;background:var(--muted)}
+  .p.ok{background:var(--ok)} .p.warn{background:var(--warn)} .p.bad{background:var(--bad)}
+  .name{font-weight:600}
+  .info{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+  button{font:inherit;font-size:13px;font-weight:600;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+  button.sek{background:transparent;color:var(--accent);border:1px solid var(--line)}
+  .fuss{color:var(--muted);font-size:13px;margin-top:24px}
+  code{background:rgba(128,128,128,.16);border-radius:4px;padding:1px 5px;font-family:'SF Mono',Menlo,monospace;font-size:.88em}
+</style>
+<div class="page">
+  <h1>Verti Kompatibilitäts-Check</h1>
+  <p class="sub">Prüft die Stellen, an denen Verti mit beliebigen Web-Apps in Berührung kommt. Vor jedem Release einmal durchsehen, besonders nach einem Electron-Update.</p>
+  <div class="zaehler">
+    <div class="z ok">✓ <span id="nOk">0</span> in Ordnung</div>
+    <div class="z warn">! <span id="nWarn">0</span> zu prüfen</div>
+    <div class="z bad">✕ <span id="nBad">0</span> kaputt</div>
+    <div class="z">↦ <span id="nManuell">0</span> per Klick</div>
+  </div>
+  <div id="ziel"></div>
+  <p class="fuss">Punkte mit Knopf lassen sich nur von Hand prüfen, weil der Browser dafür eine echte Nutzer-Geste verlangt. Nach dem Klick färbt sich die Zeile.</p>
+</div>
+<script>
+(() => {
+  const ziel = document.getElementById('ziel');
+  const gruppen = {};
+  const zeilen = [];
+  function gruppe(titel) {
+    if (gruppen[titel]) return gruppen[titel];
+    const d = document.createElement('div');
+    d.className = 'gruppe';
+    d.innerHTML = '<div class="gtitel">' + titel + '</div>';
+    ziel.appendChild(d);
+    return (gruppen[titel] = d);
+  }
+  // status: 'ok' | 'warn' | 'bad' | '' (offen)
+  function pruef(grp, name, fn, knopf) {
+    const el = document.createElement('div');
+    el.className = 'zeile';
+    el.innerHTML = '<span class="p"></span><span><span class="name"></span><br><span class="info"></span></span><span class="tat"></span>';
+    gruppe(grp).appendChild(el);
+    el.querySelector('.name').textContent = name;
+    const setze = (status, info) => {
+      el.querySelector('.p').className = 'p ' + (status || '');
+      el.querySelector('.info').textContent = info || '';
+      el.dataset.status = status || '';
+      zaehle();
+    };
+    zeilen.push(el);
+    if (knopf) {
+      const b = document.createElement('button');
+      b.textContent = knopf;
+      b.onclick = async () => { try { await fn(setze); } catch (e) { setze('bad', e.message); } };
+      el.querySelector('.tat').appendChild(b);
+      setze('', 'noch nicht geprüft');
+    } else {
+      Promise.resolve().then(() => fn(setze)).catch((e) => setze('bad', e.message));
+    }
+    return setze;
+  }
+  function zaehle() {
+    const z = (s) => zeilen.filter((e) => e.dataset.status === s).length;
+    document.getElementById('nOk').textContent = z('ok');
+    document.getElementById('nWarn').textContent = z('warn');
+    document.getElementById('nBad').textContent = z('bad');
+    document.getElementById('nManuell').textContent = z('');
+  }
+
+  // ---------- Kennung ----------
+  pruef('Kennung', 'User-Agent', (s) => {
+    const ua = navigator.userAgent;
+    const chrome = /Chrome\/(\d+)/.exec(ua);
+    s(chrome ? 'ok' : 'warn', ua.slice(0, 110));
+  });
+  pruef('Kennung', 'Client Hints (userAgentData)', (s) => {
+    if (!navigator.userAgentData) return s('warn', 'fehlt – bekannte Electron-Lücke (Issue 34762). Manche Dienste werten das als Fälschung.');
+    s('ok', JSON.stringify(navigator.userAgentData.brands || []));
+  });
+  pruef('Kennung', 'Sprache', (s) => s('ok', navigator.language + ' | ' + (navigator.languages || []).join(', ')));
+
+  // ---------- Fenster & Navigation ----------
+  pruef('Fenster & Navigation', 'window.open ohne Maße (Tab-Wunsch)', (s) => {
+    const w = window.open('about:blank');
+    if (!w) return s('bad', 'blockiert – Verti müsste es in der Ansicht öffnen');
+    setTimeout(() => { try { w.close(); } catch (e) {} }, 300);
+    s('ok', 'geöffnet – muss laut Regel IN der Ansicht landen, kein zweites Fenster');
+  }, 'Testen');
+  pruef('Fenster & Navigation', 'window.open MIT Maßen (echtes Popup)', (s) => {
+    const w = window.open('about:blank', '_blank', 'width=420,height=520');
+    if (!w) return s('bad', 'blockiert – OAuth-Anmeldungen würden scheitern!');
+    setTimeout(() => { try { w.close(); } catch (e) {} }, 600);
+    s('ok', 'eigenes Fenster – so müssen Login-Popups aufgehen');
+  }, 'Testen');
+  pruef('Fenster & Navigation', 'window.opener erreichbar', (s) => {
+    const w = window.open('about:blank', '_blank', 'width=300,height=300');
+    if (!w) return s('bad', 'kein Fenster');
+    let ok = false;
+    try { ok = w.opener === window; } catch (e) {}
+    try { w.close(); } catch (e) {}
+    s(ok ? 'ok' : 'warn', ok ? 'Rückkanal steht (OAuth braucht das)' : 'opener nicht erreichbar – OAuth-Flows können hängen');
+  }, 'Testen');
+
+  // ---------- Benachrichtigungen ----------
+  pruef('Benachrichtigungen', 'Notification-Berechtigung', (s) => {
+    if (!('Notification' in window)) return s('bad', 'Notification fehlt komplett');
+    s(Notification.permission === 'granted' ? 'ok' : 'warn', 'permission = ' + Notification.permission);
+  });
+  pruef('Benachrichtigungen', 'Meldung anzeigen', (s) => {
+    const n = new Notification('Verti-Test', { body: 'Wenn du das siehst, funktionieren Meldungen.' });
+    setTimeout(() => { try { n.close(); } catch (e) {} }, 4000);
+    s('ok', 'abgeschickt – erscheint sie oben rechts?');
+  }, 'Auslösen');
+  pruef('Benachrichtigungen', 'Service-Worker showNotification', async (s) => {
+    if (!('serviceWorker' in navigator)) return s('bad', 'Service Worker fehlt');
+    const r = await navigator.serviceWorker.getRegistration();
+    if (!r) return s('warn', 'keine Registrierung auf dieser Seite – Verti biegt den Aufruf sonst auf die klassische API um');
+    await r.showNotification('Verti-Test (SW)', { body: 'Über Service-Worker-API' });
+    s('ok', 'abgeschickt');
+  }, 'Auslösen');
+  pruef('Benachrichtigungen', 'Badge-API (setAppBadge)', (s) => {
+    s(navigator.setAppBadge ? 'ok' : 'warn', navigator.setAppBadge ? 'vorhanden' : 'fehlt – moderne PWAs melden ihre Zahl so; Verti liest nur Titel und Favicon');
+  });
+
+  // ---------- Medien ----------
+  pruef('Medien', 'Autoplay mit Ton (soll VOR Klick blockiert sein)', async (s) => {
+    const a = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+    a.volume = 1;
+    try { await a.play(); s('warn', 'spielte ohne Nutzer-Geste – der Autoplay-Riegel greift nicht'); }
+    catch (e) { s('ok', 'blockiert (' + e.name + ') – so soll es sein'); }
+  });
+  pruef('Medien', 'Kamera/Mikrofon verfügbar', (s) => {
+    s(navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? 'ok' : 'bad',
+      navigator.mediaDevices ? 'API vorhanden (Berechtigung erst beim Zugriff)' : 'mediaDevices fehlt');
+  });
+  pruef('Medien', 'Bildschirmfreigabe', (s) => {
+    s(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia ? 'ok' : 'warn', 'für Meetings nötig');
+  });
+
+  // ---------- Anmeldung ----------
+  pruef('Anmeldung', 'Passkeys (WebAuthn)', async (s) => {
+    if (!window.PublicKeyCredential) return s('bad', 'WebAuthn fehlt – Dienste mit Passkey-Zwang sind nicht nutzbar');
+    let verfuegbar = false;
+    try { verfuegbar = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); } catch (e) {}
+    s(verfuegbar ? 'ok' : 'warn', verfuegbar ? 'Plattform-Authentifikator da' : 'kein Plattform-Authentifikator – bekannte Electron-Grenze, Ausweg ist Passwort');
+  });
+  pruef('Anmeldung', 'Cookies (auch von Drittanbietern)', (s) => {
+    document.cookie = 'vertitest=1;SameSite=Lax';
+    const da = /vertitest=1/.test(document.cookie);
+    document.cookie = 'vertitest=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    s(da ? 'ok' : 'bad', da ? 'schreib- und lesbar' : 'Cookies gehen nicht – keine Anmeldung möglich');
+  });
+  pruef('Anmeldung', 'Speicher (localStorage, IndexedDB)', (s) => {
+    let ls = false, idb = !!window.indexedDB;
+    try { localStorage.setItem('vt', '1'); ls = localStorage.getItem('vt') === '1'; localStorage.removeItem('vt'); } catch (e) {}
+    s(ls && idb ? 'ok' : 'bad', 'localStorage ' + (ls ? 'ok' : 'FEHLT') + ', IndexedDB ' + (idb ? 'ok' : 'FEHLT'));
+  });
+
+  // ---------- Dateien & Zwischenablage ----------
+  pruef('Dateien & Zwischenablage', 'Download starten', (s) => {
+    const b = new Blob(['Verti Kompatibilitaets-Test\n'], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = 'verti-test.txt';
+    document.body.appendChild(a); a.click(); a.remove();
+    s('ok', 'ausgelöst – landet die Datei in Downloads, mit Ton und Mitteilung?');
+  }, 'Testen');
+  pruef('Dateien & Zwischenablage', 'Datei-Auswahl öffnen', (s) => {
+    const i = document.createElement('input');
+    i.type = 'file';
+    i.onchange = () => s('ok', 'Datei gewählt: ' + (i.files[0] ? i.files[0].name : '–'));
+    i.click();
+    s('warn', 'Dialog geöffnet – wähle eine Datei, dann wird es grün');
+  }, 'Testen');
+  pruef('Dateien & Zwischenablage', 'In die Zwischenablage schreiben', async (s) => {
+    await navigator.clipboard.writeText('Verti-Test ' + Date.now());
+    s('ok', 'geschrieben');
+  }, 'Testen');
+  pruef('Dateien & Zwischenablage', 'Aus der Zwischenablage lesen', async (s) => {
+    const t = await navigator.clipboard.readText();
+    s('ok', 'gelesen: ' + t.slice(0, 40));
+  }, 'Testen');
+
+  // ---------- Darstellung ----------
+  pruef('Darstellung', 'Fensterbreite (Umschaltpunkte)', (s) => {
+    const w = window.innerWidth;
+    s(w >= 1024 ? 'ok' : 'warn', w + ' CSS-Pixel' + (w < 1024 ? ' – unter 1024 schalten viele Apps auf Tablet-Layout, das sieht wie ein Verti-Fehler aus' : ''));
+  });
+  pruef('Darstellung', 'Zoomstufe', (s) => {
+    const z = Math.round(window.devicePixelRatio * 100) / 100;
+    s('ok', 'devicePixelRatio ' + z);
+  });
+  pruef('Darstellung', 'Vollbild', (s) => {
+    document.documentElement.requestFullscreen()
+      .then(() => { setTimeout(() => document.exitFullscreen(), 900); s('ok', 'ging auf und wieder zu'); })
+      .catch((e) => s('bad', e.message));
+  }, 'Testen');
+  pruef('Darstellung', 'Drucken', (s) => { window.print(); s('ok', 'Dialog ausgelöst'); }, 'Testen');
+
+  // ---------- Externe Ziele ----------
+  const linkTest = (name, url, hinweis) => pruef('Externe Ziele', name, (s) => {
+    location.href = url;
+    s('warn', hinweis + ' – öffnet sich das passende Programm?');
+  }, 'Öffnen');
+  linkTest('E-Mail (mailto:)', 'mailto:test@example.com', 'Mail-Programm');
+  linkTest('Telefon (tel:)', 'tel:+4930123456', 'Telefon/FaceTime');
+  linkTest('Zoom-Meeting (zoommtg:)', 'zoommtg://zoom.us/join?confno=1234567890', 'Zoom');
+  linkTest('Teams (msteams:)', 'msteams://teams.microsoft.com/l/meetup-join/test', 'Microsoft Teams');
+  linkTest('Kalender-Abo (webcal:)', 'webcal://example.com/kalender.ics', 'Kalender');
+})();
+</script>

@@ -497,7 +497,7 @@
     </div>
     <div class="setrow" id="adminRow" style="display:none">
       <div class="setlabel"><b>Verbesserungen</b><span>Meldungen aus dem Team ansehen</span></div>
-      <div class="verwrap"><button class="setbtn" id="openAdmin">Admin-Panel öffnen</button></div>
+      <div class="verwrap"><button class="setbtn" id="openCompat">Kompatibilität prüfen</button><button class="setbtn" id="openAdmin">Admin-Panel öffnen</button></div>
     </div>
     <div class="setsection-title">Benachrichtigungen pro App</div>
     <div id="notifList"></div>
@@ -535,6 +535,8 @@
         if (ar) ar.style.display = '';
         const ab = document.getElementById('openAdmin');
         if (ab) ab.addEventListener('click', () => window.verti.openAdmin());
+        const cb2 = document.getElementById('openCompat');
+        if (cb2) cb2.addEventListener('click', () => window.verti.openCompatCheck());
       }
       if (!appInfo.packaged) {
         const devTag = document.getElementById('devTag');
