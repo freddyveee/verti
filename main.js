@@ -343,6 +343,7 @@ function loadState() {
     externalLinks: s.externalLinks === 'system' ? 'system' : 'verti', // externe Links: im Verti-Browser (Standard) oder System-Browser
     theme: s.theme === 'light' ? 'light' : 'dark', // Darstellung: dunkel (Standard) oder hell
     mutedApps: Array.isArray(s.mutedApps) ? s.mutedApps.filter((x) => typeof x === 'string') : [], // pro App stummgeschaltet (kein Badge, keine Meldung)
+    onboarded: s.onboarded === true, // Ersteinrichtung schon durchlaufen?
   };
 }
 
@@ -1492,6 +1493,7 @@ function createWindow() {
   } catch (e) {}
   applyGoogleAuthDisguise(ses);
   ladeErweiterungen(ses); // gemerkte Erweiterungen wiederherstellen (Electron tut das nicht selbst)
+  if (!state.onboarded) setTimeout(zeigeOnboarding, 600); // Ersteinrichtung nur beim allerersten Start
   // Login-Popups laufen teils in der Default-Session, bevor sie adoptiert werden
   applyGoogleAuthDisguise(session.defaultSession);
   ses.setPermissionRequestHandler((wc, permission, cb) => {
@@ -1669,6 +1671,125 @@ ipcMain.on('open-admin', () => {
 // Downloads, Medien, Anmeldung, Zwischenablage, Darstellung, Deep-Links).
 // Vor jedem Release einmal oeffnen, besonders nach einem Electron-Update -
 // dann sieht man in Minuten, welche Flaeche sich verschoben hat.
+// ---------- Ersteinrichtung (Onboarding) ----------
+// Laeuft genau einmal beim allerersten Start. Vier Schritte nach dem Vorbild
+// von Shift: Willkommen, Standardbrowser, Daten uebernehmen, Apps auswaehlen.
+// Fenster ohne Rahmen ueber dem Hauptfenster, wie das Update-Popup.
+let onboardWin = null;
+
+// Lesezeichen aus einem vorhandenen Chromium-Browser lesen. Deren Datei
+// "Bookmarks" ist unverschluesseltes JSON - anders als Cookies oder
+// Passwoerter, die wir bewusst NICHT anfassen.
+function chromeProfile(unterordner) {
+  const home = app.getPath('home');
+  return process.platform === 'darwin'
+    ? path.join(home, 'Library', 'Application Support', ...unterordner)
+    : path.join(home, 'AppData', 'Local', ...unterordner);
+}
+const LESEZEICHEN_QUELLEN = [
+  { name: 'Google Chrome', pfad: () => chromeProfile(process.platform === 'darwin' ? ['Google', 'Chrome', 'Default', 'Bookmarks'] : ['Google', 'Chrome', 'User Data', 'Default', 'Bookmarks']) },
+  { name: 'Microsoft Edge', pfad: () => chromeProfile(process.platform === 'darwin' ? ['Microsoft Edge', 'Default', 'Bookmarks'] : ['Microsoft', 'Edge', 'User Data', 'Default', 'Bookmarks']) },
+  { name: 'Brave', pfad: () => chromeProfile(process.platform === 'darwin' ? ['BraveSoftware', 'Brave-Browser', 'Default', 'Bookmarks'] : ['BraveSoftware', 'Brave-Browser', 'User Data', 'Default', 'Bookmarks']) },
+];
+function sammleLesezeichen(knoten, raus) {
+  if (!knoten) return;
+  if (Array.isArray(knoten.children)) for (const k of knoten.children) sammleLesezeichen(k, raus);
+  if (knoten.type === 'url' && /^https?:/.test(knoten.url || '')) {
+    raus.push({ url: knoten.url, title: String(knoten.name || knoten.url).slice(0, 120) });
+  }
+}
+function gefundeneQuellen() {
+  return LESEZEICHEN_QUELLEN.map((q) => {
+    try {
+      const p = q.pfad();
+      if (!fs.existsSync(p)) return null;
+      const roh = JSON.parse(fs.readFileSync(p, 'utf8'));
+      const raus = [];
+      for (const wurzel of Object.values(roh.roots || {})) sammleLesezeichen(wurzel, raus);
+      return raus.length ? { name: q.name, anzahl: raus.length } : null;
+    } catch (e) { return null; }
+  }).filter(Boolean);
+}
+ipcMain.handle('onboard:quellen', () => gefundeneQuellen());
+ipcMain.handle('onboard:import', (e, quelle) => {
+  const q = LESEZEICHEN_QUELLEN.find((x) => x.name === quelle);
+  if (!q) return { ok: false };
+  try {
+    const roh = JSON.parse(fs.readFileSync(q.pfad(), 'utf8'));
+    const raus = [];
+    for (const wurzel of Object.values(roh.roots || {})) sammleLesezeichen(wurzel, raus);
+    if (!state.bookmarks) state.bookmarks = [];
+    const da = new Set(state.bookmarks.map((b) => b.url));
+    let neu = 0;
+    for (const b of raus) if (!da.has(b.url)) { state.bookmarks.push(b); da.add(b.url); neu++; }
+    saveState();
+    sendBrowserBookmarks();
+    return { ok: true, anzahl: neu };
+  } catch (err) { return { ok: false, error: err.message } }
+});
+ipcMain.handle('onboard:standardbrowser', () => {
+  // Verti als Standardbrowser anmelden. Auf dem Mac oeffnet macOS dafuer eine
+  // eigene Rueckfrage, unter Windows setzt es den Eintrag direkt.
+  let ok = false;
+  try {
+    ok = app.setAsDefaultProtocolClient('http') && app.setAsDefaultProtocolClient('https');
+  } catch (e) {}
+  return { ok };
+});
+ipcMain.handle('onboard:vorschlaege', () => {
+  // Vorauswahl: die IMPERIO-Apps. Der Browser ist ohnehin fest dabei.
+  return CATALOG
+    .filter((c) => c.id !== BROWSER_ID)
+    .map((c) => ({ id: c.id, name: c.name, icon: c.icon, url: c.url, category: CATEGORIES[c.id] || 'Weitere', empfohlen: IMPERIO_IDS.includes(c.id) }));
+});
+ipcMain.handle('onboard:fertig', (e, ids) => {
+  try {
+    const gewaehlt = Array.isArray(ids) ? ids : [];
+    const behalten = state.apps.filter((a) => a.id === BROWSER_ID);
+    for (const id of gewaehlt) {
+      if (id === BROWSER_ID) continue;
+      const c = CATALOG.find((x) => x.id === id);
+      if (c && !behalten.some((a) => a.id === id)) behalten.push({ id: c.id, name: c.name, url: c.url, icon: c.icon });
+    }
+    state.apps = behalten;
+    state.onboarded = true;
+    saveState();
+  } catch (err) {}
+  if (onboardWin && !onboardWin.isDestroyed()) onboardWin.close();
+  app.relaunch();
+  app.exit(0);
+  return { ok: true };
+});
+ipcMain.on('onboard:abbrechen', () => {
+  state.onboarded = true;
+  saveState();
+  if (onboardWin && !onboardWin.isDestroyed()) onboardWin.close();
+});
+function zeigeOnboarding() {
+  if (onboardWin) return;
+  const cb = win && !win.isDestroyed() ? win.getContentBounds() : null;
+  onboardWin = new BrowserWindow({
+    ...(cb ? { x: cb.x, y: cb.y, width: cb.width, height: cb.height } : { width: 1100, height: 800 }),
+    frame: false, transparent: true, hasShadow: false, resizable: false,
+    maximizable: false, minimizable: false, fullscreenable: false,
+    skipTaskbar: true, show: false, alwaysOnTop: true,
+    webPreferences: { preload: path.join(__dirname, 'onboarding-preload.js') },
+  });
+  // Wie beim Update-Popup: kein Elternfenster, dafuer von Hand nachfuehren
+  const folge = () => {
+    if (!onboardWin || onboardWin.isDestroyed() || !win || win.isDestroyed()) return;
+    const b = win.getContentBounds();
+    try { onboardWin.setBounds({ x: b.x, y: b.y, width: b.width, height: b.height }); } catch (e) {}
+  };
+  if (win && !win.isDestroyed()) { win.on('move', folge); win.on('resize', folge); }
+  onboardWin.loadFile('onboarding.html');
+  onboardWin.webContents.once('did-finish-load', () => { folge(); onboardWin.show(); });
+  onboardWin.on('closed', () => {
+    if (win && !win.isDestroyed()) { win.off('move', folge); win.off('resize', folge); }
+    onboardWin = null;
+  });
+}
+
 // ---------- Chrome-Erweiterungen ----------
 // Electron kann nur ENTPACKTE Erweiterungs-Ordner laden (gemessen 31.08.2026:
 // loadExtension funktioniert, und Content-Skripte wirken auch in Vertis

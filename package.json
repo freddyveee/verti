@@ -79,6 +79,8 @@
       "kompatibilitaets-check.html",
       "update.html",
       "update-preload.js",
+      "onboarding-preload.js",
+      "onboarding.html",
       "view-preload.js",
       "screen-picker.html",
       "screen-picker-preload.js",

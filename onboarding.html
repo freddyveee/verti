@@ -1,0 +1,224 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Verti einrichten</title>
+<!--
+  Ersteinrichtung, laeuft genau einmal beim allerersten Start.
+  Vier Schritte nach dem Vorbild von Shift (Freddys Wunsch 28.08.2026):
+  Willkommen, Standardbrowser als EIGENER Schritt, Daten uebernehmen, Apps.
+-->
+<style>
+  :root{--karte:#221f2e;--ink:#f4f2fa;--muted:#a9a4bd;--line:#3a3550;--accent:#7c3aed;--accent2:#a855f7;--ok:#4ade80}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{background:rgba(14,12,20,.62);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+  .karte{width:min(640px,92vw);max-height:88vh;display:flex;flex-direction:column;background:var(--karte);
+    border:1px solid var(--line);border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden}
+  .kopf{padding:26px 30px 0}
+  .marke{font-size:13px;font-weight:800;letter-spacing:.4px;color:var(--accent2)}
+  h1{font-size:25px;font-weight:800;margin:6px 0 4px;letter-spacing:-.3px}
+  .sub{color:var(--muted);margin:0}
+  .punkte{display:flex;gap:6px;padding:16px 30px 0}
+  .punkt{height:3px;flex:1;border-radius:2px;background:var(--line)}
+  .punkt.an{background:var(--accent)}
+  .inhalt{padding:20px 30px;overflow:auto;flex:1;min-height:180px}
+  .fuss{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:16px 30px 24px;border-top:1px solid var(--line)}
+  button{font:inherit;font-weight:650;border:0;border-radius:11px;padding:11px 20px;cursor:pointer}
+  .haupt{background:var(--accent);color:#fff}
+  .haupt:hover{background:var(--accent2)}
+  .neben{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  .text{background:transparent;color:var(--muted);padding:11px 4px}
+  .zeile{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+  .zeile:last-child{border-bottom:0}
+  .zeile b{display:block;font-size:15px}
+  .zeile span{color:var(--muted);font-size:13.5px}
+  .wahl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  .opt{border:1.5px solid var(--line);border-radius:14px;padding:15px;cursor:pointer;background:transparent;color:inherit;text-align:left}
+  .opt.an{border-color:var(--accent);background:rgba(124,58,237,.16)}
+  .opt b{display:block;margin-bottom:3px}
+  .opt span{color:var(--muted);font-size:13px}
+  .apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .app{display:flex;align-items:center;gap:9px;border:1.5px solid var(--line);border-radius:12px;padding:9px 11px;cursor:pointer;background:transparent;color:inherit;text-align:left;overflow:hidden}
+  .app.an{border-color:var(--accent);background:rgba(124,58,237,.16)}
+  .app img{width:20px;height:20px;border-radius:5px;flex:0 0 auto;background:#fff}
+  .app span{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gruppe{font-size:11.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:16px 0 7px}
+  .gruppe:first-child{margin-top:0}
+  .status{font-size:13.5px;color:var(--muted);min-height:20px}
+  .status.ok{color:var(--ok)}
+</style>
+<div class="karte">
+  <div class="kopf">
+    <div class="marke">VERTI</div>
+    <h1 id="titel">Willkommen bei Verti</h1>
+    <p class="sub" id="untertitel">Alle deine Web-Apps an einem Ort, dauerhaft angemeldet.</p>
+  </div>
+  <div class="punkte" id="punkte"></div>
+  <div class="inhalt" id="inhalt"></div>
+  <div class="fuss">
+    <button class="text" id="ueberspringen">Überspringen</button>
+    <div style="display:flex;gap:10px">
+      <button class="neben" id="zurueck" style="display:none">Zurück</button>
+      <button class="haupt" id="weiter">Los geht's</button>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  const A = window.vertionboard;
+  const inhalt = document.getElementById('inhalt');
+  const titel = document.getElementById('titel');
+  const unter = document.getElementById('untertitel');
+  const punkte = document.getElementById('punkte');
+  const bZurueck = document.getElementById('zurueck');
+  const bWeiter = document.getElementById('weiter');
+  const ANZAHL = 4;
+  let schritt = 0;
+  let standard = null;      // 'verti' | 'behalten'
+  let gewaehlteApps = new Set();
+  let katalog = [];
+
+  document.getElementById('ueberspringen').addEventListener('click', () => A.abbrechen());
+
+  function malePunkte() {
+    punkte.innerHTML = '';
+    for (let i = 0; i < ANZAHL; i++) {
+      const d = document.createElement('div');
+      d.className = 'punkt' + (i <= schritt ? ' an' : '');
+      punkte.appendChild(d);
+    }
+  }
+
+  // --- Schritt 1: Willkommen ---
+  function s0() {
+    titel.textContent = 'Willkommen bei Verti';
+    unter.textContent = 'Alle deine Web-Apps an einem Ort, dauerhaft angemeldet.';
+    inhalt.innerHTML = `
+      <div class="zeile"><div><b>Deine Apps in einer Leiste</b><span>WhatsApp, Kalender, Drive und über 200 weitere – ein Klick statt Tab-Suche.</span></div></div>
+      <div class="zeile"><div><b>Angemeldet bleiben</b><span>Einmal anmelden. Verti merkt sich die Sitzung, auch nach einem Neustart.</span></div></div>
+      <div class="zeile"><div><b>Nichts verpassen</b><span>Ungelesen-Zahlen und Meldungen kommen an, auch wenn die App im Hintergrund läuft.</span></div></div>`;
+    bWeiter.textContent = "Los geht's";
+  }
+
+  // --- Schritt 2: Standardbrowser (Freddys Wunsch: eigener Schritt) ---
+  function s1() {
+    titel.textContent = 'Soll Verti dein Standardbrowser werden?';
+    unter.textContent = 'Dann öffnen Links aus anderen Programmen direkt in Verti.';
+    inhalt.innerHTML = `
+      <div class="wahl">
+        <button class="opt" data-v="verti"><b>Ja, Verti nehmen</b><span>Links landen künftig hier.</span></button>
+        <button class="opt" data-v="behalten"><b>Aktuellen behalten</b><span>Chrome oder Safari bleibt Standard.</span></button>
+      </div>
+      <p class="status" id="stdStatus" style="margin-top:14px"></p>`;
+    inhalt.querySelectorAll('.opt').forEach((b) => {
+      if (standard === b.dataset.v) b.classList.add('an');
+      b.addEventListener('click', async () => {
+        standard = b.dataset.v;
+        inhalt.querySelectorAll('.opt').forEach((x) => x.classList.toggle('an', x === b));
+        const st = document.getElementById('stdStatus');
+        if (standard === 'verti') {
+          st.textContent = 'Wird gesetzt …';
+          const r = await A.standardbrowser();
+          st.className = 'status ok';
+          st.textContent = r && r.ok
+            ? 'Verti ist als Standardbrowser angemeldet. Dein System fragt eventuell noch einmal nach.'
+            : 'Dein System hat noch nicht bestätigt – du kannst das später in den Systemeinstellungen nachholen.';
+        } else { st.className = 'status'; st.textContent = 'Alles bleibt, wie es ist.'; }
+      });
+    });
+    bWeiter.textContent = 'Weiter';
+  }
+
+  // --- Schritt 3: Daten übernehmen ---
+  async function s2() {
+    titel.textContent = 'Lesezeichen übernehmen?';
+    unter.textContent = 'Verti kann deine Lesezeichen aus einem vorhandenen Browser übernehmen.';
+    inhalt.innerHTML = '<p class="status">Suche nach vorhandenen Browsern …</p>';
+    const quellen = await A.quellen();
+    if (!quellen.length) {
+      inhalt.innerHTML = '<p class="status">Kein Browser mit Lesezeichen gefunden. Du kannst Lesezeichen später jederzeit selbst anlegen.</p>';
+      bWeiter.textContent = 'Weiter';
+      return;
+    }
+    inhalt.innerHTML = '';
+    for (const q of quellen) {
+      const row = document.createElement('div');
+      row.className = 'zeile';
+      const links = document.createElement('div');
+      links.innerHTML = '<b>' + q.name + '</b><span>' + q.anzahl + ' Lesezeichen gefunden</span>';
+      const btn = document.createElement('button');
+      btn.className = 'neben';
+      btn.textContent = 'Übernehmen';
+      btn.addEventListener('click', async () => {
+        btn.disabled = true; btn.textContent = 'Übernehme …';
+        const r = await A.importieren(q.name);
+        btn.textContent = r && r.ok ? r.anzahl + ' übernommen' : 'Ging nicht';
+      });
+      row.appendChild(links); row.appendChild(btn);
+      row.style.justifyContent = 'space-between';
+      row.style.alignItems = 'center';
+      inhalt.appendChild(row);
+    }
+    const hinweis = document.createElement('p');
+    hinweis.className = 'status';
+    hinweis.style.marginTop = '12px';
+    hinweis.textContent = 'Nur Lesezeichen. Anmeldungen und Passwörter fasst Verti nicht an.';
+    inhalt.appendChild(hinweis);
+    bWeiter.textContent = 'Weiter';
+  }
+
+  // --- Schritt 4: Apps auswählen ---
+  async function s3() {
+    titel.textContent = 'Welche Apps möchtest du?';
+    unter.textContent = 'Du kannst später jederzeit welche hinzufügen oder entfernen.';
+    if (!katalog.length) {
+      inhalt.innerHTML = '<p class="status">Lade Apps …</p>';
+      katalog = await A.vorschlaege();
+      for (const c of katalog) if (c.empfohlen) gewaehlteApps.add(c.id);
+    }
+    inhalt.innerHTML = '';
+    const gruppen = {};
+    for (const c of katalog) (gruppen[c.empfohlen ? 'Empfohlen' : c.category] = gruppen[c.empfohlen ? 'Empfohlen' : c.category] || []).push(c);
+    const reihenfolge = ['Empfohlen', ...Object.keys(gruppen).filter((g) => g !== 'Empfohlen').sort()];
+    for (const g of reihenfolge) {
+      if (!gruppen[g]) continue;
+      const h = document.createElement('div'); h.className = 'gruppe'; h.textContent = g;
+      inhalt.appendChild(h);
+      const grid = document.createElement('div'); grid.className = 'apps';
+      for (const c of gruppen[g]) {
+        const b = document.createElement('button');
+        b.className = 'app' + (gewaehlteApps.has(c.id) ? ' an' : '');
+        const img = document.createElement('img');
+        img.src = c.icon || ('https://www.google.com/s2/favicons?sz=64&domain=' + (() => { try { return new URL(c.url).hostname; } catch (e) { return 'example.com'; } })());
+        img.alt = '';
+        const sp = document.createElement('span'); sp.textContent = c.name;
+        b.appendChild(img); b.appendChild(sp);
+        b.addEventListener('click', () => {
+          if (gewaehlteApps.has(c.id)) gewaehlteApps.delete(c.id); else gewaehlteApps.add(c.id);
+          b.classList.toggle('an');
+          bWeiter.textContent = gewaehlteApps.size ? 'Fertig (' + gewaehlteApps.size + ')' : 'Ohne Apps starten';
+        });
+        grid.appendChild(b);
+      }
+      inhalt.appendChild(grid);
+    }
+    bWeiter.textContent = gewaehlteApps.size ? 'Fertig (' + gewaehlteApps.size + ')' : 'Ohne Apps starten';
+  }
+
+  const schritte = [s0, s1, s2, s3];
+  async function zeige() {
+    malePunkte();
+    bZurueck.style.display = schritt === 0 ? 'none' : '';
+    await schritte[schritt]();
+    inhalt.scrollTop = 0;
+  }
+  bWeiter.addEventListener('click', async () => {
+    if (schritt < ANZAHL - 1) { schritt++; await zeige(); return; }
+    bWeiter.disabled = true;
+    bWeiter.textContent = 'Richte ein …';
+    await A.fertig([...gewaehlteApps]);
+  });
+  bZurueck.addEventListener('click', async () => { if (schritt > 0) { schritt--; await zeige(); } });
+  zeige();
+})();
+</script>
