@@ -12,6 +12,7 @@ Verti ist Freddys selbstgebauter Shift-Ersatz: ein vertikaler Browser als Electr
 - `scripts/mouse-probe.js` – Sonde, die im Fenster zeigt, was Maus-Seitentasten/Tastenkürzel im Hauptprozess auslösen (`npx electron scripts/mouse-probe.js`); wird nicht mitgepackt
 - `icons/` – lokal eingebettete App-Logos (WhatsApp/Stackfield/Telegram, weil Favicon-Dienste dort versagen; Stackfield-Haken wurde manuell weiß gefüllt, war transparent ausgestanzt)
 - `build/` – App-Icon (icon.png) und DMG-Hintergrund
+- `QA-CHECKLISTE.md` – Prüfliste, die VOR jedem Release einmal durchgeklickt wird (Kernfunktionen absichern, auf Mac + Windows). Bei neuen Funktionen mitpflegen
 - `docs/` – Landingpage (GitHub Pages): https://freddyveee.github.io/verti/
 - `BACKLOG.md` – Ideen und Wünsche (Offen / Umgesetzt-ungebaut / Blockiert / Veröffentlicht). Jeden neuen Wunsch von Freddy sofort dort eintragen; Umsetzung laufend, Release gebündelt auf „jetzt bauen". Format: `- Text (TT.MM.JJJJ)`, Releases als `### 1.0.x (Datum)`
 - `scripts/backlog-page.js` – baut aus `BACKLOG.md` die Checklisten-Seite: `node scripts/backlog-page.js .backlog-preview.html --full` für die Vorschau neben dem Chat (Datei ist gitignored, im Browser-Bereich öffnen) und ohne `--full` für das Artifact „Verti Backlog" (URL im Memory). Nach JEDER Änderung an BACKLOG.md beides neu ausspielen; wird nicht mitgepackt
