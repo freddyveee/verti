@@ -18,7 +18,22 @@ function wantsRealWindow({ url, disposition, features, postBody } = {}) {
   if (disposition === 'new-window') return true;   // echtes Skript-Popup
   if (features && String(features).trim()) return true; // window.open mit Massen
   if (postBody) return true;                       // <form target=_blank>
+  if (istVorschau(url)) return true;               // Bild-Grossansicht, s.u.
   return false;
+}
+
+// Grossansichten von Bildern und Dateien laufen ueber blob: oder data:.
+// Die MUESSEN ein eigenes Fenster bekommen:
+//  - blob: traegt den Ursprung der Seite (blob:https://chatgpt.com/... hat den
+//    origin https://chatgpt.com), galt damit als "gleiche App" und haette die
+//    App-Ansicht WEGNAVIGIERT - der Chat waere verschwunden.
+//  - data: hat gar keinen Ursprung, landete deshalb beim externen Oeffnen und
+//    wurde dort still verworfen (nicht in der Protokoll-Liste) - es passierte
+//    schlicht nichts.
+// Gemeldet am 31.08.2026: In ChatGPT liess sich ein erzeugtes Bild nicht gross
+// ansehen. Genau das war die Ursache.
+function istVorschau(url) {
+  return /^(blob:|data:)/i.test(String(url || ''));
 }
 
 // deps: { isAuthUrl, isInstalledAppUrl, popupWindowOptions, browserOpenExternal, log }
@@ -61,10 +76,15 @@ function makeWindowOpenPolicy(deps) {
       if (disposition === 'new-window' && isInstalledAppUrl(url)) {
         return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(1100, 800) };
       }
+      // data:-Vorschauen haben keinen Ursprung und faenden sonst hier ihr Ende
+      // (der externe Weg laesst nur bekannte Protokolle durch, data: nicht).
+      if (istVorschau(url)) {
+        return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(1100, 800) };
+      }
       browserOpenExternal(url);
       return { action: 'deny' };
     };
   };
 }
 
-module.exports = { wantsRealWindow, makeWindowOpenPolicy };
+module.exports = { wantsRealWindow, istVorschau, makeWindowOpenPolicy };

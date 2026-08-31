@@ -10,7 +10,8 @@ Nächstes Release: 1.1.18
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (nichts – wandert beim Release hierher)
+- Bild-Großansichten funktionieren wieder: In ChatGPT (und überall sonst) ließ sich ein erzeugtes Bild nicht groß ansehen. Ursache waren zwei Fälle in der Fenster-Regel – eine `blob:`-Adresse trägt den Ursprung der Seite und hätte die App-Ansicht weggeblättert, eine `data:`-Adresse hat gar keinen Ursprung und wurde still verworfen. Beide öffnen jetzt ein eigenes Vorschau-Fenster, die App bleibt stehen. Mit zwei neuen Testfällen abgesichert und in der echten App gegengeprüft. (31.08.2026)
+- Kompatibilitäts-Check um den Bereich „Bilder & Vorschau" erweitert (Overlay, `<dialog>`, Object-URL, neues Fenster per blob: und data:, Vollbild) – damit fällt genau diese Fehlerklasse künftig beim Vorab-Test auf. (31.08.2026)
 
 ## Blockiert
 

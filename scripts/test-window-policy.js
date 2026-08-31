@@ -45,6 +45,12 @@ const FAELLE = [
   ['OAuth ohne URL', { url: '', disposition: 'foreground-tab' }, 'allow', 520, null],
   ['Login-Link (target=_blank)', { url: 'https://accounts.google.com/signin', disposition: 'foreground-tab' }, 'deny', null, 'geladen'],
   ['Apple-Login mit Massen', { url: 'https://appleid.apple.com/auth', disposition: 'foreground-tab', features: 'width=400' }, 'allow', 520, null],
+  // --- Bild-Vorschauen (blob:/data:) - der ChatGPT-Fall vom 31.08.2026 ---
+  // Ein Bild in der Grossansicht darf NIE die App-Ansicht wegnavigieren und
+  // erst recht nicht still verschluckt werden.
+  ['Bild als blob: aus der App', { url: 'blob:https://www.canva.com/abc-123', disposition: 'foreground-tab' }, 'allow', 1100, null],
+  ['Bild als data:', { url: 'data:image/png;base64,iVBORw0KGgo=', disposition: 'foreground-tab' }, 'allow', 1100, null],
+  ['Bild als blob: per Skript-Popup', { url: 'blob:https://www.canva.com/x', disposition: 'new-window' }, 'allow', 1100, null],
   // --- fremde Seite: ab in den Browser ---
   ['fremder Link', { url: 'https://example.com/artikel', disposition: 'foreground-tab' }, 'deny', null, 'extern'],
   ['fremdes Skript-Popup', { url: 'https://example.com/x', disposition: 'new-window' }, 'deny', null, 'extern'],

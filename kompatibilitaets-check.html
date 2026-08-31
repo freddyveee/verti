@@ -226,6 +226,59 @@
   }, 'Testen');
   pruef('Darstellung', 'Drucken', (s) => { window.print(); s('ok', 'Dialog ausgelöst'); }, 'Testen');
 
+  // ---------- Bilder & Vorschau ----------
+  // Anlass: In ChatGPT liess sich ein erzeugtes Bild nicht in der Grossansicht
+  // oeffnen (31.08.2026). Genau diese Mechanismen benutzen Web-Apps dafuer.
+  pruef('Bilder & Vorschau', 'Overlay im selben Fenster (haeufigster Weg)', (s) => {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font:16px sans-serif';
+    d.textContent = 'Grossansicht – klicken zum Schliessen';
+    d.onclick = () => d.remove();
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 1600);
+    s('ok', 'Overlay erschien – so machen es die meisten Apps');
+  }, 'Testen');
+  pruef('Bilder & Vorschau', '<dialog> als Grossansicht', (s) => {
+    if (!window.HTMLDialogElement) return s('bad', '<dialog> fehlt – moderne Lightboxen gehen nicht');
+    const dlg = document.createElement('dialog');
+    dlg.textContent = 'Dialog-Grossansicht';
+    dlg.style.cssText = 'padding:28px;border-radius:12px;border:0';
+    document.body.appendChild(dlg);
+    try {
+      dlg.showModal();
+      setTimeout(() => { dlg.close(); dlg.remove(); }, 1400);
+      s('ok', 'showModal() funktioniert');
+    } catch (e) { s('bad', e.message); }
+  }, 'Testen');
+  pruef('Bilder & Vorschau', 'Object-URL erzeugen (blob:)', (s) => {
+    try {
+      const u = URL.createObjectURL(new Blob(['x'], { type: 'image/png' }));
+      s('ok', u.slice(0, 46) + ' …');
+      URL.revokeObjectURL(u);
+    } catch (e) { s('bad', e.message); }
+  });
+  pruef('Bilder & Vorschau', 'Bild in neuem Tab (blob:)', (s) => {
+    const u = URL.createObjectURL(new Blob(['x'], { type: 'text/plain' }));
+    const w = window.open(u, '_blank');
+    if (!w) return s('bad', 'wurde verworfen – so ein Bild liesse sich nicht gross ansehen');
+    setTimeout(() => { try { w.close(); } catch (e) {} URL.revokeObjectURL(u); }, 800);
+    s('warn', 'geoeffnet – bitte prüfen, ob die AKTUELLE Seite dabei stehen bleibt und nicht wegnavigiert');
+  }, 'Testen');
+  pruef('Bilder & Vorschau', 'Bild in neuem Tab (data:)', (s) => {
+    const w = window.open('data:text/plain,Verti-Test', '_blank');
+    if (!w) return s('bad', 'wurde STILL verworfen – data:-Adressen kommen bei uns nicht durch');
+    setTimeout(() => { try { w.close(); } catch (e) {} }, 800);
+    s('ok', 'geoeffnet');
+  }, 'Testen');
+  pruef('Bilder & Vorschau', 'Bild im Vollbild', (s) => {
+    const d = document.createElement('div');
+    d.style.cssText = 'width:200px;height:120px;background:#7c3aed';
+    document.body.appendChild(d);
+    d.requestFullscreen()
+      .then(() => { setTimeout(() => { document.exitFullscreen(); d.remove(); }, 900); s('ok', 'ging auf'); })
+      .catch((e) => { d.remove(); s('bad', e.message); });
+  }, 'Testen');
+
   // ---------- Externe Ziele ----------
   const linkTest = (name, url, hinweis) => pruef('Externe Ziele', name, (s) => {
     location.href = url;
