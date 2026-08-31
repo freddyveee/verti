@@ -354,6 +354,31 @@
   .seg button { border: none; background: transparent; color: var(--text-2); font-family: inherit; font-size: 13px; padding: 7px 13px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
   .seg button.on { background: var(--accent); color: #fff; }
   /* App-Kennzeichnung: beschreibt UNSERE Zusage, nicht die Qualitaet der App */
+  /* Browser-Seitenkarte (Schnellzugriff), Vorbild Shifts "Quick Settings".
+     Bewusst getrennt von den Verti-Einstellungen: hier steht nur, was den
+     Browser betrifft. Der Darstellungs-Schalter faerbt trotzdem ganz Verti um
+     (Freddys Entscheidung 31.08.2026) - ein zweites Design-Set nur fuer den
+     Browser waere fleckig und pflegeintensiv. */
+  .bpanel { position: fixed; top: 0; right: 0; width: 340px; height: 100vh; z-index: 60;
+    background: var(--panel); border-left: 1px solid var(--divider);
+    transform: translateX(100%); transition: transform .22s ease; overflow-y: auto;
+    display: flex; flex-direction: column; }
+  .bpanel.open { transform: none; }
+  .bpanel-kopf { display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 18px 10px; }
+  .bpanel-kopf h2 { font-size: 17px; font-weight: 800; margin: 0; }
+  .bpanel-x { background: transparent; border: 0; color: var(--text-2); font-size: 17px; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+  .bpanel-x:hover { background: var(--hover); color: var(--text); }
+  .bpanel-grp { font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+    color: var(--text-2); padding: 14px 18px 6px; }
+  .bpanel-item { display: flex; align-items: center; gap: 11px; width: 100%; background: transparent;
+    border: 0; color: var(--text); font: inherit; font-size: 14.5px; text-align: left;
+    padding: 10px 18px; cursor: pointer; }
+  .bpanel-item:hover { background: var(--hover); }
+  .bpanel-item .kbd { margin-left: auto; color: var(--text-2); font-size: 12px; }
+  .bpanel-item svg { width: 17px; height: 17px; flex: 0 0 auto; opacity: .85; }
+  .bpanel-hr { height: 1px; background: var(--divider); margin: 10px 18px; }
+  .bpanel-seg { padding: 4px 18px 18px; }
   .stufe { display: inline-block; margin-top: 3px; font-size: 10.5px; font-weight: 700;
     letter-spacing: .3px; border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
   .stufe.geprueft { color: #1f9d55; background: rgba(31,157,85,.14); }
@@ -513,6 +538,20 @@
     <div id="extList"></div>
     <div class="setsection-title">Benachrichtigungen pro App</div>
     <div id="notifList"></div>
+  </div>
+
+  <div class="bpanel" id="bpanel">
+    <div class="bpanel-kopf"><h2>Browser</h2><button class="bpanel-x" id="bpanelX" title="Schließen">✕</button></div>
+    <div class="bpanel-grp">Tabs</div>
+    <button class="bpanel-item" id="bpNewTab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Neuer Tab<span class="kbd" id="bpNewTabKbd"></span></button>
+    <div class="bpanel-grp">Einstellungen</div>
+    <button class="bpanel-item" id="bpExt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10 3.5a1.8 1.8 0 0 1 3.6 0V5h2.6a1 1 0 0 1 1 1v2.6h1.5a1.8 1.8 0 0 1 0 3.6H17.2V15a1 1 0 0 1-1 1h-2.6v1.5a1.8 1.8 0 0 1-3.6 0V16H7.4a1 1 0 0 1-1-1v-2.6H4.9a1.8 1.8 0 0 1 0-3.6h1.5V6a1 1 0 0 1 1-1H10z"/></svg>Erweiterungen</button>
+    <button class="bpanel-item" id="bpDown"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14"/></svg>Downloads-Ordner öffnen</button>
+    <button class="bpanel-item" id="bpHist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg>Verlauf löschen<span class="kbd" id="bpHistN"></span></button>
+    <div class="bpanel-hr"></div>
+    <button class="bpanel-item" id="bpAlle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>Alle Verti-Einstellungen</button>
+    <div class="bpanel-grp">Darstellung</div>
+    <div class="bpanel-seg"><div class="seg" id="bpTheme"><button data-v="dark">Dunkel</button><button data-v="light">Hell</button></div></div>
   </div>
 
   <div class="fbmodal" id="feedback">
@@ -942,6 +981,36 @@
       document.getElementById('plus').addEventListener('click', openLibrary);
       document.getElementById('appSearch').addEventListener('input', (e) => { libQuery = e.target.value; renderCatalog(); });
       window.addEventListener('resize', () => { if (library.classList.contains('open')) clampAll(); });
+
+      // ---------- Browser-Seitenkarte ----------
+      // Getrennt von den Verti-Einstellungen: hier nur Browser-Sachen. Der
+      // Darstellungs-Schalter faerbt bewusst ganz Verti um (eine Quelle).
+      const bpanel = document.getElementById('bpanel');
+      async function oeffneBrowserKarte() {
+        const cur = await window.verti.getSettings();
+        markSeg('bpTheme', cur.theme);
+        const n = await window.verti.historyCount();
+        document.getElementById('bpHistN').textContent = n ? n + ' Seiten' : 'leer';
+        document.getElementById('bpNewTabKbd').textContent = (window.verti.platform === 'darwin' ? 'Cmd' : 'Strg') + '+T';
+        bpanel.classList.add('open');
+      }
+      function schliesseBrowserKarte() { bpanel.classList.remove('open'); }
+      window.verti.onOpenBrowserPanel(oeffneBrowserKarte);
+      document.getElementById('bpanelX').addEventListener('click', schliesseBrowserKarte);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && bpanel.classList.contains('open')) schliesseBrowserKarte(); });
+      document.getElementById('bpNewTab').addEventListener('click', () => { window.verti.browserNewTab(); schliesseBrowserKarte(); });
+      document.getElementById('bpExt').addEventListener('click', () => { schliesseBrowserKarte(); openSettings(); setTimeout(() => { const el = document.getElementById('extList'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 140); });
+      document.getElementById('bpDown').addEventListener('click', () => { window.verti.openDownloadsFolder(); schliesseBrowserKarte(); });
+      document.getElementById('bpHist').addEventListener('click', async () => {
+        await window.verti.historyClear();
+        document.getElementById('bpHistN').textContent = 'geleert';
+      });
+      document.getElementById('bpAlle').addEventListener('click', () => { schliesseBrowserKarte(); openSettings(); });
+      document.getElementById('bpTheme').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+        window.verti.setTheme(b.dataset.v);
+        markSeg('bpTheme', b.dataset.v);
+        markSeg('segTheme', b.dataset.v);
+      }));
 
       // ---------- Chrome-Erweiterungen ----------
       // Electron laedt nur ENTPACKTE Ordner, keine .crx und nichts aus dem

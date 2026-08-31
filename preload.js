@@ -43,4 +43,9 @@ contextBridge.exposeInMainWorld('verti', {
   extAdd: () => ipcRenderer.invoke('ext:add'),
   extRemove: (id) => ipcRenderer.invoke('ext:remove', id),
   onOpenSettingsSection: (cb) => ipcRenderer.on('open-settings-section', (e, s) => cb(s)),
+  onOpenBrowserPanel: (cb) => ipcRenderer.on('open-browser-panel', () => cb()),
+  openDownloadsFolder: () => ipcRenderer.send('open-downloads-folder'),
+  historyCount: () => ipcRenderer.invoke('history:count'),
+  historyClear: () => ipcRenderer.invoke('history:clear'),
+  browserNewTab: () => ipcRenderer.send('browser:new-tab'),
 });

@@ -1882,8 +1882,19 @@ ipcMain.on('browser:open-extensions', () => {
 // Zahnrad in der Browser-Leiste: normale Einstellungen, ohne Sprung zu den
 // Erweiterungen. Puzzle = Erweiterungen, Zahnrad = Einstellungen - vorher
 // fuehrte das Puzzle einfach in die allgemeinen Einstellungen, was verwirrte.
+// Zahnrad in der Browser-Leiste oeffnet die Browser-Seitenkarte (Schnell-
+// zugriff), NICHT die allgemeinen Verti-Einstellungen. Vorbild ist Shifts
+// "Quick Settings": Tabs, Erweiterungen, Downloads, Darstellung.
 ipcMain.on('browser:open-settings', () => {
-  if (win && !win.isDestroyed()) win.webContents.send('open-settings-section', '');
+  if (win && !win.isDestroyed()) win.webContents.send('open-browser-panel');
+});
+ipcMain.on('open-downloads-folder', () => {
+  try { shell.openPath(app.getPath('downloads')); } catch (e) {}
+});
+ipcMain.handle('history:count', () => (state && Array.isArray(state.history) ? state.history.length : 0));
+ipcMain.handle('history:clear', () => {
+  try { state.history = []; saveState(); } catch (e) {}
+  return { ok: true };
 });
 
 ipcMain.on('open-compat-check', () => {
