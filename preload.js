@@ -48,4 +48,5 @@ contextBridge.exposeInMainWorld('verti', {
   historyCount: () => ipcRenderer.invoke('history:count'),
   historyClear: () => ipcRenderer.invoke('history:clear'),
   browserNewTab: () => ipcRenderer.send('browser:new-tab'),
+  browserPanelState: (offen) => ipcRenderer.send('browser-panel-state', offen),
 });

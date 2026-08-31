@@ -993,8 +993,9 @@
         document.getElementById('bpHistN').textContent = n ? n + ' Seiten' : 'leer';
         document.getElementById('bpNewTabKbd').textContent = (window.verti.platform === 'darwin' ? 'Cmd' : 'Strg') + '+T';
         bpanel.classList.add('open');
+        window.verti.browserPanelState(true); // App-Ansichten machen rechts Platz
       }
-      function schliesseBrowserKarte() { bpanel.classList.remove('open'); }
+      function schliesseBrowserKarte() { bpanel.classList.remove('open'); window.verti.browserPanelState(false); }
       window.verti.onOpenBrowserPanel(oeffneBrowserKarte);
       document.getElementById('bpanelX').addEventListener('click', schliesseBrowserKarte);
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && bpanel.classList.contains('open')) schliesseBrowserKarte(); });

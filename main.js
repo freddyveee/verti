@@ -723,6 +723,19 @@ function applyGoogleAuthDisguise(ses) {
 // webFrame.executeJavaScript, weil Googles CSP eingefügte <script>-Elemente
 // still verwirft); die Header macht weiterhin applyGoogleAuthDisguise oben.
 
+// Die Browser-Seitenkarte lebt in der Sidebar-Ebene, und die App-Ansichten
+// liegen DARUEBER - eine eingeblendete Karte waere sonst unsichtbar dahinter
+// (genau der Fehler, den der "Verbesserung"-Knopf schon hatte). Statt die
+// Ansichten wie bei den Einstellungen komplett auszublenden, machen wir ihnen
+// rechts Platz: dann bleibt die Seite daneben sichtbar, wie bei Shift.
+const BROWSER_PANEL_W = 340;
+let browserPanelOpen = false;
+function setBrowserPanel(offen) {
+  browserPanelOpen = !!offen;
+  layoutViews();
+}
+ipcMain.on('browser-panel-state', (e, offen) => setBrowserPanel(offen));
+
 function layoutViews() {
   if (!win) return;
   const [w, h] = win.getContentSize();
@@ -730,7 +743,7 @@ function layoutViews() {
     views[id].setBounds({
       x: SIDEBAR_WIDTH,
       y: TOP_BAR,
-      width: w - SIDEBAR_WIDTH - FRAME,
+      width: w - SIDEBAR_WIDTH - FRAME - (browserPanelOpen ? BROWSER_PANEL_W : 0),
       height: id === BROWSER_ID ? browserBarHeight() + (browserSuggestOpen ? SUGGEST_H : 0) : h - TOP_BAR - FRAME,
     });
   }
@@ -993,7 +1006,7 @@ function layoutBrowserTabs() {
   if (!win) return;
   const [w, h] = win.getContentSize();
   const bar = browserBarHeight();
-  const b = { x: SIDEBAR_WIDTH, y: TOP_BAR + bar, width: w - SIDEBAR_WIDTH - FRAME, height: h - TOP_BAR - bar - FRAME };
+  const b = { x: SIDEBAR_WIDTH, y: TOP_BAR + bar, width: w - SIDEBAR_WIDTH - FRAME - (browserPanelOpen ? BROWSER_PANEL_W : 0), height: h - TOP_BAR - bar - FRAME };
   for (const v of browserTabs.values()) v.setBounds(b);
 }
 function browserApplyVisibility() {
