@@ -6,10 +6,10 @@ Nächstes Release: 1.1.17
 
 ## Offen
 
+- Verti Browser – Erweiterungen Stufe 2 (Stufe 1 ist umgesetzt): mitgelieferte, kuratierte Auswahl statt Chrome Web Store, plus eigene Symbolleiste und Popups. **Chrome Web Store ist bewusst raus** – Googles Bedingungen (Ziffer 4.4.2) untersagen den Bezug außerhalb ihrer Oberfläche, und die vorhandenen Hilfspakete sind ungepflegt, prüfen keine Signatur oder stehen unter GPL. **Harte Grenzen, die in die Erwartung müssen:** Passwortmanager (1Password, Bitwarden) laufen NIE, weil Electron die native Brücke sperrt. Klassisches uBlock Origin läuft nicht (chrome.webRequest ist in unserer Electron-Version kaputt), uBlock Origin Lite wahrscheinlich schon. Erweiterungs-Symbole und Badges muss Verti selbst zeichnen, chrome.action ist in Electron eine Attrappe. Bester Erstkandidat zum Testen: Dark Reader. (31.08.2026)
 ### Qualitätssicherung für den Verkauf (29.08.2026)
 
 
-- Verti Browser – Stufe 3 (Stufen 1 und 2 sind fertig, s. unten): Chrome-Extensions – eigene „Erweiterungen"-Seite + Installieren/Aktualisieren aus dem Web Store (`session.loadExtension`); machbar (Shift macht es vor), Grenze ist nur die Kompatibilität einzelner Erweiterungen. (24.08.2026)
 - Onboarding beim ersten Start (Shift-Stil, wird gerade anhand von Shift zusammengetragen): mehrstufiger Ersteinrichtungs-Assistent. Schritt 1: Bedingungen zustimmen + „Verti als Standardbrowser" + „Daten aus vorhandenem Browser importieren". Schritt 2: eigene Frage „Verti als Standardbrowser nutzen oder aktuellen Browser (Chrome/Safari) behalten?". Schritt 3: Apps auswählen und hinzufügen – nutzt Vertis vorhandenen App-Katalog; Vorschläge aus dem Browser-Verlauf, die meistgenutzten schon angehakt, „Ohne Apps überspringen" möglich. Abschluss: „Browser ist fertig"-Screen mit optionalem Konto/Sync (Spaces, Apps, Tabs, Lesezeichen, Verlauf geräteübergreifend; „Später erinnern"/„Jetzt syncen") – Login des Shift-Kontos läuft über Google/Apple/Microsoft als OAuth-Partner (nicht zu verwechseln mit eingebettetem Google-Login). Das Sync/Konto selbst ist unser zurückgestelltes Account-System, s. „Verschoben". (28.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
