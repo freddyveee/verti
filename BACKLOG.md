@@ -2,7 +2,7 @@
 
 Hier sammeln wir Ideen und Wünsche. Umgesetzt wird laufend (Dev-Version, `npm start`), veröffentlicht wird gebündelt, sobald Freddy „jetzt bauen" sagt. Beim Release wandern die fertigen Punkte unter die neue Versionsnummer.
 
-Nächstes Release: 1.1.17
+Nächstes Release: 1.1.18
 
 ## Offen
 
@@ -10,12 +10,7 @@ Nächstes Release: 1.1.17
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- Browser-Seitenkarte (Zahnrad in der Browser-Leiste, Vorbild Shifts „Quick Settings"): Neuer Tab, Erweiterungen, Downloads-Ordner öffnen, Verlauf löschen, alle Verti-Einstellungen und ein Hell/Dunkel-Schalter. Getrennt von den allgemeinen Einstellungen – vorher landete man beim Klick einfach dort. Das Puzzle steht jetzt nur noch für Erweiterungen, das Zahnrad für Einstellungen. (31.08.2026)
-- Ersteinrichtung beim allerersten Start (vier Schritte, Shift-Vorbild): Willkommen, dann die Frage „Soll Verti dein Standardbrowser werden?" als eigener Schritt, dann Lesezeichen aus Chrome, Edge oder Brave übernehmen, dann Apps auswählen (IMPERIO-Apps schon angehakt, nach Kategorien sortiert, „Ohne Apps starten" möglich). Zum Schluss startet Verti mit der Auswahl neu. Überspringen jederzeit möglich. Importiert werden NUR Lesezeichen – Anmeldungen und Passwörter fasst Verti nicht an. (31.08.2026)
-- App-Kennzeichnung in der Bibliothek: jede App zeigt „Geprüft" (mit Datum im Tooltip), „Unterstützt" oder „Experimentell". Die Stufe beschreibt UNSERE Zusage, nicht die Qualität der fremden App – kein Wettbewerber zeigt so etwas. Gepflegt wird die Liste in `app-status.json`, ohne Code-Änderung. Aktuell als geprüft eingetragen: Google Kalender, Google Drive, Canva, ChatGPT. **Freddy sollte die Liste erweitern, sobald er eine App wirklich durchgespielt hat** (anmelden, Kernfunktion, Badges). (31.08.2026)
-- Störungsmeldung pro App: Rechtsklick auf ein Sidebar-Icon → „Diese App funktioniert nicht …". Das Formular ist mit dem App-Namen vorbelegt und stellt eine Pflichtfrage: „Geht es in deinem normalen Browser?" Diese eine Antwort trennt einen Verti-Fehler von einer Änderung beim App-Anbieter – ohne sie landet jede fremde Web-App-Änderung bei uns. Meldung geht wie bisher ins Admin-Panel. (31.08.2026)
-- Kompatibilitäts-Check: eine Seite mit 25 Prüfpunkten, die alle Berührungsflächen zwischen Verti und beliebigen Web-Apps durchspielt (Fenster öffnen, Meldungen, Downloads, Medien, Anmeldung inkl. Passkeys, Zwischenablage, Darstellung, Meeting-Links). Zahnrad → Einstellungen → „Kompatibilität prüfen". Damit ist der Test vor einem Release ein einziger Seitenaufruf statt Handarbeit – besonders nach jedem Electron-Update. (31.08.2026)
-- Die Fenster-Regel (öffnet sich etwas als Tab in der Ansicht oder als eigenes Fenster?) ist jetzt durch eine Testtabelle mit 16 Fällen abgesichert, `npm test`. Genau dort saß der Canva-Fehler. Dabei aufgefallen und behoben: das ausgelagerte Modul fehlte in der Paket-Liste, die gebaute App wäre nicht gestartet. (29.08.2026)
+- (nichts – wandert beim Release hierher)
 
 ## Blockiert
 
@@ -38,6 +33,15 @@ Nächstes Release: 1.1.17
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.17 (31.08.2026)
+
+- Browser-Seitenkarte (Zahnrad in der Browser-Leiste, Vorbild Shifts „Quick Settings"): Neuer Tab, Erweiterungen, Downloads-Ordner öffnen, Verlauf löschen, alle Verti-Einstellungen und ein Hell/Dunkel-Schalter. Getrennt von den allgemeinen Einstellungen – vorher landete man beim Klick einfach dort. Das Puzzle steht jetzt nur noch für Erweiterungen, das Zahnrad für Einstellungen. (31.08.2026)
+- Ersteinrichtung beim allerersten Start (vier Schritte, Shift-Vorbild): Willkommen, dann die Frage „Soll Verti dein Standardbrowser werden?" als eigener Schritt, dann Lesezeichen aus Chrome, Edge oder Brave übernehmen, dann Apps auswählen (IMPERIO-Apps schon angehakt, nach Kategorien sortiert, „Ohne Apps starten" möglich). Zum Schluss startet Verti mit der Auswahl neu. Überspringen jederzeit möglich. Importiert werden NUR Lesezeichen – Anmeldungen und Passwörter fasst Verti nicht an. (31.08.2026)
+- App-Kennzeichnung in der Bibliothek: jede App zeigt „Geprüft" (mit Datum im Tooltip), „Unterstützt" oder „Experimentell". Die Stufe beschreibt UNSERE Zusage, nicht die Qualität der fremden App – kein Wettbewerber zeigt so etwas. Gepflegt wird die Liste in `app-status.json`, ohne Code-Änderung. Aktuell als geprüft eingetragen: Google Kalender, Google Drive, Canva, ChatGPT. **Freddy sollte die Liste erweitern, sobald er eine App wirklich durchgespielt hat** (anmelden, Kernfunktion, Badges). (31.08.2026)
+- Störungsmeldung pro App: Rechtsklick auf ein Sidebar-Icon → „Diese App funktioniert nicht …". Das Formular ist mit dem App-Namen vorbelegt und stellt eine Pflichtfrage: „Geht es in deinem normalen Browser?" Diese eine Antwort trennt einen Verti-Fehler von einer Änderung beim App-Anbieter – ohne sie landet jede fremde Web-App-Änderung bei uns. Meldung geht wie bisher ins Admin-Panel. (31.08.2026)
+- Kompatibilitäts-Check: eine Seite mit 25 Prüfpunkten, die alle Berührungsflächen zwischen Verti und beliebigen Web-Apps durchspielt (Fenster öffnen, Meldungen, Downloads, Medien, Anmeldung inkl. Passkeys, Zwischenablage, Darstellung, Meeting-Links). Zahnrad → Einstellungen → „Kompatibilität prüfen". Damit ist der Test vor einem Release ein einziger Seitenaufruf statt Handarbeit – besonders nach jedem Electron-Update. (31.08.2026)
+- Die Fenster-Regel (öffnet sich etwas als Tab in der Ansicht oder als eigenes Fenster?) ist jetzt durch eine Testtabelle mit 16 Fällen abgesichert, `npm test`. Genau dort saß der Canva-Fehler. Dabei aufgefallen und behoben: das ausgelagerte Modul fehlte in der Paket-Liste, die gebaute App wäre nicht gestartet. (29.08.2026)
 
 ### 1.1.16 (29.08.2026)
 
