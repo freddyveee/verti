@@ -15,7 +15,9 @@
   .karte{width:min(640px,92vw);max-height:88vh;display:flex;flex-direction:column;background:var(--karte);
     border:1px solid var(--line);border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden}
   .kopf{padding:26px 30px 0}
-  .marke{font-size:13px;font-weight:800;letter-spacing:.4px;color:var(--accent2)}
+  /* Schriftzug wie in der Sidebar: weiss mit lila Punkt */
+  .marke{font-size:19px;font-weight:800;letter-spacing:.2px;color:var(--ink)}
+  .marke em{font-style:normal;color:#b78aff}
   h1{font-size:25px;font-weight:800;margin:6px 0 4px;letter-spacing:-.3px}
   .sub{color:var(--muted);margin:0}
   .punkte{display:flex;gap:6px;padding:16px 30px 0}
@@ -33,9 +35,9 @@
   .zeile b{display:block;font-size:15px}
   /* Runder Haken vor den Willkommens-Punkten: lila Umrandung, fliederfarbener
      Hintergrund, lila Haken. */
-  .haken{flex:0 0 auto;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--accent);
-    background:rgba(168,85,247,.20);display:flex;align-items:center;justify-content:center;margin-top:1px}
-  .haken svg{width:14px;height:14px;stroke:var(--accent2);stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .haken{flex:0 0 auto;width:26px;height:26px;border-radius:50%;border:2px solid #7c3aed;
+    background:#ede4ff;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .haken svg{width:14px;height:14px;stroke:#7c3aed;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
   .zeile span{color:var(--muted);font-size:13.5px}
   .wahl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
   .opt{border:1.5px solid var(--line);border-radius:14px;padding:15px;cursor:pointer;background:transparent;color:inherit;text-align:left}
@@ -54,7 +56,7 @@
 </style>
 <div class="karte">
   <div class="kopf">
-    <div class="marke">VERTI</div>
+    <div class="marke">Verti<em>.</em></div>
     <h1 id="titel">Willkommen bei Verti</h1>
     <p class="sub" id="untertitel">Alle deine Web-Apps an einem Ort, dauerhaft angemeldet.</p>
   </div>

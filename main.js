@@ -1879,6 +1879,12 @@ ipcMain.handle('ext:remove', (e, id) => {
 ipcMain.on('browser:open-extensions', () => {
   if (win && !win.isDestroyed()) win.webContents.send('open-settings-section', 'erweiterungen');
 });
+// Zahnrad in der Browser-Leiste: normale Einstellungen, ohne Sprung zu den
+// Erweiterungen. Puzzle = Erweiterungen, Zahnrad = Einstellungen - vorher
+// fuehrte das Puzzle einfach in die allgemeinen Einstellungen, was verwirrte.
+ipcMain.on('browser:open-settings', () => {
+  if (win && !win.isDestroyed()) win.webContents.send('open-settings-section', '');
+});
 
 ipcMain.on('open-compat-check', () => {
   if (!istAdminRechner()) return;

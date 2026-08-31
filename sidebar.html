@@ -986,9 +986,18 @@
       });
       renderExt();
       // Puzzle-Symbol im Browser oeffnet die Einstellungen beim Abschnitt Erweiterungen
-      window.verti.onOpenSettingsSection(() => {
+      window.verti.onOpenSettingsSection((abschnitt) => {
         openSettings();
-        setTimeout(() => { const el = document.getElementById('extList'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 120);
+        if (abschnitt !== 'erweiterungen') return;
+        setTimeout(() => {
+          const el = document.getElementById('extList');
+          if (!el) return;
+          el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          // kurz hervorheben, damit klar ist, wo man gelandet ist
+          el.style.transition = 'background .3s';
+          el.style.background = 'rgba(124,58,237,.18)';
+          setTimeout(() => { el.style.background = ''; }, 1400);
+        }, 140);
       });
 
       // ---------- Verbesserung vorschlagen (Feedback) ----------
