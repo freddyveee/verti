@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <style>
   :root {
-    --bg: #22242c; --panel: #22242c; --card: rgba(255,255,255,0.05);
+    --bg: #2a2c36; --panel: #2f313c; --card: rgba(255,255,255,0.05);
     --text: #ffffff; --text-2: rgba(255,255,255,0.6); --text-faint: rgba(255,255,255,0.22);
     --hover: rgba(255,255,255,0.08); --active: rgba(255,255,255,0.14); --divider: rgba(255,255,255,0.12);
     --dash: rgba(255,255,255,0.30); --accent: #9257ff;
@@ -15,6 +15,22 @@
     --hover: rgba(0,0,0,0.06); --active: rgba(0,0,0,0.10); --divider: rgba(0,0,0,0.14);
     --dash: rgba(0,0,0,0.33); --accent: #7c3aed;
   }
+
+  /* Farbwelten (Einstellungen -> Darstellung). Der Standard "graphit" ist
+     zugleich das neue, etwas hellere Dunkel. Jede Farbe hat einen dunklen
+     und einen hellen Satz, damit sie zu beiden Modi passt. */
+  :root[data-farbe="graphit"] { --bg: #2a2c36; --panel: #2f313c; }
+  :root[data-farbe="marine"] { --bg: #232a3a; --panel: #283041; }
+  :root[data-farbe="wald"] { --bg: #232f2a; --panel: #283630; }
+  :root[data-farbe="kupfer"] { --bg: #322a26; --panel: #3a302b; }
+  :root[data-farbe="pflaume"] { --bg: #2c2635; --panel: #332c3d; }
+  :root[data-farbe="rubin"] { --bg: #33262a; --panel: #3b2c31; }
+  :root[data-theme="light"][data-farbe="graphit"] { --bg: #efece6; --panel: #f7f5f0; }
+  :root[data-theme="light"][data-farbe="marine"] { --bg: #e9edf5; --panel: #f4f7fc; }
+  :root[data-theme="light"][data-farbe="wald"] { --bg: #e8f0ea; --panel: #f3f9f4; }
+  :root[data-theme="light"][data-farbe="kupfer"] { --bg: #f4ece6; --panel: #fbf5f0; }
+  :root[data-theme="light"][data-farbe="pflaume"] { --bg: #efe9f5; --panel: #f8f4fb; }
+  :root[data-theme="light"][data-farbe="rubin"] { --bg: #f6e9ec; --panel: #fcf4f6; }
   :root { color-scheme: dark; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -379,6 +395,9 @@
   .bpanel-item svg { width: 17px; height: 17px; flex: 0 0 auto; opacity: .85; }
   .bpanel-hr { height: 1px; background: var(--divider); margin: 10px 18px; }
   .bpanel-seg { padding: 4px 18px 18px; }
+  .farben { display: flex; gap: 9px; flex-wrap: wrap; padding-top: 2px; }
+  .farbe { width: 30px; height: 30px; border-radius: 9px; border: 2px solid transparent; cursor: pointer; padding: 0; }
+  .farbe.on { border-color: var(--accent); }
   .stufe { display: inline-block; margin-top: 3px; font-size: 10.5px; font-weight: 700;
     letter-spacing: .3px; border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
   .stufe.geprueft { color: #1f9d55; background: rgba(31,157,85,.14); }
@@ -519,6 +538,10 @@
       <div class="seg" id="segTheme"><button data-v="dark">Dunkel</button><button data-v="light">Hell</button></div>
     </div>
     <div class="setrow">
+      <div class="setlabel"><b>Farbe</b><span>Farbwelt der Oberfläche</span></div>
+      <div class="farben" id="farbWahl"></div>
+    </div>
+    <div class="setrow">
       <div class="setlabel"><b>Externe Links</b><span>Wo Links aus Apps geöffnet werden</span></div>
       <div class="seg" id="segLinks"><button data-v="verti">Verti-Browser</button><button data-v="system">System-Browser</button></div>
     </div>
@@ -552,7 +575,8 @@
     <div class="bpanel-hr"></div>
     <button class="bpanel-item" id="bpAlle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>Alle Verti-Einstellungen</button>
     <div class="bpanel-grp">Darstellung</div>
-    <div class="bpanel-seg"><div class="seg" id="bpTheme"><button data-v="dark">Dunkel</button><button data-v="light">Hell</button></div></div>
+    <div class="bpanel-seg"><div class="seg" id="bpTheme"><button data-v="dark">Dunkel</button><button data-v="light">Hell</button></div>
+      <div class="farben" id="bpFarben" style="margin-top:12px"></div></div>
     </div>
     <div id="bpErw" style="display:none">
       <div class="bpanel-grp">Geladene Erweiterungen</div>
@@ -596,6 +620,7 @@
       const appInfo = await window.verti.getAppInfo();
       const initSettings = await window.verti.getSettings();
       if (initSettings.theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      if (initSettings.themeColor) document.documentElement.setAttribute('data-farbe', initSettings.themeColor);
       const sv = document.getElementById('settingsVersion');
       if (sv) sv.textContent = appInfo.version + (appInfo.packaged ? '' : ' (Dev)');
       if (appInfo.admin) {
@@ -991,6 +1016,29 @@
       document.getElementById('appSearch').addEventListener('input', (e) => { libQuery = e.target.value; renderCatalog(); });
       window.addEventListener('resize', () => { if (library.classList.contains('open')) clampAll(); });
 
+      // ---------- Farbwelten ----------
+      // Vorschau-Farben muessen zu den CSS-Bloecken oben passen (dunkler Satz).
+      const FARB_VORSCHAU = { graphit: '#2a2c36', marine: '#232a3a', wald: '#232f2a',
+        kupfer: '#322a26', pflaume: '#2c2635', rubin: '#33262a' };
+      const FARB_NAME = { graphit: 'Graphit', marine: 'Marine', wald: 'Wald',
+        kupfer: 'Kupfer', pflaume: 'Pflaume', rubin: 'Rubin' };
+      function baueFarbwahl(ziel, aktiv, welten) {
+        if (!ziel) return;
+        ziel.innerHTML = '';
+        for (const f of (welten || Object.keys(FARB_VORSCHAU))) {
+          const b = document.createElement('button');
+          b.className = 'farbe' + (f === aktiv ? ' on' : '');
+          b.style.background = FARB_VORSCHAU[f] || '#333';
+          b.title = FARB_NAME[f] || f;
+          b.dataset.f = f;
+          b.addEventListener('click', () => {
+            window.verti.setThemeColor(f);
+            document.querySelectorAll('.farben .farbe').forEach((x) => x.classList.toggle('on', x.dataset.f === f));
+          });
+          ziel.appendChild(b);
+        }
+      }
+
       // ---------- Browser-Seitenkarte ----------
       // Getrennt von den Verti-Einstellungen: hier nur Browser-Sachen. Der
       // Darstellungs-Schalter faerbt bewusst ganz Verti um (eine Quelle).
@@ -998,6 +1046,7 @@
       async function oeffneBrowserKarte() {
         const cur = await window.verti.getSettings();
         markSeg('bpTheme', cur.theme);
+        baueFarbwahl(document.getElementById('bpFarben'), cur.themeColor, cur.farbwelten);
         const n = await window.verti.historyCount();
         document.getElementById('bpHistN').textContent = n ? n + ' Seiten' : 'leer';
         document.getElementById('bpNewTabKbd').textContent = (window.verti.platform === 'darwin' ? 'Cmd' : 'Strg') + '+T';
@@ -1215,9 +1264,10 @@
       });
 
       // ---------- Einstellungen (Zahnrad oben rechts) ----------
-      function applyTheme(t) {
+      function applyTheme(t, farbe) {
         if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
         else document.documentElement.removeAttribute('data-theme');
+        if (farbe) document.documentElement.setAttribute('data-farbe', farbe);
       }
       function markSeg(segId, val) {
         document.querySelectorAll('#' + segId + ' button').forEach((b) => b.classList.toggle('on', b.dataset.v === val));
@@ -1242,6 +1292,7 @@
         const cur = await window.verti.getSettings();
         markSeg('segTheme', cur.theme);
         markSeg('segLinks', cur.externalLinks);
+        baueFarbwahl(document.getElementById('farbWahl'), cur.themeColor, cur.farbwelten);
         renderNotifList(cur.mutedApps);
         library.classList.remove('open');
         settingsEl.classList.add('open');
