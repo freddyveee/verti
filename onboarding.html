@@ -31,6 +31,11 @@
   .zeile{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
   .zeile:last-child{border-bottom:0}
   .zeile b{display:block;font-size:15px}
+  /* Runder Haken vor den Willkommens-Punkten: lila Umrandung, fliederfarbener
+     Hintergrund, lila Haken. */
+  .haken{flex:0 0 auto;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--accent);
+    background:rgba(168,85,247,.20);display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .haken svg{width:14px;height:14px;stroke:var(--accent2);stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
   .zeile span{color:var(--muted);font-size:13.5px}
   .wahl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
   .opt{border:1.5px solid var(--line);border-radius:14px;padding:15px;cursor:pointer;background:transparent;color:inherit;text-align:left}
@@ -94,9 +99,9 @@
     titel.textContent = 'Willkommen bei Verti';
     unter.textContent = 'Alle deine Web-Apps an einem Ort, dauerhaft angemeldet.';
     inhalt.innerHTML = `
-      <div class="zeile"><div><b>Deine Apps in einer Leiste</b><span>WhatsApp, Kalender, Drive und über 200 weitere – ein Klick statt Tab-Suche.</span></div></div>
-      <div class="zeile"><div><b>Angemeldet bleiben</b><span>Einmal anmelden. Verti merkt sich die Sitzung, auch nach einem Neustart.</span></div></div>
-      <div class="zeile"><div><b>Nichts verpassen</b><span>Ungelesen-Zahlen und Meldungen kommen an, auch wenn die App im Hintergrund läuft.</span></div></div>`;
+      <div class="zeile"><span class="haken"><svg viewBox="0 0 24 24"><path d="M5 12.5 L10 17.5 L19 7"/></svg></span><div><b>Deine Apps in einer Leiste</b><span>WhatsApp, Kalender, Drive und über 200 weitere – ein Klick statt Tab-Suche.</span></div></div>
+      <div class="zeile"><span class="haken"><svg viewBox="0 0 24 24"><path d="M5 12.5 L10 17.5 L19 7"/></svg></span><div><b>Angemeldet bleiben</b><span>Einmal anmelden. Verti merkt sich die Sitzung, auch nach einem Neustart.</span></div></div>
+      <div class="zeile"><span class="haken"><svg viewBox="0 0 24 24"><path d="M5 12.5 L10 17.5 L19 7"/></svg></span><div><b>Nichts verpassen</b><span>Ungelesen-Zahlen und Meldungen kommen an, auch wenn die App im Hintergrund läuft.</span></div></div>`;
     bWeiter.textContent = "Los geht's";
   }
 
@@ -117,12 +122,27 @@
         inhalt.querySelectorAll('.opt').forEach((x) => x.classList.toggle('an', x === b));
         const st = document.getElementById('stdStatus');
         if (standard === 'verti') {
-          st.textContent = 'Wird gesetzt …';
-          const r = await A.standardbrowser();
-          st.className = 'status ok';
-          st.textContent = r && r.ok
-            ? 'Verti ist als Standardbrowser angemeldet. Dein System fragt eventuell noch einmal nach.'
-            : 'Dein System hat noch nicht bestätigt – du kannst das später in den Systemeinstellungen nachholen.';
+          // Der Systemdialog steht nach dem Aufruf noch offen. Deshalb hier
+          // KEINE Erfolgsmeldung raten, sondern nachfragen, bis das System
+          // geantwortet hat (bis zu 20s, danach neutral bleiben).
+          st.className = 'status';
+          st.textContent = 'Dein System fragt nach – bitte dort bestätigen.';
+          await A.standardbrowser();
+          let fertig = false;
+          for (let i = 0; i < 20 && !fertig; i++) {
+            await new Promise((r) => setTimeout(r, 1000));
+            const s2 = await A.istStandard();
+            if (s2 && s2.ist) {
+              fertig = true;
+              st.className = 'status ok';
+              st.textContent = 'Verti ist jetzt dein Standardbrowser.';
+            }
+            if (standard !== 'verti') return; // Nutzer hat inzwischen umgewählt
+          }
+          if (!fertig) {
+            st.className = 'status';
+            st.textContent = 'Noch nicht bestätigt. Du kannst das jederzeit in den Systemeinstellungen nachholen.';
+          }
         } else { st.className = 'status'; st.textContent = 'Alles bleibt, wie es ist.'; }
       });
     });
@@ -188,9 +208,7 @@
       for (const c of gruppen[g]) {
         const b = document.createElement('button');
         b.className = 'app' + (gewaehlteApps.has(c.id) ? ' an' : '');
-        const img = document.createElement('img');
-        img.src = c.icon || ('https://www.google.com/s2/favicons?sz=64&domain=' + (() => { try { return new URL(c.url).hostname; } catch (e) { return 'example.com'; } })());
-        img.alt = '';
+        const img = symbolFuer(c);
         const sp = document.createElement('span'); sp.textContent = c.name;
         b.appendChild(img); b.appendChild(sp);
         b.addEventListener('click', () => {
@@ -203,6 +221,37 @@
       inhalt.appendChild(grid);
     }
     bWeiter.textContent = gewaehlteApps.size ? 'Fertig (' + gewaehlteApps.size + ')' : 'Ohne Apps starten';
+  }
+
+  // Logo-Kette wie in der App-Bibliothek (sidebar.html): eigenes Icon, dann
+  // Favicon des Hosts, dann der Hauptdomain, zuletzt der Anfangsbuchstabe.
+  // Wichtig ist die isGeneric-Pruefung: Googles Dienst liefert bei Unbekanntem
+  // eine graue Weltkugel mit 16px statt eines Fehlers - ohne diese Pruefung
+  // bleibt die Weltkugel stehen (genau das war hier zu sehen).
+  function symbolFuer(c) {
+    let host = 'example.com';
+    try { host = new URL(c.url).hostname; } catch (e) {}
+    const apex = host.split('.').slice(-2).join('.');
+    const quellen = [];
+    if (c.icon) quellen.push(c.icon);
+    quellen.push('https://www.google.com/s2/favicons?domain=' + host + '&sz=64');
+    if (apex !== host) quellen.push('https://www.google.com/s2/favicons?domain=' + apex + '&sz=64');
+    const img = document.createElement('img');
+    img.alt = '';
+    let i = 0;
+    const generisch = () => img.src.includes('s2/favicons') && img.naturalWidth < 32;
+    const weiter = () => {
+      i++;
+      if (i < quellen.length) { img.src = quellen[i]; return; }
+      const fb = document.createElement('div');
+      fb.textContent = (c.name || '?')[0].toUpperCase();
+      fb.style.cssText = 'width:20px;height:20px;border-radius:5px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:var(--line);font-size:11px;font-weight:800';
+      img.replaceWith(fb);
+    };
+    img.onload = () => { if (generisch()) weiter(); };
+    img.onerror = weiter;
+    img.src = quellen[0];
+    return img;
   }
 
   const schritte = [s0, s1, s2, s3];

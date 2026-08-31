@@ -1727,14 +1727,24 @@ ipcMain.handle('onboard:import', (e, quelle) => {
     return { ok: true, anzahl: neu };
   } catch (err) { return { ok: false, error: err.message } }
 });
+// Verti als Standardbrowser anmelden. WICHTIG: setAsDefaultProtocolClient
+// kehrt SOFORT zurueck, auf dem Mac steht die Systemrueckfrage danach noch
+// offen. Der Rueckgabewert sagt also nur "angefragt", nicht "erledigt" - eine
+// Erfolgs- oder Fehlermeldung an dieser Stelle waere schlicht geraten.
+// Deshalb fragt die Seite anschliessend per onboard:iststandard nach.
+// (In der Dev-Version nennt macOS die App "Electron", weil das Bundle
+// Electron.app heisst; in der gebauten App steht dort Verti.)
 ipcMain.handle('onboard:standardbrowser', () => {
-  // Verti als Standardbrowser anmelden. Auf dem Mac oeffnet macOS dafuer eine
-  // eigene Rueckfrage, unter Windows setzt es den Eintrag direkt.
-  let ok = false;
   try {
-    ok = app.setAsDefaultProtocolClient('http') && app.setAsDefaultProtocolClient('https');
+    app.setAsDefaultProtocolClient('http');
+    app.setAsDefaultProtocolClient('https');
   } catch (e) {}
-  return { ok };
+  return { angefragt: true };
+});
+ipcMain.handle('onboard:iststandard', () => {
+  try {
+    return { ist: app.isDefaultProtocolClient('http') && app.isDefaultProtocolClient('https') };
+  } catch (e) { return { ist: false }; }
 });
 ipcMain.handle('onboard:vorschlaege', () => {
   // Vorauswahl: die IMPERIO-Apps. Der Browser ist ohnehin fest dabei.
