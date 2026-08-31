@@ -57,6 +57,33 @@ Google-Login prüfen (tippt eine Fantasie-Adresse ein, kein Passwort nötig; spa
 npx electron scripts/google-login-probe.js
 ```
 
+## Oberflächen-Änderungen selbst prüfen (Pflicht)
+
+Jede sichtbare Änderung wird **bis zum Bildschirmfoto selbst getrieben**, bevor Freddy sie ansieht. Kein „probier mal" auf Verdacht.
+
+Rezept (bewährt, dauert zwei Minuten):
+
+```bash
+# 1. Treiber-Skript IM Projektordner (loadFile löst relativ zum App-Pfad auf)
+cat > .treiber.tmp.js <<'EOF'
+process.env.VERTI_USER_DATA = '/tmp/verti-pruef';
+require('/Users/freddy/Projekte/verti/main.js');
+const { app, BrowserWindow } = require('electron');
+app.whenReady().then(() => setTimeout(() => {
+  const w = BrowserWindow.getAllWindows()[0];
+  if (w) w.webContents.send('open-browser-panel');   // gewünschten Zustand herstellen
+}, 7000));
+EOF
+node node_modules/electron/cli.js ./.treiber.tmp.js &
+sleep 13 && screencapture -x /tmp/pruef.png
+```
+
+Danach den Ausschnitt per PIL zuschneiden, **das Bild wirklich ansehen**, dann Skript und Testprofil löschen.
+
+**Die Falle, die zweimal zugeschlagen hat:** Alles, was in `sidebar.html` eingeblendet wird (Einstellungen, Verbesserung-Formular, Browser-Seitenkarte), liegt **hinter** den App-Ansichten, weil WebContentsViews darüber liegen. Entweder die Views ausblenden (`window.verti.openLibrary()`) oder ihnen Platz machen (Breite in `layoutViews`/`layoutBrowserTabs` abziehen). Sonst ist die Änderung unsichtbar, obwohl der Code stimmt.
+
+**Jede neue Datei im Projektwurzel-Verzeichnis muss in `package.json` unter `build.files` nachgetragen werden**, sonst fehlt sie in der gebauten App und diese stürzt beim Start ab.
+
 ## Release (Ablauf)
 
 1. Version in `package.json` erhöhen, auch den Versionstext in `docs/index.html` anpassen; in `BACKLOG.md` die Punkte aus „Umgesetzt, noch nicht veröffentlicht" unter die neue Version verschieben
