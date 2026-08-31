@@ -542,6 +542,7 @@
 
   <div class="bpanel" id="bpanel">
     <div class="bpanel-kopf"><h2>Browser</h2><button class="bpanel-x" id="bpanelX" title="Schließen">✕</button></div>
+    <div id="bpHaupt">
     <div class="bpanel-grp">Tabs</div>
     <button class="bpanel-item" id="bpNewTab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Neuer Tab<span class="kbd" id="bpNewTabKbd"></span></button>
     <div class="bpanel-grp">Einstellungen</div>
@@ -552,6 +553,14 @@
     <button class="bpanel-item" id="bpAlle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>Alle Verti-Einstellungen</button>
     <div class="bpanel-grp">Darstellung</div>
     <div class="bpanel-seg"><div class="seg" id="bpTheme"><button data-v="dark">Dunkel</button><button data-v="light">Hell</button></div></div>
+    </div>
+    <div id="bpErw" style="display:none">
+      <div class="bpanel-grp">Geladene Erweiterungen</div>
+      <div id="bpErwListe"></div>
+      <div class="bpanel-hr"></div>
+      <button class="bpanel-item" id="bpErwAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Erweiterung hinzufügen …</button>
+      <button class="bpanel-item" id="bpErwZurueck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l-6 6 6 6"/></svg>Zurück</button>
+    </div>
   </div>
 
   <div class="fbmodal" id="feedback">
@@ -992,6 +1001,7 @@
         const n = await window.verti.historyCount();
         document.getElementById('bpHistN').textContent = n ? n + ' Seiten' : 'leer';
         document.getElementById('bpNewTabKbd').textContent = (window.verti.platform === 'darwin' ? 'Cmd' : 'Strg') + '+T';
+        zeigeKartenHaupt();
         bpanel.classList.add('open');
         window.verti.browserPanelState(true); // App-Ansichten machen rechts Platz
       }
@@ -1000,7 +1010,47 @@
       document.getElementById('bpanelX').addEventListener('click', schliesseBrowserKarte);
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && bpanel.classList.contains('open')) schliesseBrowserKarte(); });
       document.getElementById('bpNewTab').addEventListener('click', () => { window.verti.browserNewTab(); schliesseBrowserKarte(); });
-      document.getElementById('bpExt').addEventListener('click', () => { schliesseBrowserKarte(); openSettings(); setTimeout(() => { const el = document.getElementById('extList'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 140); });
+      // Erweiterungen bleiben IN der Seitenkarte (zweite Ansicht) statt in die
+      // allgemeinen Einstellungen zu springen - das Puzzle soll Erweiterungen
+      // zeigen, nicht die Einstellungen aufreissen.
+      const bpHaupt = document.getElementById('bpHaupt');
+      const bpErw = document.getElementById('bpErw');
+      async function zeigeErweiterungen() {
+        const liste = await window.verti.extList();
+        const ziel = document.getElementById('bpErwListe');
+        ziel.innerHTML = '';
+        if (!liste.length) {
+          const leer = document.createElement('div');
+          leer.className = 'bpanel-item';
+          leer.style.color = 'var(--text-2)';
+          leer.style.cursor = 'default';
+          leer.textContent = 'Noch keine Erweiterung geladen.';
+          ziel.appendChild(leer);
+        } else {
+          for (const e of liste) {
+            const row = document.createElement('div');
+            row.className = 'bpanel-item';
+            row.style.cursor = 'default';
+            const t = document.createElement('span');
+            t.textContent = e.name;
+            const del = document.createElement('button');
+            del.textContent = 'Entfernen';
+            del.style.cssText = 'margin-left:auto;background:transparent;border:0;color:var(--text-2);font:inherit;font-size:12.5px;cursor:pointer';
+            del.addEventListener('click', async () => { await window.verti.extRemove(e.id); zeigeErweiterungen(); renderExt(); });
+            row.appendChild(t); row.appendChild(del);
+            ziel.appendChild(row);
+          }
+        }
+        bpHaupt.style.display = 'none';
+        bpErw.style.display = '';
+      }
+      function zeigeKartenHaupt() { bpErw.style.display = 'none'; bpHaupt.style.display = ''; }
+      document.getElementById('bpExt').addEventListener('click', zeigeErweiterungen);
+      document.getElementById('bpErwZurueck').addEventListener('click', zeigeKartenHaupt);
+      document.getElementById('bpErwAdd').addEventListener('click', async () => {
+        const r = await window.verti.extAdd();
+        if (r && r.ok) { zeigeErweiterungen(); renderExt(); }
+      });
       document.getElementById('bpDown').addEventListener('click', () => { window.verti.openDownloadsFolder(); schliesseBrowserKarte(); });
       document.getElementById('bpHist').addEventListener('click', async () => {
         await window.verti.historyClear();
@@ -1056,9 +1106,10 @@
       });
       renderExt();
       // Puzzle-Symbol im Browser oeffnet die Einstellungen beim Abschnitt Erweiterungen
-      window.verti.onOpenSettingsSection((abschnitt) => {
+      window.verti.onOpenSettingsSection(async (abschnitt) => {
+        if (abschnitt === 'erweiterungen') { await oeffneBrowserKarte(); await zeigeErweiterungen(); return; }
         openSettings();
-        if (abschnitt !== 'erweiterungen') return;
+        if (true) return;
         setTimeout(() => {
           const el = document.getElementById('extList');
           if (!el) return;
