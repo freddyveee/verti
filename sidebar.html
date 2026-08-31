@@ -505,6 +505,12 @@
       <div class="setlabel"><b>Verbesserungen</b><span>Meldungen aus dem Team ansehen</span></div>
       <div class="verwrap"><button class="setbtn" id="openCompat">Kompatibilität prüfen</button><button class="setbtn" id="openAdmin">Admin-Panel öffnen</button></div>
     </div>
+    <div class="setsection-title">Erweiterungen</div>
+    <div class="setrow">
+      <div class="setlabel"><b>Chrome-Erweiterungen</b><span id="extHinweis">Entpackte Erweiterungen aus einem Ordner laden</span></div>
+      <div class="verwrap"><button class="setbtn" id="extAdd">Erweiterung hinzufügen …</button></div>
+    </div>
+    <div id="extList"></div>
     <div class="setsection-title">Benachrichtigungen pro App</div>
     <div id="notifList"></div>
   </div>
@@ -936,6 +942,54 @@
       document.getElementById('plus').addEventListener('click', openLibrary);
       document.getElementById('appSearch').addEventListener('input', (e) => { libQuery = e.target.value; renderCatalog(); });
       window.addEventListener('resize', () => { if (library.classList.contains('open')) clampAll(); });
+
+      // ---------- Chrome-Erweiterungen ----------
+      // Electron laedt nur ENTPACKTE Ordner, keine .crx und nichts aus dem
+      // Chrome Web Store. Deshalb der Ordner-Dialog statt eines Store-Knopfes.
+      const extListEl = document.getElementById('extList');
+      async function renderExt() {
+        const liste = await window.verti.extList();
+        extListEl.innerHTML = '';
+        if (!liste.length) {
+          const leer = document.createElement('div');
+          leer.className = 'setrow';
+          leer.innerHTML = '<div class="setlabel"><span>Noch keine Erweiterung geladen.</span></div>';
+          extListEl.appendChild(leer);
+          return;
+        }
+        for (const e of liste) {
+          const row = document.createElement('div');
+          row.className = 'setrow';
+          const lab = document.createElement('div');
+          lab.className = 'setlabel';
+          const b = document.createElement('b');
+          b.textContent = e.name + '  ' + e.version;
+          const sp = document.createElement('span');
+          sp.textContent = e.beschreibung || e.pfad;
+          lab.appendChild(b); lab.appendChild(sp);
+          const wrap = document.createElement('div');
+          wrap.className = 'verwrap';
+          const del = document.createElement('button');
+          del.className = 'setbtn';
+          del.textContent = 'Entfernen';
+          del.addEventListener('click', async () => { await window.verti.extRemove(e.id); renderExt(); });
+          wrap.appendChild(del);
+          row.appendChild(lab); row.appendChild(wrap);
+          extListEl.appendChild(row);
+        }
+      }
+      document.getElementById('extAdd').addEventListener('click', async () => {
+        const hinweis = document.getElementById('extHinweis');
+        const r = await window.verti.extAdd();
+        if (r && r.ok) { hinweis.textContent = '„' + r.name + '" hinzugefügt.'; renderExt(); }
+        else if (r && r.error) { hinweis.textContent = r.error; }
+      });
+      renderExt();
+      // Puzzle-Symbol im Browser oeffnet die Einstellungen beim Abschnitt Erweiterungen
+      window.verti.onOpenSettingsSection(() => {
+        openSettings();
+        setTimeout(() => { const el = document.getElementById('extList'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 120);
+      });
 
       // ---------- Verbesserung vorschlagen (Feedback) ----------
       const fbModal = document.getElementById('feedback');

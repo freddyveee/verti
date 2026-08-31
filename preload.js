@@ -39,4 +39,8 @@ contextBridge.exposeInMainWorld('verti', {
   openAdmin: () => ipcRenderer.send('open-admin'),
   openCompatCheck: () => ipcRenderer.send('open-compat-check'),
   onReportAppProblem: (cb) => ipcRenderer.on('report-app-problem', (e, a) => cb(a)),
+  extList: () => ipcRenderer.invoke('ext:list'),
+  extAdd: () => ipcRenderer.invoke('ext:add'),
+  extRemove: (id) => ipcRenderer.invoke('ext:remove', id),
+  onOpenSettingsSection: (cb) => ipcRenderer.on('open-settings-section', (e, s) => cb(s)),
 });

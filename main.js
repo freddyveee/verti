@@ -1491,6 +1491,7 @@ function createWindow() {
     if (wunsch.length) ses.setSpellCheckerLanguages(wunsch);
   } catch (e) {}
   applyGoogleAuthDisguise(ses);
+  ladeErweiterungen(ses); // gemerkte Erweiterungen wiederherstellen (Electron tut das nicht selbst)
   // Login-Popups laufen teils in der Default-Session, bevor sie adoptiert werden
   applyGoogleAuthDisguise(session.defaultSession);
   ses.setPermissionRequestHandler((wc, permission, cb) => {
@@ -1668,6 +1669,86 @@ ipcMain.on('open-admin', () => {
 // Downloads, Medien, Anmeldung, Zwischenablage, Darstellung, Deep-Links).
 // Vor jedem Release einmal oeffnen, besonders nach einem Electron-Update -
 // dann sieht man in Minuten, welche Flaeche sich verschoben hat.
+// ---------- Chrome-Erweiterungen ----------
+// Electron kann nur ENTPACKTE Erweiterungs-Ordner laden (gemessen 31.08.2026:
+// loadExtension funktioniert, und Content-Skripte wirken auch in Vertis
+// App-Ansichten). Wir merken uns die Ordner-Pfade und laden sie bei jedem
+// Start neu - Electron behaelt sie nicht ueber Neustarts hinweg.
+// WICHTIG fuer den Nutzer: eine Erweiterung laeuft in derselben Session wie
+// ALLE eingeloggten Apps, sie sieht also potenziell alles. Deshalb die
+// Warnung im Hinzufuegen-Dialog.
+const extFile = () => path.join(app.getPath('userData'), 'extensions.json');
+function ladeExtListe() {
+  try { return JSON.parse(fs.readFileSync(extFile(), 'utf8')).pfade || []; } catch (e) { return []; }
+}
+function speichereExtListe(pfade) {
+  try { fs.writeFileSync(extFile(), JSON.stringify({ pfade }, null, 2)); } catch (e) {}
+}
+// Beim Start alle gemerkten Erweiterungen laden. Fehlende Ordner (verschoben
+// oder geloescht) fliegen still aus der Liste, statt jedes Mal zu scheitern.
+async function ladeErweiterungen(ses) {
+  const pfade = ladeExtListe();
+  const ok = [];
+  for (const p of pfade) {
+    try {
+      await ses.extensions.loadExtension(p, { allowFileAccess: true });
+      ok.push(p);
+    } catch (e) {
+      console.log('[erweiterung] konnte nicht geladen werden:', p, e.message);
+    }
+  }
+  if (ok.length !== pfade.length) speichereExtListe(ok);
+}
+function erweiterungenListe(ses) {
+  const pfade = ladeExtListe();
+  try {
+    return ses.extensions.getAllExtensions().map((e) => ({
+      id: e.id, name: e.name, version: e.version,
+      beschreibung: (e.manifest && e.manifest.description) || '',
+      pfad: e.path,
+      merkbar: pfade.includes(e.path),
+    }));
+  } catch (e) { return []; }
+}
+ipcMain.handle('ext:list', () => erweiterungenListe(session.fromPartition('persist:apps')));
+ipcMain.handle('ext:add', async () => {
+  const w = BrowserWindow.getFocusedWindow() || win;
+  const r = await dialog.showOpenDialog(w, {
+    title: 'Erweiterung hinzufügen',
+    message: 'Wähle den entpackten Ordner der Erweiterung (der mit der manifest.json).',
+    properties: ['openDirectory'],
+    buttonLabel: 'Hinzufügen',
+  });
+  if (r.canceled || !r.filePaths[0]) return { ok: false };
+  const ordner = r.filePaths[0];
+  if (!fs.existsSync(path.join(ordner, 'manifest.json'))) {
+    return { ok: false, error: 'In diesem Ordner liegt keine manifest.json. Das ist keine entpackte Erweiterung.' };
+  }
+  try {
+    const ses = session.fromPartition('persist:apps');
+    const ext = await ses.extensions.loadExtension(ordner, { allowFileAccess: true });
+    const pfade = ladeExtListe();
+    if (!pfade.includes(ordner)) { pfade.push(ordner); speichereExtListe(pfade); }
+    return { ok: true, name: ext.name };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+ipcMain.handle('ext:remove', (e, id) => {
+  const ses = session.fromPartition('persist:apps');
+  const alle = erweiterungenListe(ses);
+  const treffer = alle.find((x) => x.id === id);
+  try { ses.extensions.removeExtension(id); } catch (err) {}
+  if (treffer) speichereExtListe(ladeExtListe().filter((p) => p !== treffer.pfad));
+  return { ok: true };
+});
+// Puzzle-Symbol in der Browser-Leiste: oeffnet die Einstellungen, dort liegt
+// der Abschnitt "Erweiterungen". Bewusst keine eigene Seite - so gibt es nur
+// EINEN Ort fuer Einstellungen statt zwei.
+ipcMain.on('browser:open-extensions', () => {
+  if (win && !win.isDestroyed()) win.webContents.send('open-settings-section', 'erweiterungen');
+});
+
 ipcMain.on('open-compat-check', () => {
   if (!istAdminRechner()) return;
   switchApp(BROWSER_ID);

@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('vertibrowser', {
   reload: () => ipcRenderer.send('browser:reload'),
   stop: () => ipcRenderer.send('browser:stop'),
   toggleBookmark: () => ipcRenderer.send('browser:toggle-bookmark'),
+  openExtensions: () => ipcRenderer.send('browser:open-extensions'),
   openBookmark: (url) => ipcRenderer.send('browser:open-bookmark', url),
   removeBookmark: (url) => ipcRenderer.send('browser:remove-bookmark', url),
   onBookmarks: (cb) => ipcRenderer.on('browser:bookmarks', (e, list) => cb(list)),
