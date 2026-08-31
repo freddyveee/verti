@@ -10,7 +10,8 @@ Nächstes Release: 1.1.19
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- (nichts – wandert beim Release hierher)
+- Verti ist als Standard etwas heller (Dunkelmodus von #22242c auf #2a2c36 angehoben). (31.08.2026)
+- Sechs Farbwelten zur Auswahl (Graphit, Marine, Wald, Kupfer, Pflaume, Rubin), wie bei Shift. Zu finden unter Einstellungen → Darstellung → Farbe und in der Browser-Seitenkarte. Jede Farbe hat einen dunklen und einen hellen Satz, passt also zu beiden Modi, und färbt Sidebar, Browser-Leiste und Fensterhintergrund gemeinsam. (31.08.2026)
 
 ## Blockiert
 

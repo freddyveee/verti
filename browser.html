@@ -18,6 +18,13 @@
     --icon-dim:rgba(0,0,0,0.45); --placeholder:rgba(0,0,0,0.4); --text-dim:rgba(0,0,0,0.45); --nav-disabled:rgba(0,0,0,0.25);
     --accent:#7c3aed; --nav-hover:rgba(0,0,0,0.07); --xhover:rgba(0,0,0,0.12);
   }
+  /* Farbwelten, passend zur Sidebar (Einstellungen -> Darstellung) */
+  :root[data-farbe="graphit"] { --bg:#2f313c; --bg2:#2a2c36; --tabstrip:#2a2c36; --field:#2a2c36; --suggest-bg:#2f313c; }
+  :root[data-farbe="marine"] { --bg:#283041; --bg2:#232a3a; --tabstrip:#232a3a; --field:#232a3a; --suggest-bg:#283041; }
+  :root[data-farbe="wald"] { --bg:#283630; --bg2:#232f2a; --tabstrip:#232f2a; --field:#232f2a; --suggest-bg:#283630; }
+  :root[data-farbe="kupfer"] { --bg:#3a302b; --bg2:#322a26; --tabstrip:#322a26; --field:#322a26; --suggest-bg:#3a302b; }
+  :root[data-farbe="pflaume"] { --bg:#332c3d; --bg2:#2c2635; --tabstrip:#2c2635; --field:#2c2635; --suggest-bg:#332c3d; }
+  :root[data-farbe="rubin"] { --bg:#3b2c31; --bg2:#33262a; --tabstrip:#33262a; --field:#33262a; --suggest-bg:#3b2c31; }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -149,9 +156,10 @@
 
     window.vertibrowser.onTabs(renderTabs);
     window.vertibrowser.onState(applyState);
-    window.vertibrowser.onTheme((t) => {
+    window.vertibrowser.onTheme((t, farbe) => {
       if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
       else document.documentElement.removeAttribute('data-theme');
+      if (farbe) document.documentElement.setAttribute('data-farbe', farbe);
     });
     window.vertibrowser.onBookmarks((list) => {
       document.body.classList.toggle('hasbm', list.length > 0);

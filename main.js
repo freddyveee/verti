@@ -342,6 +342,7 @@ function loadState() {
     history: Array.isArray(s.history) ? s.history : [], // Browser-Verlauf
     externalLinks: s.externalLinks === 'system' ? 'system' : 'verti', // externe Links: im Verti-Browser (Standard) oder System-Browser
     theme: s.theme === 'light' ? 'light' : 'dark', // Darstellung: dunkel (Standard) oder hell
+    themeColor: FARBWELTEN.includes(s.themeColor) ? s.themeColor : 'graphit', // Farbwelt der Oberflaeche
     mutedApps: Array.isArray(s.mutedApps) ? s.mutedApps.filter((x) => typeof x === 'string') : [], // pro App stummgeschaltet (kein Badge, keine Meldung)
     onboarded: s.onboarded === true, // Ersteinrichtung schon durchlaufen?
   };
@@ -1591,7 +1592,7 @@ function createWindow() {
   win.on('hide', () => { if (zoomHud && !zoomHud.isDestroyed()) zoomHud.hide(); if (activeId) recomputeBadge(activeId); });
 
   win.webContents.once('did-finish-load', () => {
-    win.webContents.send('theme', state.theme);
+    win.webContents.send('theme', state.theme, state.themeColor);
     switchApp(views[state.activeApp] ? state.activeApp : state.apps[0].id);
   });
 }
@@ -1610,7 +1611,7 @@ ipcMain.on('nav-back', navBackActive);
 ipcMain.on('nav-forward', navForwardActive);
 ipcMain.on('nav-home', navHomeActive);
 // Verti-Browser
-ipcMain.on('browser:ready', () => { if (browserTabs.size === 0 && activeId === BROWSER_ID) browserRestoreOrNew(); else sendBrowserUpdate(); sendBrowserBookmarks(); if (views[BROWSER_ID]) views[BROWSER_ID].webContents.send('theme', state.theme); });
+ipcMain.on('browser:ready', () => { if (browserTabs.size === 0 && activeId === BROWSER_ID) browserRestoreOrNew(); else sendBrowserUpdate(); sendBrowserBookmarks(); if (views[BROWSER_ID]) views[BROWSER_ID].webContents.send('theme', state.theme, state.themeColor); });
 ipcMain.on('browser:new-tab', () => browserNewTab());
 ipcMain.on('browser:close-tab', (e, key) => browserCloseTab(key));
 ipcMain.on('browser:switch-tab', (e, key) => browserSwitchTab(key));
@@ -1627,13 +1628,34 @@ ipcMain.on('browser:suggest-open', () => { if (!browserSuggestOpen) { browserSug
 ipcMain.on('browser:suggest-close', () => { if (browserSuggestOpen) { browserSuggestOpen = false; layoutViews(); } });
 ipcMain.handle('get-apps', () => state.apps);
 // ---------- Einstellungen (Theme, externe Links) ----------
-function themeBg() { return state && state.theme === 'light' ? '#e7e5df' : '#22242c'; }
-function broadcastTheme() {
-  if (win && !win.isDestroyed()) { try { win.setBackgroundColor(themeBg()); } catch {} win.webContents.send('theme', state.theme); }
-  if (views[BROWSER_ID] && !views[BROWSER_ID].webContents.isDestroyed()) views[BROWSER_ID].webContents.send('theme', state.theme);
+// Farbwelten der Oberflaeche (Einstellungen -> Darstellung). "graphit" ist der
+// Standard und zugleich das neue, etwas hellere Dunkel (vorher #22242c).
+// Die Werte muessen zu den CSS-Bloecken in sidebar.html/browser.html passen.
+const FARBWELTEN = ['graphit', 'marine', 'wald', 'kupfer', 'pflaume', 'rubin'];
+const FENSTER_BG = {
+  graphit: { dark: '#2a2c36', light: '#efece6' },
+  marine:  { dark: '#232a3a', light: '#e9edf5' },
+  wald:    { dark: '#232f2a', light: '#e8f0ea' },
+  kupfer:  { dark: '#322a26', light: '#f4ece6' },
+  pflaume: { dark: '#2c2635', light: '#efe9f5' },
+  rubin:   { dark: '#33262a', light: '#f6e9ec' },
+};
+function themeBg() {
+  const f = (state && FENSTER_BG[state.themeColor]) || FENSTER_BG.graphit;
+  return state && state.theme === 'light' ? f.light : f.dark;
 }
-ipcMain.handle('get-settings', () => ({ theme: (state && state.theme) || 'dark', externalLinks: (state && state.externalLinks) || 'verti', mutedApps: (state && state.mutedApps) || [] }));
+function broadcastTheme() {
+  if (win && !win.isDestroyed()) { try { win.setBackgroundColor(themeBg()); } catch {} win.webContents.send('theme', state.theme, state.themeColor); }
+  if (views[BROWSER_ID] && !views[BROWSER_ID].webContents.isDestroyed()) views[BROWSER_ID].webContents.send('theme', state.theme, state.themeColor);
+}
+ipcMain.handle('get-settings', () => ({ theme: (state && state.theme) || 'dark', themeColor: (state && state.themeColor) || 'graphit', farbwelten: FARBWELTEN, externalLinks: (state && state.externalLinks) || 'verti', mutedApps: (state && state.mutedApps) || [] }));
 ipcMain.on('set-theme', (e, t) => { if (!state) return; state.theme = t === 'light' ? 'light' : 'dark'; saveState(); broadcastTheme(); });
+ipcMain.on('set-theme-color', (e, f) => {
+  if (!state || !FARBWELTEN.includes(f)) return;
+  state.themeColor = f;
+  saveState();
+  broadcastTheme();
+});
 ipcMain.on('set-external-links', (e, m) => { if (!state) return; state.externalLinks = m === 'system' ? 'system' : 'verti'; saveState(); });
 // Stumm-Status an die betroffene View schicken (view-preload unterdrückt dann Meldungen)
 function pushMuted(id) {
