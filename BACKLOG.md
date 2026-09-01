@@ -6,6 +6,7 @@ Nächstes Release: 1.1.19
 
 ## Offen
 
+- Machbarkeit Chromium-Eigenbau MESSEN (statt schätzen): einmal einen Chromium-Rebrand bauen und die echte Zeit stoppen. Vorbereitet ist alles – auf Freddys externer SSD liegt ein 200-GB-APFS-Abbild `/Volumes/VertiBuild` (die interne Platte hat nur 3 GB frei, die SSD selbst ist exFAT und dafür ungeeignet). Symlinks und Rechte dort geprüft. Läuft mehrere Stunden mit voller CPU-Last, deshalb nur abends auf Zuruf starten. Wartung danach: einmal im Monat neu bauen reicht, plus nachziehen bei kritischen Lücken (2025 acht Fälle) – Shift selbst hinkt 4 Monate hinterher. (31.08.2026)
 - Verti Browser – Erweiterungen Stufe 2 (Stufe 1 ist umgesetzt): mitgelieferte, kuratierte Auswahl statt Chrome Web Store, plus eigene Symbolleiste und Popups. **Chrome Web Store ist bewusst raus** – Googles Bedingungen (Ziffer 4.4.2) untersagen den Bezug außerhalb ihrer Oberfläche, und die vorhandenen Hilfspakete sind ungepflegt, prüfen keine Signatur oder stehen unter GPL. **Harte Grenzen, die in die Erwartung müssen:** Passwortmanager (1Password, Bitwarden) laufen NIE, weil Electron die native Brücke sperrt. Klassisches uBlock Origin läuft nicht (chrome.webRequest ist in unserer Electron-Version kaputt), uBlock Origin Lite wahrscheinlich schon. Erweiterungs-Symbole und Badges muss Verti selbst zeichnen, chrome.action ist in Electron eine Attrappe. Bester Erstkandidat zum Testen: Dark Reader. (31.08.2026)
 
 ## Umgesetzt, noch nicht veröffentlicht
