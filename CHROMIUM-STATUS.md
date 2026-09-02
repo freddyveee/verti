@@ -167,30 +167,62 @@ Updater, Onboarding, Erweiterungen von der Platte laden, Verti-Browser-
 Seitenkarte. Der Rechtsklick auf ein App-Symbol oeffnet jetzt ein selbst
 gebautes Menue - Erweiterungen duerfen kein natives oeffnen.
 
-## Der Rahmen: Chromium kann vertikale Tabs von Haus aus
+## Der Rahmen: Chromiums vertikale Tableiste IST Vertis App-Leiste
 
-Vertis `sidebar.html` ist fuer ein **ganzes Fenster** gebaut (`width: 100vw`),
-die App-Leiste ist nur die linken 68 px davon. Ein Erweiterungs-Seitenpanel ist
-dagegen ein schmaler Streifen (Standard etwa 450 px) und laesst Chromiums
-Tableiste und Adressleiste stehen. So saehe Verti aus wie Chrome mit Panel.
+Freddys Entscheidung am 02.09.2026. Statt eine eigene Leiste danebenzubauen,
+uebernimmt Chromiums eingebaute vertikale Tableiste die Rolle - Vertis Apps sind
+ohnehin angeheftete Tabs.
 
-**Chromium 155 loest das selbst.** Es gibt eine eingebaute vertikale Tableiste,
-und sie haengt an einer blossen Einstellung (`vertical_tabs.enabled`), nicht an
-einem Bau-Schalter. Gemessen mit `scratchpad/vtabs-probe.js` bei gleich grossem
-Fenster:
+Der Patch setzt in `chrome/browser/ui/tabs/tab_strip_prefs.cc` zwei Standards:
+
+```
+kVerticalTabsEnabled        false -> true    (Leiste von Anfang an da)
+kVerticalTabsCollapsedState false -> true    (eingeklappt = schmale Symbolleiste)
+```
+
+Gemessen mit `scripts/vtabs-probe.js`, frisches Profil, nichts eingestellt,
+Fenster 1200 x 800:
 
 | | Seitenbreite | Seitenhoehe |
 |---|---|---|
-| ohne | 1200 px | 713 px |
-| mit | 960 px | 753 px |
+| Chromium ohne Aenderung | 1200 px | 713 px |
+| Verti, aufgeklappt | 960 px | 753 px |
+| **Verti, wie ausgeliefert** | **1144 px** | **753 px** |
 
-Also **240 px weniger Breite** (die vertikale Leiste, Standardbreite 240) und
-**40 px mehr Hoehe** (die waagerechte Tableiste faellt weg). Genau Vertis
-Aufteilung - ohne C++-Aenderung.
+Also **56 px Leiste links** (Vertis bisherige Leiste war 68 px breit) und
+40 px mehr Hoehe, weil die waagerechte Tableiste wegfaellt. Genau Vertis
+Aufteilung, ohne eigenen Unterbau.
 
-**Offene Entscheidung:** ob Vertis App-Leiste diese native vertikale Tableiste
-wird (Apps sind ohnehin angeheftete Tabs) oder ob sie als eigene Flaeche
-danebensteht. Davon haengt ab, wieviel Chromium-Code ueberhaupt angefasst wird.
+### Ungelesen-Zahlen: ins Favicon gemalt
+
+Vertis Badges sassen bisher am Symbol in der eigenen Sidebar. Chromiums
+Tableiste zeigt aber nur das Favicon. Statt Chromium umzubauen malt
+`chromium/extension/badge-content.js` die Zahl ins Favicon - genau das, was
+Favico.js in vielen Web-Apps ohnehin tut. Gemessen: **Chromium uebernimmt ein
+per Skript gesetztes Favicon.**
+
+Damit keine doppelten Zahlen entstehen, malen wir NUR, wenn die Zahl im
+Seitentitel steht. Apps, die ihr Favicon selbst bemalen (Stackfield ueber
+Favico.js), schreiben nichts in den Titel - deren Favicon bleibt unberuehrt.
+
+`scripts/badge-test.js` prueft beides:
+
+```
+Titel "(7) WhatsApp": data:image/png;…   <- Zahl im Favicon
+Titel "WhatsApp":     /icon.png          <- beim Lesen wieder zurueckgesetzt
+```
+
+### Bibliothek und Einstellungen als Tab, nicht als Seitenpanel
+
+Ein Erweiterungs-Seitenpanel ist nur etwa 450 px breit. Vertis Bibliothek und
+Einstellungen sind aber ganzflaechige Ueberlagerungen (`sidebar.html` rechnet mit
+`100vw`) - im Panel waeren sie gequetscht. Deshalb oeffnet ein Klick auf das
+Verti-Symbol `sidebar.html` als **angehefteten Tab** mit voller Breite.
+
+Die App-Leiste aus `sidebar.html` waere dann doppelt da (einmal von Chromium).
+`scripts/sidebar-port.js` legt fuer die Chromium-Fassung deshalb eine kleine
+CSS-Ergaenzung darueber, die sie ausblendet. `sidebar.html` selbst bleibt
+unangetastet - fuer Electron ist die Leiste dort ja richtig.
 
 ## Offen ausser DRM
 

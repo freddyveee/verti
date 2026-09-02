@@ -164,15 +164,28 @@ async function themeMelden() {
 
 // ---------- Ereignisse ----------
 chrome.runtime.onInstalled.addListener(async () => {
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
   chrome.alarms.create('verti-puls', { periodInMinutes: 1 });
   await ladeKatalog();
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
   chrome.alarms.create('verti-puls', { periodInMinutes: 1 });
 });
+
+// Vertis Oberflaeche als eigener Tab, NICHT als Seitenpanel.
+// Grund: Bibliothek und Einstellungen sind in Verti ganzflaechige Ueberlagerungen
+// (sidebar.html rechnet mit 100vw). Ein Seitenpanel ist nur etwa 450 px breit -
+// die Bibliothek waere darin gequetscht. Als Tab hat sie die volle Breite, und
+// die App-Leiste zeichnet ohnehin Chromiums vertikale Tableiste.
+async function vertiTabOeffnen() {
+  const url = chrome.runtime.getURL('sidebar.html');
+  const da = (await chrome.tabs.query({ url })) [0];
+  if (da) { await chrome.tabs.update(da.id, { active: true }); return da.id; }
+  const tab = await chrome.tabs.create({ url, active: true, pinned: true, index: 0 });
+  return tab.id;
+}
+
+chrome.action.onClicked.addListener(vertiTabOeffnen);
 
 chrome.alarms.onAlarm.addListener((a) => { if (a.name === 'verti-puls') { badgesMelden(); audioMelden(); } });
 
@@ -191,6 +204,19 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
 // Ein einziger Einstiegspunkt statt vieler Kanaele - das entspricht dem
 // ipcMain-Block in main.js und haelt verti-shim.js schlank.
 const RUFE = {
+  // Das Inhaltsskript fragt beim Start: gehoert dieser Tab zu einer Verti-App,
+  // und gilt die Titel-Regel "ueberall" oder nur "am Anfang"?
+  'badge-regel': async (absender) => {
+    const k = await ladeKatalog();
+    const s = await zustand();
+    const tabId = absender && absender.tab && absender.tab.id;
+    const treffer = Object.entries(s.tabs).find(([, t]) => t === tabId);
+    if (!treffer) return { istApp: false };
+    return { istApp: true, ueberall: k.titleBadge.includes(treffer[0]) };
+  },
+
+  'verti-oeffnen': () => vertiTabOeffnen(),
+
   'get-apps': async () => (await zustand()).apps,
   'get-active-app': async () => { navStandMelden(); return (await zustand()).activeApp; },
   'get-app-info': async () => ({ version: chrome.runtime.getManifest().version, packaged: true, admin: false }),
@@ -321,11 +347,13 @@ const RUFE = {
   },
 };
 
-chrome.runtime.onMessage.addListener((msg, _absender, antwort) => {
+chrome.runtime.onMessage.addListener((msg, absender, antwort) => {
   if (!msg || !msg.ruf) return false;
   const fn = RUFE[msg.ruf];
   if (!fn) { antwort({ fehler: 'unbekannter Ruf: ' + msg.ruf }); return false; }
-  Promise.resolve(fn(...(msg.args || [])))
+  // Der Absender wird hinten angehaengt - nur 'badge-regel' braucht ihn, alle
+  // anderen ignorieren ihn einfach.
+  Promise.resolve(fn(...(msg.args || []), absender))
     .then((wert) => antwort({ wert }))
     .catch((e) => antwort({ fehler: String((e && e.message) || e) }));
   return true; // Antwort kommt asynchron

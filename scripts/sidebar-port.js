@@ -34,6 +34,19 @@ const htmlFertig = html.replace(/@@SKRIPT@@/g, () => {
   return '<script src="verti-shim.js"></script>\n  <script src="sidebar.js"></script>';
 });
 
+// In Chromium zeichnet die eingebaute vertikale Tableiste Vertis App-Leiste.
+// Die Leiste aus sidebar.html waere sonst doppelt da. Statt sidebar.html zu
+// aendern (dort ist sie fuer Electron richtig) legen wir hier eine kleine
+// Ergaenzung darueber - eine Quelle bleibt eine Quelle.
+const CHROMIUM_CSS = `
+  <style>
+  /* --- von scripts/sidebar-port.js ergaenzt, nur fuer die Chromium-Fassung --- */
+  /* Die App-Leiste zeichnet Chromiums vertikale Tableiste. */
+  .sidebar { display: none !important; }
+  /* Bibliothek und Einstellungen bekommen dadurch den Platz ganz links. */
+  .library, .settings { left: 0 !important; }
+  </style>`;
+
 const kopf = [
   '// ERZEUGT von scripts/sidebar-port.js aus sidebar.html - NICHT von Hand aendern.',
   '// Aenderungen gehoeren in sidebar.html im Projektwurzel-Verzeichnis, danach',
@@ -42,8 +55,10 @@ const kopf = [
 ].join('\n');
 
 const js = kopf + bloecke.join('\n');
-fs.writeFileSync(path.join(zielOrdner, 'sidebar.html'), htmlFertig);
+// Ergaenzung ans Ende des <head>, damit sie die Regeln aus sidebar.html schlaegt
+const mitCss = htmlFertig.replace('</head>', CHROMIUM_CSS + '\n</head>');
+fs.writeFileSync(path.join(zielOrdner, 'sidebar.html'), mitCss);
 fs.writeFileSync(path.join(zielOrdner, 'sidebar.js'), js);
 
 const zeilen = (s) => s.split('\n').length;
-console.log('sidebar.html: ' + zeilen(htmlFertig) + ' Zeilen | sidebar.js: ' + zeilen(js) + ' Zeilen (aus ' + bloecke.length + ' Block/Bloecken)');
+console.log('sidebar.html: ' + zeilen(mitCss) + ' Zeilen | sidebar.js: ' + zeilen(js) + ' Zeilen (aus ' + bloecke.length + ' Block/Bloecken)');

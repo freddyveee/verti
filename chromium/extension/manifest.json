@@ -4,7 +4,6 @@
   "version": "1.1.18",
   "description": "Vertis Sidebar: Web-Apps dauerhaft eingeloggt neben einer schmalen Leiste.",
   "permissions": [
-    "sidePanel",
     "tabs",
     "storage",
     "alarms",
@@ -14,8 +13,25 @@
     "history",
     "browsingData"
   ],
-  "host_permissions": ["<all_urls>"],
-  "side_panel": { "default_path": "sidebar.html" },
-  "background": { "service_worker": "sw.js" },
-  "action": { "default_title": "Verti" }
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "sw.js"
+  },
+  "action": {
+    "default_title": "Verti - Apps und Einstellungen"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "badge-content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
 }
