@@ -137,6 +137,12 @@
     historyClear: () => ruf('history-clear'),
     browserNewTab: () => sende('browser-new-tab'),
 
+    // --- Updates ---
+    getPendingUpdate: () => ruf('get-pending-update'),
+    openUpdatePopup: () => sende('open-update-popup'),
+    checkUpdates: () => ruf('settings-check-updates'),
+    onUpdatePill: (cb) => auf('update-pill', cb),
+
     // --- Erweiterungen ---
     extList: () => ruf('ext-list'),
     extRemove: (id) => ruf('ext-remove', id),
@@ -145,12 +151,6 @@
     // Diese Aufrufe gehoeren zu Teilen, die es in der Chromium-Fassung noch
     // nicht gibt. Sie tun bewusst nichts Sinnvolles, statt zu fehlen - so
     // laeuft die Sidebar vollstaendig, und die Luecken bleiben benennbar.
-
-    // Es gibt noch keinen Updater fuer die Chromium-Fassung.
-    getPendingUpdate: () => Promise.resolve(null),
-    openUpdatePopup: () => {},
-    checkUpdates: () => Promise.resolve({ ok: false, error: 'In der Chromium-Fassung noch nicht eingebaut.' }),
-    onUpdatePill: () => {},
 
     // In Electron blendeten diese Aufrufe die App-Ansichten aus, damit die
     // Bibliothek darueber sichtbar wird. Die Sidebar ist hier eine eigene

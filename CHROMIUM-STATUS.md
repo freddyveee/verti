@@ -126,7 +126,7 @@ Farbaenderungen verschluckt hat. Stattdessen:
 | Erzeuger | macht daraus |
 |---|---|
 | `scripts/katalog-export.js` | `apps.json` (214 Apps, Kategorien, Pruefstufen, Feedback-Zugang) aus `main.js` und `app-status.json` |
-| `scripts/sidebar-port.js` | `sidebar.html` + `sidebar.js` aus der echten `sidebar.html` |
+| `scripts/chromium-port.js` | `sidebar.html` + `sidebar.js` aus der echten `sidebar.html` |
 
 Beide nach jeder Aenderung an main.js/sidebar.html erneut laufen lassen.
 `main.js` und `sidebar.html` bleiben die einzige Wahrheit.
@@ -220,13 +220,55 @@ Einstellungen sind aber ganzflaechige Ueberlagerungen (`sidebar.html` rechnet mi
 Verti-Symbol `sidebar.html` als **angehefteten Tab** mit voller Breite.
 
 Die App-Leiste aus `sidebar.html` waere dann doppelt da (einmal von Chromium).
-`scripts/sidebar-port.js` legt fuer die Chromium-Fassung deshalb eine kleine
+`scripts/chromium-port.js` legt fuer die Chromium-Fassung deshalb eine kleine
 CSS-Ergaenzung darueber, die sie ausblendet. `sidebar.html` selbst bleibt
 unangetastet - fuer Electron ist die Leiste dort ja richtig.
 
+## Updater (02.09.2026)
+
+Vertis Regel bleibt: **nichts still im Hintergrund.** Erst fragen, Release-Notes
+zeigen, dann laden - genau wie in der Electron-Fassung. Deshalb ist es auch
+derselbe Dialog: `update.html` wird von `scripts/chromium-port.js` mitportiert,
+`update-shim.js` stellt `window.vertiUpdate` auf Chrome-APIs nach.
+
+Geprueft wird gegen **GitHub Releases**, also denselben Kanal wie heute.
+
+### Was laeuft (mit `scripts/update-test.js` gemessen)
+
+- Echte Abfrage bei GitHub: `{"ok":true,"aktuell":true,"version":"1.1.18"}`
+- Dialog erscheint mit Ueberschrift, Version, "Jetzt aktualisieren"/"Spaeter"
+  und den Release-Notes als Aufzaehlung
+- Download laeuft samt Fortschritt bis `installing` durch (mit einer kleinen
+  echten Release-Datei gemessen, nicht mit 400 MB)
+- Keine Konsolenfehler
+
+Beim Testen einmal reingefallen: die Notizen direkt in den Zustand geschrieben
+und damit an `notizenText()` vorbeigetestet - der Dialog erwartet Zeilen mit
+"•". Der Test geht jetzt durch dieselbe Aufbereitung wie ein echtes Release.
+
+### Der letzte Baustein fehlt: das Austauschen
+
+**Eine Erweiterung darf das Programm nicht selbst ersetzen.** Heruntergeladen
+wird die neue Fassung, danach zeigt Verti sie im Finder - der Nutzer zieht sie
+selbst hinueber. Das ist schlechter als heute und nur eine Zwischenloesung.
+
+Drei Wege, Entscheidung steht aus:
+
+| | Weg | Braucht | Bewertung |
+|---|---|---|---|
+| A | Chromiums eigener Updater (Omaha 4, liegt in `chrome/updater`) | einen kleinen Server, der das Omaha-Protokoll spricht (Netlify- oder Supabase-Funktion) | robust, von Google gepflegt, kuemmert sich um Rechte, Signaturpruefung und Neustart. Alle Werte sind in `chrome/updater/branding.gni` einstellbar, auch `update_check_url` - nicht an Googles Marke gebunden |
+| B | eigener Helfer im App-Paket (Native Messaging) | kein Server | weniger Teile, aber wir schreiben den heiklen Teil (Paket tauschen, Signatur, Neustart) selbst |
+| C | herunterladen, Nutzer zieht selbst hinueber | nichts | ist gebaut und funktioniert, aber schlechter als Vertis heutiger Stand |
+
+Der **einmalige Umstieg** von Electron auf Chromium ist davon unberuehrt: den
+liefert die heutige Electron-Fassung ueber electron-updater aus, mit einem
+`Verti-Mac.zip`, in dem das Chromium-Verti steckt. Die Bundle-Kennung ist
+absichtlich dieselbe (`rocks.imperio.verti`).
+
 ## Offen ausser DRM
 
-Signierung, Notarisierung, Updater, kompletter Windows-Zweig.
+Signierung, Notarisierung, das Austauschen beim Update (siehe oben), Onboarding,
+Verti-Browser, kompletter Windows-Zweig.
 
 Ausserdem: `screencapture` liefert auf diesem Mac gerade "could not create image
 from display" - Bildschirmfotos des ganzen Fensters gehen deshalb nicht. Die

@@ -1,6 +1,6 @@
-// ERZEUGT von scripts/sidebar-port.js aus sidebar.html - NICHT von Hand aendern.
-// Aenderungen gehoeren in sidebar.html im Projektwurzel-Verzeichnis, danach
-// "node scripts/sidebar-port.js" laufen lassen.
+// ERZEUGT von scripts/chromium-port.js aus sidebar.html - NICHT von Hand aendern.
+// Aenderungen gehoeren in sidebar.html im Projektwurzel-Verzeichnis,
+// danach "node scripts/chromium-port.js" laufen lassen.
 
     (async () => {
       let apps = await window.verti.getApps();

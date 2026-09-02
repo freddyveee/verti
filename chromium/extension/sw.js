@@ -358,3 +358,145 @@ chrome.runtime.onMessage.addListener((msg, absender, antwort) => {
     .catch((e) => antwort({ fehler: String((e && e.message) || e) }));
   return true; // Antwort kommt asynchron
 });
+
+// ---------- Updates ----------
+// Vertis Regel (Freddys ausdruecklicher Wunsch): NICHTS still im Hintergrund.
+// Erst fragen, Release-Notes zeigen, dann laden. Genau wie in der Electron-
+// Fassung - deshalb ist auch der Dialog derselbe (update.html).
+//
+// Geprueft wird gegen GitHub Releases, also gegen denselben Kanal, den die
+// heutige Verti-Version schon benutzt.
+const RELEASE_API = 'https://api.github.com/repos/freddyveee/verti/releases/latest';
+const UPDATE_ABSTAND_MIN = 60;   // hoechstens einmal pro Stunde nachschauen
+
+// Vergleicht "1.2.10" mit "1.2.9" richtig - ein Zeichenkettenvergleich wuerde
+// hier "1.2.10 < 1.2.9" sagen.
+function versionNeuer(neu, alt) {
+  const z = (v) => String(v || '').replace(/^v/, '').split('.').map((x) => parseInt(x, 10) || 0);
+  const a = z(neu), b = z(alt);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    if ((a[i] || 0) > (b[i] || 0)) return true;
+    if ((a[i] || 0) < (b[i] || 0)) return false;
+  }
+  return false;
+}
+
+// Release-Notes von GitHub sind Markdown. Der Dialog erwartet einfachen Text
+// mit Aufzaehlungspunkten - gleiche Aufbereitung wie releaseNotesText() in
+// main.js.
+function notizenText(roh) {
+  return String(roh || '')
+    .replace(/\r/g, '')
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/^[-*]\s+/gm, '• ')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+async function updateZustandLesen() {
+  return (await chrome.storage.local.get('vertiUpdate')).vertiUpdate || null;
+}
+
+async function updateZustandSetzen(z) {
+  await chrome.storage.local.set({ vertiUpdate: z });
+  melde('update-zustand', z);
+  return z;
+}
+
+async function updateFensterOeffnen() {
+  const url = chrome.runtime.getURL('update.html');
+  const da = (await chrome.tabs.query({ url }))[0];
+  if (da) { await chrome.windows.update(da.windowId, { focused: true }); return; }
+  await chrome.windows.create({ url, type: 'popup', width: 520, height: 620 });
+}
+
+async function updatePruefen(vonHand) {
+  const jetzt = Date.now();
+  const merk = (await chrome.storage.local.get('updateZuletzt')).updateZuletzt || 0;
+  if (!vonHand && jetzt - merk < UPDATE_ABSTAND_MIN * 60000) return null;
+  await chrome.storage.local.set({ updateZuletzt: jetzt });
+
+  try {
+    const r = await fetch(RELEASE_API, { headers: { Accept: 'application/vnd.github+json' } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rel = await r.json();
+    const neu = String(rel.tag_name || '').replace(/^v/, '');
+    const hier = chrome.runtime.getManifest().version;
+    if (!neu || !versionNeuer(neu, hier)) {
+      if (vonHand) return { ok: true, aktuell: true, version: hier };
+      return null;
+    }
+    // Die Mac-Datei aus dem Release heraussuchen
+    const datei = (rel.assets || []).find((a) => /Verti-Mac\.zip$/i.test(a.name))
+      || (rel.assets || []).find((a) => /\.dmg$/i.test(a.name));
+    const z = await updateZustandSetzen({
+      mode: 'available',
+      version: neu,
+      notes: notizenText(rel.body),
+      datei: datei ? { name: datei.name, url: datei.browser_download_url, groesse: datei.size } : null,
+      forced: false,
+    });
+    melde('update-pill', neu);
+    await updateFensterOeffnen();
+    return { ok: true, aktuell: false, version: neu };
+  } catch (e) {
+    if (vonHand) return { ok: false, error: (e && e.message) || 'Netzwerkfehler.' };
+    return null;
+  }
+}
+
+// Was der Dialog ausloest.
+//
+// ACHTUNG, offener Punkt: 'update' kann die neue Fassung herunterladen, aber
+// eine Erweiterung darf das Programm NICHT selbst austauschen. Dafuer fehlt
+// noch der letzte Baustein (siehe CHROMIUM-STATUS.md). Bis dahin laden wir die
+// Datei herunter und zeigen sie im Finder - der Nutzer zieht sie selbst
+// hinueber. Das ist ehrlicher als so zu tun, als sei es fertig.
+async function updateAktion(name) {
+  const z = await updateZustandLesen();
+  if (name === 'close') {
+    const w = (await chrome.tabs.query({ url: chrome.runtime.getURL('update.html') }))[0];
+    if (w) { try { await chrome.windows.remove(w.windowId); } catch (e) {} }
+    return;
+  }
+  if (name === 'defer') { await updateZustandSetzen({ ...(z || {}), forced: false }); return; }
+  if (name !== 'update') return;
+
+  if (!z || !z.datei) {
+    await updateZustandSetzen({ ...(z || {}), mode: 'error', fehler: 'Kein passendes Paket im Release gefunden.' });
+    return;
+  }
+  await updateZustandSetzen({ ...z, mode: 'downloading', percent: 0 });
+  try {
+    const id = await chrome.downloads.download({ url: z.datei.url, filename: z.datei.name });
+    // Fortschritt melden, solange der Download laeuft
+    const takt = setInterval(async () => {
+      const [d] = await chrome.downloads.search({ id });
+      if (!d) return;
+      if (d.totalBytes > 0) {
+        const p = Math.round((d.bytesReceived / d.totalBytes) * 100);
+        const jetzt = await updateZustandLesen();
+        if (jetzt && jetzt.mode === 'downloading') await updateZustandSetzen({ ...jetzt, percent: p });
+      }
+      if (d.state === 'complete') {
+        clearInterval(takt);
+        chrome.downloads.show(id);
+        await updateZustandSetzen({ ...z, mode: 'installing' });
+      } else if (d.state === 'interrupted') {
+        clearInterval(takt);
+        await updateZustandSetzen({ ...z, mode: 'error', fehler: 'Download abgebrochen.' });
+      }
+    }, 700);
+  } catch (e) {
+    await updateZustandSetzen({ ...z, mode: 'error', fehler: (e && e.message) || 'Download fehlgeschlagen.' });
+  }
+}
+
+RUFE['update-zustand'] = () => updateZustandLesen();
+RUFE['update-aktion'] = (name) => updateAktion(name);
+RUFE['settings-check-updates'] = () => updatePruefen(true);
+RUFE['get-pending-update'] = async () => { const z = await updateZustandLesen(); return z && z.mode === 'available' ? z.version : null; };
+RUFE['open-update-popup'] = () => updateFensterOeffnen();
+
+chrome.alarms.onAlarm.addListener((a) => { if (a.name === 'verti-puls') updatePruefen(false); });

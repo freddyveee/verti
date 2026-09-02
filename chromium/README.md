@@ -31,11 +31,12 @@ Nach jeder Aenderung an `main.js`, `app-status.json` oder `sidebar.html`:
 
 ```bash
 node scripts/katalog-export.js
-node scripts/sidebar-port.js
+node scripts/chromium-port.js
 ```
 
-Von Hand gepflegt werden nur `manifest.json`, `verti-shim.js` (bildet
-`window.verti` auf Chrome-APIs ab) und `sw.js` (Gegenstueck zu `main.js`).
+Von Hand gepflegt werden nur `manifest.json`, `sw.js` (Gegenstueck zu
+`main.js`), `badge-content.js` und die beiden Bruecken `verti-shim.js`
+(`window.verti`) und `update-shim.js` (`window.vertiUpdate`).
 
 ## Bauen
 
