@@ -372,11 +372,63 @@ Bundle-Kennung zurueck; Chrome meldet sich dort ebenfalls als
 "com.google.chrome" an. Server, Info.plist und Anmeldung muessen dieselbe
 Kennung benutzen, sonst fragt der Updater brav und bekommt nie eine Antwort.
 
+## Signierung und Notarisierung (02.09.2026) - LAEUFT
+
+Verwendet werden **Chromiums eigene Signier-Skripte**, nicht selbstgebaute
+codesign-Aufrufe. Vertis Paket enthaelt verschachtelte Programme (Framework,
+vier Helfer-Varianten, den Updater), die von innen nach aussen und mit je
+eigenen Berechtigungen signiert werden muessen.
+
+```
+python3 "out/Release/Verti Packaging/sign_chrome.py" \
+  --input out/Release --output out/Release/signed \
+  --identity "Developer ID Application: Freddy Henrich-Held (CHS9G483R4)" \
+  --notarize staple \
+  --notary-arg=--keychain-profile --notary-arg=verti-notary
+```
+
+Ergebnis: `Verti-155.0.8038.0.dmg`, 161 MB, signiert und notarisiert.
+Geprueft mit `scripts/signatur-pruefen.sh`:
+
+```
+2. Developer ID Application: Freddy Henrich-Held (CHS9G483R4)
+3. Gehaertete Laufzeit: ok
+4. Notarisierung angeheftet: ok
+5. Gatekeeper: accepted, source=Notarized Developer ID
+```
+
+### Drei Fallen auf dem Weg
+
+1. **Der mitgelieferte Updater war nur adhoc signiert** ("Sealed Resources=none").
+   Bei Google kommt er fertig signiert aus CIPD, bei uns nicht.
+   `sign_chrome.py` signiert ihn NICHT mit. Loesung: vorher mit Chromiums
+   eigenem Updater-Werkzeug signieren und ins Framework zuruecklegen:
+   `python3 "out/Release/Updater Packaging/sign_updater.py" --input out/Release
+   --output out/Release/updater-signed --identity "..." --notarize none`,
+   dann das Ergebnis nach
+   `Verti.app/Contents/Frameworks/Verti Framework.framework/Versions/<v>/Helpers/`.
+2. **Der Gatekeeper-Test lief VOR der Notarisierung** und konnte deshalb nie
+   bestehen ("source=Unnotarized Developer ID"). Der ganze Lauf brach ab, bevor
+   notarytool ueberhaupt aufgerufen wurde - im Protokoll null Treffer. Der Patch
+   schaltet `run_spctl_assess` in `chromium_config.py` ab; gefragt wird jetzt am
+   Ende mit `scripts/signatur-pruefen.sh`, wo die Antwort auch aussagekraeftig
+   ist.
+3. **`--disable-packaging` legt nichts ab.** Die Beschreibung im Skript sagt,
+   die App werde nach `--output` kopiert; der Code tut es nicht (nur der
+   Packaging-Zweig schreibt dorthin). Ohne den Schalter entsteht die DMG.
+
+Und eine Falle beim PRUEFEN: `codesign --deep --strict` meldet an einer App IN
+einer DMG "resource fork, Finder information, or similar detritus not allowed".
+Das ist kein Mangel - das Dateisystem der DMG haengt jeder Datei ein
+`com.apple.FinderInfo` an (im Bau steht dort `com.apple.provenance`). Apple
+notarisiert solche Pakete anstandslos. Massstab ist Gatekeeper, nicht dieser
+Test.
+
 ### Was noch fehlt
 
-1. Signierung und Notarisierung des Chromium-Pakets.
-2. Der erste echte Release mit einem CRX3-Paket im GitHub-Release.
-3. Kompletter Windows-Zweig.
+1. Der erste echte Release: CRX3-Paket aus der **signierten** App bauen und
+   zusammen mit DMG und Pruefwert ins GitHub-Release legen.
+2. Kompletter Windows-Zweig.
 
 Der **einmalige Umstieg** von Electron auf Chromium ist davon unberuehrt: den
 liefert die heutige Electron-Fassung ueber electron-updater aus, mit einem
