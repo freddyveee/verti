@@ -246,19 +246,51 @@ Beim Testen einmal reingefallen: die Notizen direkt in den Zustand geschrieben
 und damit an `notizenText()` vorbeigetestet - der Dialog erwartet Zeilen mit
 "•". Der Test geht jetzt durch dieselbe Aufbereitung wie ein echtes Release.
 
-### Der letzte Baustein fehlt: das Austauschen
+### Das Austauschen: Chromiums eigener Updater (Freddys Entscheidung, Weg A)
 
-**Eine Erweiterung darf das Programm nicht selbst ersetzen.** Heruntergeladen
-wird die neue Fassung, danach zeigt Verti sie im Finder - der Nutzer zieht sie
-selbst hinueber. Das ist schlechter als heute und nur eine Zwischenloesung.
+Der entscheidende Fund: **Chromium liefert das Mac-Installationsskript mit** -
+`chrome/installer/mac/keystone_install.sh`, Googles eigenes, erprobtes Skript.
+Es macht den atomaren Tausch, prueft die Signatur, setzt Rechte und Quarantaene.
+Genau den heiklen Teil schreiben wir also NICHT selbst - das war der Grund gegen
+Weg B.
 
-Drei Wege, Entscheidung steht aus:
+**Gemessen am 02.09.2026:**
 
-| | Weg | Braucht | Bewertung |
-|---|---|---|---|
-| A | Chromiums eigener Updater (Omaha 4, liegt in `chrome/updater`) | einen kleinen Server, der das Omaha-Protokoll spricht (Netlify- oder Supabase-Funktion) | robust, von Google gepflegt, kuemmert sich um Rechte, Signaturpruefung und Neustart. Alle Werte sind in `chrome/updater/branding.gni` einstellbar, auch `update_check_url` - nicht an Googles Marke gebunden |
-| B | eigener Helfer im App-Paket (Native Messaging) | kein Server | weniger Teile, aber wir schreiben den heiklen Teil (Paket tauschen, Signatur, Neustart) selbst |
-| C | herunterladen, Nutzer zieht selbst hinueber | nichts | ist gebaut und funktioniert, aber schlechter als Vertis heutiger Stand |
+- `chrome/updater:updater` baut in unserem Baum, fehlerfrei, in unter 3 Minuten
+- Auf Verti umbenannt (`chrome/updater/branding.gni`, im Patch): eigene
+  Kennungen, `rocks.imperio.verti.Updater`, Team CHS9G483R4, Ordner
+  `~/Library/Application Support/IMPERIO/VertiUpdater`
+- **Absturzberichte und Nutzungsprotokoll gehen nicht mehr an Google.** Beide
+  Adressen zeigten auf Googles Server und sind abgeklemmt. In der gebauten
+  Binaerdatei: 1 Treffer fuer unseren Server, **0 Treffer** fuer Googles Omaha
+- Die ganze Kette lokal durchgespielt (`scripts/updater-test.js`): Verti wird
+  per ksadmin angemeldet, der Updater fragt an, unser Server antwortet mit
+  "Update 999.0.0.0 verfuegbar", der Updater nimmt die Antwort an
+
+Zwei Dinge, die beim Messen Zeit gekostet haben und im Skript stehen:
+
+- Die App-Liste steckt in der Anfrage unter **`request.apps`**, nicht unter
+  `request.app` (aeltere Beschreibungen sagen etwas anderes).
+- `execSync` blockiert Nodes Ereignisschleife - der eigene Testserver kann dann
+  nicht antworten, und es sieht so aus, als kaeme keine Anfrage an. Der Test
+  startet den Updater deshalb asynchron.
+- Die **ausgelieferte** Fassung ignoriert `overrides.json` absichtlich (sonst
+  koennte jeder die Update-Adresse umbiegen). Zum Testen nimmt man
+  `VertiUpdater_test.app`.
+
+### Was zum Abschluss noch fehlt
+
+1. **Server veroeffentlichen.** `server/verti-update/index.ts` ist geschrieben -
+   eine Supabase-Funktion im BESTEHENDEN Projekt, kein neuer Anbieter:
+   `supabase functions deploy verti-update --no-verify-jwt`
+2. **Releases als CRX3 packen.** Der Updater erwartet kein ZIP, sondern ein
+   CRX3-Paket mit `.keystone_install` darin. Werkzeug dafuer liegt im Baum
+   (`components/crx_file`).
+3. **Updater ins Verti-Paket legen** und Verti beim ersten Start anmelden.
+4. Danach der echte Durchlauf mit einem richtigen Paket.
+
+Bis dahin bleibt die Zwischenloesung: Verti laedt die neue Fassung herunter und
+zeigt sie im Finder.
 
 Der **einmalige Umstieg** von Electron auf Chromium ist davon unberuehrt: den
 liefert die heutige Electron-Fassung ueber electron-updater aus, mit einem

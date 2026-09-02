@@ -1,0 +1,112 @@
+// Verti-Update-Server (Supabase Edge Function).
+//
+// Chromiums Updater spricht das Omaha-Protokoll: er schickt per POST, welche
+// Version er hat, und erwartet als Antwort entweder "noupdate" oder ein Paket
+// zum Herunterladen. Diese Funktion uebersetzt das auf Vertis GitHub-Releases -
+// derselbe Kanal, den die Electron-Fassung schon benutzt.
+//
+// Warum ueberhaupt ein Server: eine Erweiterung darf das Programm nicht selbst
+// austauschen. Chromiums eigener Updater kann das - er kuemmert sich um Rechte,
+// Signaturpruefung und Neustart. Er braucht dafuer nur jemanden, der ihm sagt,
+// wo das neue Paket liegt. Genau das ist diese Datei.
+//
+// Deployen (macht Freddy):
+//   supabase functions deploy verti-update --no-verify-jwt
+//
+// Das --no-verify-jwt ist noetig, weil der Updater keinen Supabase-Schluessel
+// mitschickt. Die Funktion gibt nur oeffentliche Release-Daten heraus.
+
+const RELEASES = 'https://api.github.com/repos/freddyveee/verti/releases/latest';
+
+// Muss zu browser_appid in chrome/updater/branding.gni passen.
+const VERTI_APPID = '{b8ea4abe-da0c-4994-a8a5-a66cc7e21ccd}';
+
+// Antworten kurz zwischenspeichern, damit nicht jeder Start eine GitHub-Abfrage
+// ausloest (GitHub begrenzt anonyme Abfragen auf 60 pro Stunde und IP).
+let cache: { zeit: number; daten: Release | null } = { zeit: 0, daten: null };
+const CACHE_MS = 5 * 60 * 1000;
+
+type Release = { version: string; url: string; groesse: number; sha256: string };
+
+function versionNeuer(neu: string, alt: string): boolean {
+  const z = (v: string) => String(v || '').replace(/^v/, '').split('.').map((x) => parseInt(x, 10) || 0);
+  const a = z(neu), b = z(alt);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    if ((a[i] || 0) > (b[i] || 0)) return true;
+    if ((a[i] || 0) < (b[i] || 0)) return false;
+  }
+  return false;
+}
+
+async function neuestesRelease(): Promise<Release | null> {
+  if (cache.daten && Date.now() - cache.zeit < CACHE_MS) return cache.daten;
+  const r = await fetch(RELEASES, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'verti-update' } });
+  if (!r.ok) return cache.daten;
+  const rel = await r.json();
+
+  // Der Updater erwartet ein CRX3-Paket, keine ZIP-Datei. Das Release muss also
+  // eine Datei Verti-Mac.crx3 enthalten und daneben Verti-Mac.crx3.sha256 mit
+  // dem Pruefwert - beides legt scripts/crx3-paket.sh an.
+  const paket = (rel.assets || []).find((a: any) => /Verti-Mac\.crx3$/i.test(a.name));
+  const pruef = (rel.assets || []).find((a: any) => /Verti-Mac\.crx3\.sha256$/i.test(a.name));
+  if (!paket || !pruef) { cache = { zeit: Date.now(), daten: null }; return null; }
+
+  const sha = (await fetch(pruef.browser_download_url).then((x) => x.text())).trim().split(/\s+/)[0];
+  const daten: Release = {
+    version: String(rel.tag_name || '').replace(/^v/, ''),
+    url: paket.browser_download_url,
+    groesse: paket.size,
+    sha256: sha,
+  };
+  cache = { zeit: Date.now(), daten };
+  return daten;
+}
+
+function antwort(koerper: unknown) {
+  // Omaha-Antworten beginnen mit einem Schutz-Praefix gegen JSON-Hijacking.
+  return new Response(")]}'\n" + JSON.stringify(koerper), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method !== 'POST') {
+    return new Response('Verti-Update-Server. Erwartet POST im Omaha-Format.', { status: 405 });
+  }
+
+  let anfrage: any = {};
+  try { anfrage = await req.json(); } catch { /* leere Anfrage ist auch eine Anfrage */ }
+  const apps = anfrage?.request?.app || anfrage?.request?.apps || [];
+
+  const rel = await neuestesRelease();
+
+  const ergebnis = (Array.isArray(apps) ? apps : []).map((app: any) => {
+    const id = String(app?.appid || '').toLowerCase();
+    const hier = String(app?.version || '0.0.0.0');
+
+    // Nur Verti selbst beantworten. Fuer alles andere (der Updater fragt auch
+    // nach sich selbst) sagen wir ehrlich "kein Update" statt zu raten.
+    const istVerti = id === VERTI_APPID.toLowerCase();
+    if (!istVerti || !rel || !versionNeuer(rel.version, hier)) {
+      return { appid: id, status: 'ok', updatecheck: { status: 'noupdate' } };
+    }
+
+    return {
+      appid: id,
+      status: 'ok',
+      updatecheck: {
+        status: 'ok',
+        nextversion: rel.version,
+        pipelines: [{
+          operations: [
+            { type: 'download', urls: [{ url: rel.url }], out: { sha256: rel.sha256 }, size: rel.groesse },
+            // Im CRX3-Paket liegt das Skript, das die App austauscht.
+            { type: 'crx3', path: '.keystone_install', arguments: '', in: { sha256: rel.sha256 } },
+          ],
+        }],
+      },
+    };
+  });
+
+  return antwort({ response: { protocol: '4.0', apps: ergebnis } });
+});
