@@ -6,6 +6,9 @@
 # Ergebnis (beides gehoert ins GitHub-Release):
 #   Verti-Mac.crx3          das Paket
 #   Verti-Mac.crx3.sha256   der Pruefwert, den der Server ausliefert
+#   Verti-Mac.crx3.version  die Version der App darin (der Server nimmt sie von
+#                           hier, damit der Release-Tag eine Verti-Zahl bleiben
+#                           kann statt Chromiums 155.0.8038.0)
 #
 # Aufbau des Pakets:
 #   Verti.app/            die neue Fassung
@@ -105,10 +108,14 @@ chmod +x "$TMP/.keystone_install"
 mkdir -p "$ZIEL"
 "$PACKER" "$ZIEL/Verti-Mac.crx3" "$TMP/payload.zip" "$KEY"
 shasum -a 256 "$ZIEL/Verti-Mac.crx3" | awk '{print $1}' > "$ZIEL/Verti-Mac.crx3.sha256"
+# Die Version der App IM Paket. Der Update-Server nimmt sie von hier und nicht
+# vom Release-Tag - der Tag bleibt so frei fuer eine Verti-Zahl.
+printf '%s\n' "$VERSION" > "$ZIEL/Verti-Mac.crx3.version"
 
 echo
 echo "Fertig:"
 ls -lh "$ZIEL/Verti-Mac.crx3" | awk '{print "  " $NF "  " $5}'
 echo "  Pruefwert: $(cat "$ZIEL/Verti-Mac.crx3.sha256")"
+echo "  Version:   $(cat "$ZIEL/Verti-Mac.crx3.version")"
 echo
-echo "Beide Dateien gehoeren ins GitHub-Release, sonst findet der Server sie nicht."
+echo "Alle DREI Dateien gehoeren ins GitHub-Release, sonst findet der Server sie nicht."

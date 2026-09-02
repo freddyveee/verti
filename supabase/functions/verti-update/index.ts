@@ -48,16 +48,31 @@ async function neuestesRelease(): Promise<Release | null> {
   if (!r.ok) return cache.daten;
   const rel = await r.json();
 
-  // Der Updater erwartet ein CRX3-Paket, keine ZIP-Datei. Das Release muss also
-  // eine Datei Verti-Mac.crx3 enthalten und daneben Verti-Mac.crx3.sha256 mit
-  // dem Pruefwert - beides legt scripts/crx3-paket.sh an.
+  // Der Updater erwartet ein CRX3-Paket, keine ZIP-Datei. Das Release braucht
+  // deshalb drei Dateien, die scripts/crx3-paket.sh alle anlegt:
+  //   Verti-Mac.crx3          das Paket
+  //   Verti-Mac.crx3.sha256   der Pruefwert
+  //   Verti-Mac.crx3.version  die Version der App darin
   const paket = (rel.assets || []).find((a: any) => /Verti-Mac\.crx3$/i.test(a.name));
   const pruef = (rel.assets || []).find((a: any) => /Verti-Mac\.crx3\.sha256$/i.test(a.name));
+  const versDatei = (rel.assets || []).find((a: any) => /Verti-Mac\.crx3\.version$/i.test(a.name));
   if (!paket || !pruef) { cache = { zeit: Date.now(), daten: null }; return null; }
 
   const sha = (await fetch(pruef.browser_download_url).then((x) => x.text())).trim().split(/\s+/)[0];
+
+  // Die Version kommt aus einer eigenen Datei, NICHT aus dem Release-Tag.
+  //
+  // Grund: das Chromium-Verti traegt Chromiums Versionsnummer (z.B.
+  // 155.0.8038.0, vier Teile). Der Release-Tag muss aber weiter eine
+  // Verti-Zahl sein - zum einen fuer Menschen, zum anderen weil der alte
+  // Electron-Updater ihn als Semver liest und mit vier Teilen nichts anfangen
+  // kann. Beide Welten kommen so ohne Verrenkung aus.
+  const version = versDatei
+    ? (await fetch(versDatei.browser_download_url).then((x) => x.text())).trim()
+    : String(rel.tag_name || '').replace(/^v/, '');
+
   const daten: Release = {
-    version: String(rel.tag_name || '').replace(/^v/, ''),
+    version,
     url: paket.browser_download_url,
     groesse: paket.size,
     sha256: sha,
