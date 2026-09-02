@@ -424,10 +424,38 @@ Das ist kein Mangel - das Dateisystem der DMG haengt jeder Datei ein
 notarisiert solche Pakete anstandslos. Massstab ist Gatekeeper, nicht dieser
 Test.
 
+## Der Kreis ist geschlossen (02.09.2026)
+
+Das CRX3-Paket wird jetzt aus der **signierten und notarisierten** App gebaut,
+nicht aus dem Rohbau. `scripts/crx3-paket.sh` holt sie dafuer aus der DMG des
+Signierlaufs und bricht ab, wenn dort keine Developer-ID-Signatur steht.
+
+**Warum das wichtig ist:** Googles Installationsskript prueft beim Austausch die
+Signatur der neuen App. Ein nur "adhoc" signiertes Paket wuerde abgelehnt - die
+Nutzer bekaemen nie ein Update, ohne dass jemand merkt warum.
+
+Kompletter Durchlauf mit dem signierten Paket:
+
+```
+-> Updater holt das Paket (230 MB)
+Version in der Zielkopie: 1.0.0.0  ->  155.0.8038.0
+AUSGETAUSCHT. Der Updater hat die App wirklich ersetzt.
+```
+
+Und die ausgetauschte App danach:
+
+```
+4. Notarisierung angeheftet: ok
+5. Gatekeeper: accepted, source=Notarized Developer ID
+```
+
+Also: **nach dem Update ist Verti immer noch notarisiert und startet ohne
+Warnung.** Damit ist die Kette vom Bau bis zum Nutzer vollstaendig.
+
 ### Was noch fehlt
 
-1. Der erste echte Release: CRX3-Paket aus der **signierten** App bauen und
-   zusammen mit DMG und Pruefwert ins GitHub-Release legen.
+1. Der erste echte Release: DMG, `Verti-Mac.crx3` und `Verti-Mac.crx3.sha256`
+   ins GitHub-Release legen.
 2. Kompletter Windows-Zweig.
 
 Der **einmalige Umstieg** von Electron auf Chromium ist davon unberuehrt: den

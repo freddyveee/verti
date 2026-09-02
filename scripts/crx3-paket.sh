@@ -26,7 +26,36 @@ SRC=/Volumes/VertiBuild/chromium/src
 DEPOT=/Volumes/VertiBuild/depot_tools
 KEY="${HOME}/Verti-Signing/verti-crx3.der"
 ZIEL="${1:-${SRC}/out/Release}"
-APP="${SRC}/out/Release/Verti.app"
+
+# Die App MUSS die signierte und notarisierte sein. Googles Installationsskript
+# prueft beim Austausch die Signatur - eine nur "adhoc" signierte App wird
+# abgelehnt, und der Nutzer bekaeme das Update nie.
+# Die signierte App steckt in der DMG aus dem Signierlauf.
+DMG=$(ls -t "${SRC}/out/Release/signed/"*.dmg 2>/dev/null | head -1)
+if [ -z "$DMG" ]; then
+  echo "Keine signierte DMG in ${SRC}/out/Release/signed/ gefunden.
+
+Erst signieren und notarisieren:
+  python3 \"${SRC}/out/Release/Verti Packaging/sign_chrome.py\" \\
+    --input out/Release --output out/Release/signed \\
+    --identity \"Developer ID Application: Freddy Henrich-Held (CHS9G483R4)\" \\
+    --notarize staple \\
+    --notary-arg=--keychain-profile --notary-arg=verti-notary
+
+Vorher den Updater signieren, sonst bricht der Lauf ab - siehe CHROMIUM-STATUS.md."
+  exit 1
+fi
+
+MOUNT=$(hdiutil attach "$DMG" -nobrowse -readonly 2>/dev/null | grep -oE "/Volumes/.*" | head -1)
+[ -n "$MOUNT" ] || { echo "DMG liess sich nicht oeffnen: $DMG"; exit 1; }
+aufraeumen() {
+  [ -n "${MOUNT:-}" ] && hdiutil detach "$MOUNT" >/dev/null 2>&1
+  [ -n "${TMP:-}" ] && rm -rf "$TMP"
+  return 0
+}
+trap aufraeumen EXIT
+APP="${MOUNT}/Verti.app"
+echo "Nehme die signierte App aus: $(basename "$DMG")"
 SKRIPT="${SRC}/chrome/installer/mac/keystone_install.sh"
 PACKER="${SRC}/out/Release/crx3_build_action"
 
@@ -55,9 +84,15 @@ fi
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
 TMP=$(mktemp -d)
-trap 'rm -rf "$TMP"' EXIT
 
-echo "Packe Verti $VERSION …"
+SIGINFO=$(codesign -dv --verbose=2 "$APP" 2>&1 || true)
+if ! printf '%s' "$SIGINFO" | grep -q "Authority=Developer ID Application"; then
+  echo "Die App in der DMG ist NICHT mit der Developer ID signiert. Abbruch."
+  echo "Was codesign meldet:"
+  printf '%s\n' "$SIGINFO" | head -8 | sed 's/^/  /'
+  exit 1
+fi
+echo "Packe Verti $VERSION (signiert und notarisiert) …"
 # ditto statt cp: erhaelt Symlinks, Rechte und erweiterte Attribute des Bundles.
 # Mit cp -R waere die Signatur der App kaputt.
 ditto "$APP" "$TMP/Verti.app"
