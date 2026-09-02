@@ -1,0 +1,8 @@
+# Minimale Supabase-Konfiguration. Nur noetig, damit das supabase-Werkzeug den
+# Projektordner erkennt - die Funktion selbst braucht nichts davon.
+project_id = "dganalwiakzgrskkvrvs"
+
+[functions.verti-update]
+# Vertis Updater schickt keinen Supabase-Schluessel mit. Die Funktion gibt nur
+# oeffentliche Release-Daten heraus, deshalb ist das in Ordnung.
+verify_jwt = false

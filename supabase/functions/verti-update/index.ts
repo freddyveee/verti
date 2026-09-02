@@ -10,11 +10,12 @@
 // Signaturpruefung und Neustart. Er braucht dafuer nur jemanden, der ihm sagt,
 // wo das neue Paket liegt. Genau das ist diese Datei.
 //
-// Deployen (macht Freddy):
-//   supabase functions deploy verti-update --no-verify-jwt
+// Deployen (macht Freddy, aus dem Projektwurzel-Verzeichnis):
+//   supabase functions deploy verti-update --project-ref dganalwiakzgrskkvrvs
 //
-// Das --no-verify-jwt ist noetig, weil der Updater keinen Supabase-Schluessel
-// mitschickt. Die Funktion gibt nur oeffentliche Release-Daten heraus.
+// verify_jwt = false steht in supabase/config.toml: Vertis Updater schickt
+// keinen Supabase-Schluessel mit. Die Funktion gibt nur oeffentliche
+// Release-Daten heraus, deshalb ist das in Ordnung.
 
 const RELEASES = 'https://api.github.com/repos/freddyveee/verti/releases/latest';
 
