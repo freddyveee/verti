@@ -19,8 +19,11 @@
 
 const RELEASES = 'https://api.github.com/repos/freddyveee/verti/releases/latest';
 
-// Muss zu browser_appid in chrome/updater/branding.gni passen.
-const VERTI_APPID = '{b8ea4abe-da0c-4994-a8a5-a66cc7e21ccd}';
+// Vertis Kennung beim Updater. Auf dem Mac ist das die BUNDLE-Kennung, nicht
+// browser_appid aus branding.gni - der Browser meldet sich unter
+// BrowserUpdaterClient::GetAppId() an, und das ist die Bundle-Kennung
+// (Chrome benutzt dort ebenfalls "com.google.chrome").
+const VERTI_APPID = 'rocks.imperio.verti';
 
 // Antworten kurz zwischenspeichern, damit nicht jeder Start eine GitHub-Abfrage
 // ausloest (GitHub begrenzt anonyme Abfragen auf 60 pro Stunde und IP).

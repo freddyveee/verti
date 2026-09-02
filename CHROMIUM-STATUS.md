@@ -319,13 +319,39 @@ DER` liefert auf dem Mac PKCS#1, der Packer bricht dann mit "Malformed
 PrivateKeyInfo" ab. Der zweite Schritt mit `openssl pkcs8 -topk8` steht in
 `scripts/crx3-paket.sh`.
 
+### Verti meldet sich selbst an (02.09.2026)
+
+Der Updater liegt bereits im Verti-Paket - das macht der Bau von selbst, seit
+`enable_updater = true` gesetzt ist
+(`Verti Framework.framework/.../Helpers/VertiUpdater.app`).
+
+Gefehlt hat die Anmeldung. Chromium ruft `EnsureUpdater()` **nur, wenn jemand
+die "Ueber"-Seite oeffnet** - das wuerde bei Vertis Nutzern nie passieren. Der
+Patch haengt den Aufruf deshalb an `ChromeBrowserMainPartsMac::PostProfileInit`,
+20 Sekunden nach dem Start und mit niedrigster Prioritaet, damit der Start nicht
+langsamer wird. Ist alles schon angemeldet, tut der Aufruf nichts.
+
+Gemessen mit `scripts/selbstanmeldung-test.js` (frisches Profil, kein Updater,
+nichts angeklickt):
+
+```
+Updater taucht auf nach etwa 20 s
+productID=rocks.imperio.verti  version=155.0.8038.0
+Verti hat sich VON ALLEIN angemeldet. Der Nutzer muss nichts tun.
+```
+
+**Wichtig, beim ersten Versuch falsch gemacht:** Die Kennung ist die
+**Bundle-Kennung** `rocks.imperio.verti`, NICHT `browser_appid` aus
+`branding.gni`. `BrowserUpdaterClient::GetAppId()` gibt auf dem Mac die
+Bundle-Kennung zurueck; Chrome meldet sich dort ebenfalls als
+"com.google.chrome" an. Server, Info.plist und Anmeldung muessen dieselbe
+Kennung benutzen, sonst fragt der Updater brav und bekommt nie eine Antwort.
+
 ### Was noch fehlt
 
-1. **Server veroeffentlichen** (macht Freddy):
-   `supabase functions deploy verti-update --no-verify-jwt`
-2. **Updater ins Verti-Paket legen** und Verti beim ersten Start anmelden -
-   bisher passiert die Anmeldung im Test von Hand per ksadmin.
-3. Signierung und Notarisierung des Chromium-Pakets.
+1. Signierung und Notarisierung des Chromium-Pakets.
+2. Der erste echte Release mit einem CRX3-Paket im GitHub-Release.
+3. Kompletter Windows-Zweig.
 
 Der **einmalige Umstieg** von Electron auf Chromium ist davon unberuehrt: den
 liefert die heutige Electron-Fassung ueber electron-updater aus, mit einem

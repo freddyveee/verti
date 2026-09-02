@@ -50,10 +50,10 @@ index 23d3c4d244..3db8335b6a 100755
      else:
          _RemoveKeystoneKeys(plist)
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 6f97b7046d..1534d4c234 100644
+index 6f97b7046d..4ff859ea4f 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -517,13 +517,20 @@ if (is_win) {
+@@ -517,13 +517,23 @@ if (is_win) {
      ]
      if (enable_updater) {
        args += [ "--privileged_helper_id=$privileged_helper_name" ]
@@ -69,12 +69,15 @@ index 6f97b7046d..1534d4c234 100644
 +      # Ohne KSProductID/KSVersion/KSUpdateURL bricht das Installationsskript
 +      # mit "couldn't determine update_version_ks" ab, und der Browser bindet
 +      # den Updater gar nicht erst ein (siehe BrowserHasKSProductID).
-+      # Die Kennung ist bewusst browser_appid und NICHT die Bundle-Kennung -
-+      # unter dieser Kennung fragt der Updater beim Server nach.
++      #
++      # KSProductID bleibt bewusst die BUNDLE-Kennung. Auf dem Mac meldet sich
++      # der Browser naemlich genau darunter an
++      # (BrowserUpdaterClient::GetAppId() gibt die Bundle-Kennung zurueck) -
++      # Chrome macht es mit "com.google.chrome" nicht anders. Setzt man hier
++      # etwas anderes, laufen Info.plist und Anmeldung auseinander.
 +      args += [
 +        "--keystone=1",
 +        "--keystone-update-url=$update_check_url",
-+        "--keystone-product-id=$browser_appid",
 +      ]
 +      if (current_cpu == "arm64") {
 +        args += [ "--keystone-base-tag=arm64" ]
@@ -105,6 +108,53 @@ index f8363d5b29..b1ef1586bb 100644
  MAC_CREATOR_CODE=Cr24
 -MAC_TEAM_ID=
 +MAC_TEAM_ID=CHS9G483R4
+diff --git a/chrome/browser/chrome_browser_main_mac.mm b/chrome/browser/chrome_browser_main_mac.mm
+index b269f1610a..c14f53eaae 100644
+--- a/chrome/browser/chrome_browser_main_mac.mm
++++ b/chrome/browser/chrome_browser_main_mac.mm
+@@ -26,6 +26,13 @@
+ #include "chrome/browser/browser_process.h"
+ #include "chrome/browser/browser_process_platform_part.h"
+ #include "chrome/browser/buildflags.h"
++// Verti: fuer die Selbstanmeldung beim Updater
++#include "base/functional/callback_helpers.h"
++#include "base/task/thread_pool.h"
++#include "base/time/time.h"
++#if BUILDFLAG(ENABLE_UPDATER)
++#include "chrome/browser/updater/updater.h"
++#endif
+ #import "chrome/browser/chrome_browser_application_mac.h"
+ #include "chrome/browser/first_run/first_run.h"
+ #include "chrome/browser/mac/install_from_dmg.h"
+@@ -179,6 +186,28 @@
+ void ChromeBrowserMainPartsMac::PostProfileInit(Profile* profile,
+                                                 bool is_initial_profile) {
+   ChromeBrowserMainPartsPosix::PostProfileInit(profile, is_initial_profile);
++
++#if BUILDFLAG(ENABLE_UPDATER)
++  // Verti: sich selbst beim Updater anmelden.
++  //
++  // Chromium ruft EnsureUpdater() nur, wenn jemand die "Ueber"-Seite oeffnet.
++  // Bei Verti soll der Nutzer dafuer gar nichts tun muessen - Updates sollen
++  // einfach ankommen.
++  //
++  // Der Aufruf ist gutmuetig: ist der Updater schon da und Verti angemeldet,
++  // tut er nichts. Er laeuft mit niedrigster Prioritaet und erst 20 Sekunden
++  // nach dem Start, damit der Start nicht langsamer wird.
++  if (is_initial_profile) {
++    base::ThreadPool::PostDelayedTask(
++        FROM_HERE,
++        {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
++         base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
++        base::BindOnce(&updater::EnsureUpdater,
++                       base::TaskPriority::BEST_EFFORT, base::DoNothing(),
++                       base::DoNothing()),
++        base::Seconds(20));
++  }
++#endif  // BUILDFLAG(ENABLE_UPDATER)
+ }
+ 
+ void ChromeBrowserMainPartsMac::DidEndMainMessageLoop() {
 diff --git a/chrome/browser/ui/tabs/tab_strip_prefs.cc b/chrome/browser/ui/tabs/tab_strip_prefs.cc
 index ca0afc6fd0..dd56ed6011 100644
 --- a/chrome/browser/ui/tabs/tab_strip_prefs.cc

@@ -34,7 +34,7 @@ const SRC = '/Volumes/VertiBuild/chromium/src';
 // die Update-Adresse umbiegen.
 const UPDATER = path.join(SRC, 'out/Release/VertiUpdater_test.app/Contents/MacOS/VertiUpdater_test');
 const PORT = 9710;
-const VERTI_APPID = '{b8ea4abe-da0c-4994-a8a5-a66cc7e21ccd}';
+const VERTI_APPID = 'rocks.imperio.verti';  // Bundle-Kennung, siehe Serverdatei
 const mitUpdate = process.argv.includes('--update');
 // Mit --echtes-paket wird das wirklich gepackte Verti-Mac.crx3 ausgeliefert und
 // der Updater installiert es tatsaechlich. Das ist der einzige Test, der die
