@@ -33,3 +33,12 @@ Verhalten unterscheidet sich je Plattform, also möglichst auf beiden testen.
 ## Regelmäßig
 - [ ] Vor größeren Releases die Kern-Flows auf **beiden** Plattformen durchgehen
 - [ ] Bei neuen eingebundenen Web-Apps: Login, Badge und Benachrichtigung dieser App einmal prüfen
+
+## Nach Änderungen an Fuses oder castLabs-Version
+
+- [ ] `npx @electron/fuses read --app dist/mac-universal/Verti.app` → `EnableCookieEncryption is Enabled`
+- [ ] Im Build-Log steht weiterhin `Signature is valid: streaming` (sonst spielt Spotify nicht)
+- [ ] Spotify spielt in der GEBAUTEN App durch (nicht im Dev testen)
+- [ ] Nach Anmeldung und Neustart: `sqlite3 <Profil>/Partitions/apps/Cookies "select sum(length(value)>0), sum(length(encrypted_value)>0) from cookies"` → erste Zahl 0, zweite > 0
+- [ ] Auto-Update Mac UND Windows durchgespielt (asar-Integrität!)
+- [ ] Windows: nach dem Update noch in allen Apps angemeldet

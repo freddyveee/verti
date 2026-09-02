@@ -1,3 +1,30 @@
+const { flipFuses, FuseVersion, FuseV1Options } = require('@electron/fuses');
+
+// Electron-Schutzschalter ("Fuses"). WICHTIG, frueher stand hier das Gegenteil:
+// castLabs signiert seit ECS v35 GENAU EINEN festen Satz mit; Abweichungen
+// lehnt EVS mit "Binary signature denied" ab. Der Satz enthaelt
+// EnableCookieEncryption - ohne diesen Schalter speichert Chromium die
+// Anmelde-Cookies im KLARTEXT auf die Platte (am 02.09.2026 gemessen:
+// 556 von 557 Cookies unverschluesselt, waehrend Chrome 2742 von 2742
+// verschluesselt). Signal Desktop und Bitwarden setzen den Schalter ebenfalls.
+//
+// Die Fuses muessen UNMITTELBAR VOR vmpSign umgelegt werden: jede spaetere
+// Aenderung an der Binaerdatei macht die VMP-Signatur ungueltig. Deshalb NICHT
+// build.electronFuses von electron-builder benutzen - das legt sie erst nach
+// afterPack um und wuerde die Signatur still zerstoeren (Spotify waere tot).
+const ECS_FUSES = {
+  version: FuseVersion.V1,
+  resetAdHocDarwinSignature: true,
+  [FuseV1Options.RunAsNode]: false,
+  [FuseV1Options.EnableCookieEncryption]: true,
+  [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+  [FuseV1Options.EnableNodeCliInspectArguments]: false,
+  [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+  [FuseV1Options.OnlyLoadAppFromAsar]: true,
+  [FuseV1Options.LoadBrowserProcessSpecificV8Snapshot]: false,
+  [FuseV1Options.GrantFileProtocolExtraPrivileges]: true,
+};
+
 // electron-builder afterPack für castLabs ECS (Widevine/VMP, seit 1.0.21).
 // macOS:
 //  - x64/arm64-Zwischenbauten des Universal-Builds: mitgelieferte Entwicklungs-
@@ -49,6 +76,9 @@ exports.default = async function afterPack(context) {
       console.log(`[ecs-afterpack] ${sigs.length} .sig-Dateien entfernt (Zwischenbau ${arch})`);
       return;
     }
+    const appPfad = path.join(context.appOutDir, `${context.packager.appInfo.productFilename}.app`);
+    console.log('[ecs-afterpack] Schutzschalter setzen (inkl. Cookie-Verschluesselung):', appPfad);
+    await flipFuses(appPfad, ECS_FUSES);
     vmpSign(context.appOutDir);
     return;
   }
@@ -57,3 +87,4 @@ exports.default = async function afterPack(context) {
   // gesetzte VMP-Signatur. Windows läuft deshalb in scripts/ecs-aftersign.js.
 };
 exports.vmpSign = vmpSign;
+exports.ECS_FUSES = ECS_FUSES;

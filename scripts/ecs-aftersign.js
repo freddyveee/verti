@@ -5,9 +5,18 @@
 // Signatur ungültig (castLabs: Windows = VMP nach Codesign, macOS = davor).
 // afterSign feuert nach dieser Bearbeitung und vor dem NSIS-Installer, der
 // die Dateien nur noch einpackt. Idempotent: gültige Signatur → kein Upload.
-const { vmpSign } = require('./ecs-afterpack');
+const path = require('path');
+const { flipFuses } = require('@electron/fuses');
+const { vmpSign, ECS_FUSES } = require('./ecs-afterpack');
 
 exports.default = async function afterSign(context) {
   if (context.electronPlatformName !== 'win32') return;
+  // Erst die Schutzschalter, dann VMP - jede spaetere Aenderung an der Exe
+  // macht die Signatur ungueltig (s. Kommentar in ecs-afterpack.js).
+  if (process.platform !== 'darwin' || context.electronPlatformName === 'win32') {
+    const exe = path.join(context.appOutDir, `${context.packager.appInfo.productFilename}.exe`);
+    console.log('[ecs-aftersign] Schutzschalter setzen:', exe);
+    await flipFuses(exe, ECS_FUSES);
+  }
   vmpSign(context.appOutDir);
 };
