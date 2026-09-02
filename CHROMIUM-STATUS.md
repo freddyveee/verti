@@ -112,6 +112,91 @@ eine Faehigkeitsmeldung.
   mit, Verti gibt sie also heute schon aus - neu ist die Frage nicht, aber vor
   dem Verkauf einmal sauber anschauen.
 
+## Sidebar: portiert und geprueft (02.09.2026)
+
+Die Sidebar laeuft in unserem Chromium. Nicht der 225-Zeilen-Machbarkeits-
+nachweis von heute Morgen, sondern die **echte** Sidebar mit allen 1416 Zeilen.
+
+### Erzeugt, nicht abgeschrieben
+
+Das ist der wichtigste Punkt am Aufbau. Eine Handkopie von `sidebar.html` waere
+nach dem naechsten Release veraltet - genau der Fehler, der schon einmal
+Farbaenderungen verschluckt hat. Stattdessen:
+
+| Erzeuger | macht daraus |
+|---|---|
+| `scripts/katalog-export.js` | `apps.json` (214 Apps, Kategorien, Pruefstufen, Feedback-Zugang) aus `main.js` und `app-status.json` |
+| `scripts/sidebar-port.js` | `sidebar.html` + `sidebar.js` aus der echten `sidebar.html` |
+
+Beide nach jeder Aenderung an main.js/sidebar.html erneut laufen lassen.
+`main.js` und `sidebar.html` bleiben die einzige Wahrheit.
+
+Von Hand geschrieben sind nur zwei Dateien:
+
+- `chromium/extension/verti-shim.js` - stellt exakt das `window.verti`-API aus
+  `preload.js` bereit, nur auf Chrome-APIs. **Deshalb bleibt sidebar.html
+  unveraendert** und es gibt keine zweite Fassung zu pflegen.
+- `chromium/extension/sw.js` - der Hintergrunddienst, also das Gegenstueck zu
+  `main.js`: Zustand, App-Tabs, Ungelesen-Zaehler, Farbwelt.
+
+Eine Falle bei Erweiterungen der Stufe 3: Skripte **im** Dokument sind
+verboten. Deshalb trennt der Erzeuger den `<script>`-Block heraus. Ausserdem
+wird der Dienst jederzeit beendet und neu gestartet - nichts darf nur im
+Arbeitsspeicher stehen, jeder Zustand liegt in `chrome.storage`, und statt
+`setInterval` laeuft ein `chrome.alarms`-Wecker.
+
+### Selbst geprueft (Treiber im Scratchpad, Bilder angesehen)
+
+- Erweiterung laedt fehlerfrei, `window.verti` ist da
+- App-Leiste rendert, Verti-Browser oben angeheftet, Apps darunter
+- App-Bibliothek: alle 214 Apps mit Kategorien, Suche, Hinzufuegen/Entfernen
+- Einstellungen: Hell/Dunkel, sechs Farbwelten, externe Links, Erweiterungen,
+  Benachrichtigungen pro App
+- Farbwelt umschalten geht durch den ganzen Rundlauf (Sidebar → Bruecke →
+  Dienst → Speicher → zurueck)
+- Klick auf eine App oeffnet sie wirklich als angehefteten Tab (mit WhatsApp
+  nachgewiesen)
+
+Einzige Meldungen in der Konsole sind 404er von Googles Favicon-Dienst fuer
+einige Adressen. Das passiert in der Electron-Fassung genauso, die Sidebar
+faellt dann auf den Anfangsbuchstaben zurueck.
+
+### Noch nicht uebersetzt (in verti-shim.js benannt, nicht still weggelassen)
+
+Updater, Onboarding, Erweiterungen von der Platte laden, Verti-Browser-
+Seitenkarte. Der Rechtsklick auf ein App-Symbol oeffnet jetzt ein selbst
+gebautes Menue - Erweiterungen duerfen kein natives oeffnen.
+
+## Der Rahmen: Chromium kann vertikale Tabs von Haus aus
+
+Vertis `sidebar.html` ist fuer ein **ganzes Fenster** gebaut (`width: 100vw`),
+die App-Leiste ist nur die linken 68 px davon. Ein Erweiterungs-Seitenpanel ist
+dagegen ein schmaler Streifen (Standard etwa 450 px) und laesst Chromiums
+Tableiste und Adressleiste stehen. So saehe Verti aus wie Chrome mit Panel.
+
+**Chromium 155 loest das selbst.** Es gibt eine eingebaute vertikale Tableiste,
+und sie haengt an einer blossen Einstellung (`vertical_tabs.enabled`), nicht an
+einem Bau-Schalter. Gemessen mit `scratchpad/vtabs-probe.js` bei gleich grossem
+Fenster:
+
+| | Seitenbreite | Seitenhoehe |
+|---|---|---|
+| ohne | 1200 px | 713 px |
+| mit | 960 px | 753 px |
+
+Also **240 px weniger Breite** (die vertikale Leiste, Standardbreite 240) und
+**40 px mehr Hoehe** (die waagerechte Tableiste faellt weg). Genau Vertis
+Aufteilung - ohne C++-Aenderung.
+
+**Offene Entscheidung:** ob Vertis App-Leiste diese native vertikale Tableiste
+wird (Apps sind ohnehin angeheftete Tabs) oder ob sie als eigene Flaeche
+danebensteht. Davon haengt ab, wieviel Chromium-Code ueberhaupt angefasst wird.
+
 ## Offen ausser DRM
 
 Signierung, Notarisierung, Updater, kompletter Windows-Zweig.
+
+Ausserdem: `screencapture` liefert auf diesem Mac gerade "could not create image
+from display" - Bildschirmfotos des ganzen Fensters gehen deshalb nicht. Die
+Sidebar selbst laesst sich ueber das DevTools-Protokoll trotzdem abfotografieren,
+fuer den Gesamteindruck fehlt aber die Bildschirmaufnahme-Berechtigung.

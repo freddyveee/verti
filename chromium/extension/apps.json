@@ -1,0 +1,1395 @@
+{
+  "erzeugtAus": "main.js",
+  "apps": [
+    {
+      "id": "browser",
+      "name": "Verti Browser",
+      "url": "https://verti.browser/",
+      "icon": "icons/verti-browser.svg"
+    },
+    {
+      "id": "calendar",
+      "name": "Google Kalender",
+      "url": "https://calendar.google.com/",
+      "icon": "https://ssl.gstatic.com/calendar/images/dynamiclogo_2020q4/calendar_31_2x.png"
+    },
+    {
+      "id": "whatsapp",
+      "name": "WhatsApp",
+      "url": "https://web.whatsapp.com/",
+      "icon": "icons/whatsapp.png"
+    },
+    {
+      "id": "todoist",
+      "name": "Todoist",
+      "url": "https://app.todoist.com/app/upcoming"
+    },
+    {
+      "id": "chatgpt",
+      "name": "ChatGPT",
+      "url": "https://chatgpt.com/"
+    },
+    {
+      "id": "imperio-tools",
+      "name": "IMPERIO Tools",
+      "url": "https://imperio-tools.netlify.app/",
+      "icon": "icons/imperio-tools.png"
+    },
+    {
+      "id": "gmail",
+      "name": "Gmail",
+      "url": "https://mail.google.com/"
+    },
+    {
+      "id": "gdrive",
+      "name": "Google Drive",
+      "url": "https://drive.google.com/",
+      "icon": "https://ssl.gstatic.com/images/branding/product/2x/drive_2020q4_48dp.png"
+    },
+    {
+      "id": "stackfield",
+      "name": "Stackfield",
+      "url": "https://www.stackfield.com/",
+      "icon": "icons/stackfield.png"
+    },
+    {
+      "id": "notion",
+      "name": "Notion",
+      "url": "https://app.notion.com/"
+    },
+    {
+      "id": "slack",
+      "name": "Slack",
+      "url": "https://app.slack.com/client"
+    },
+    {
+      "id": "telegram",
+      "name": "Telegram",
+      "url": "https://web.telegram.org/",
+      "icon": "icons/telegram.png"
+    },
+    {
+      "id": "messenger",
+      "name": "Messenger",
+      "url": "https://www.messenger.com/"
+    },
+    {
+      "id": "claude",
+      "name": "Claude",
+      "url": "https://claude.ai/"
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini",
+      "url": "https://gemini.google.com/"
+    },
+    {
+      "id": "linkedin",
+      "name": "LinkedIn",
+      "url": "https://www.linkedin.com/"
+    },
+    {
+      "id": "x",
+      "name": "X",
+      "url": "https://x.com/"
+    },
+    {
+      "id": "youtube",
+      "name": "YouTube",
+      "url": "https://www.youtube.com/"
+    },
+    {
+      "id": "spotify",
+      "name": "Spotify",
+      "url": "https://open.spotify.com/"
+    },
+    {
+      "id": "github",
+      "name": "GitHub",
+      "url": "https://github.com/"
+    },
+    {
+      "id": "figma",
+      "name": "Figma",
+      "url": "https://www.figma.com/"
+    },
+    {
+      "id": "teams",
+      "name": "Microsoft Teams",
+      "url": "https://teams.microsoft.com/"
+    },
+    {
+      "id": "discord",
+      "name": "Discord",
+      "url": "https://discord.com/channels/@me"
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "url": "https://app.zoom.us/"
+    },
+    {
+      "id": "meet",
+      "name": "Google Meet",
+      "url": "https://meet.google.com/"
+    },
+    {
+      "id": "trello",
+      "name": "Trello",
+      "url": "https://trello.com/"
+    },
+    {
+      "id": "asana",
+      "name": "Asana",
+      "url": "https://app.asana.com/"
+    },
+    {
+      "id": "miro",
+      "name": "Miro",
+      "url": "https://miro.com/app/dashboard/"
+    },
+    {
+      "id": "canva",
+      "name": "Canva",
+      "url": "https://www.canva.com/"
+    },
+    {
+      "id": "airtable",
+      "name": "Airtable",
+      "url": "https://airtable.com/"
+    },
+    {
+      "id": "dropbox",
+      "name": "Dropbox",
+      "url": "https://www.dropbox.com/home"
+    },
+    {
+      "id": "office",
+      "name": "Microsoft 365",
+      "url": "https://www.office.com/"
+    },
+    {
+      "id": "gdocs",
+      "name": "Google Docs",
+      "url": "https://docs.google.com/document/",
+      "icon": "https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico"
+    },
+    {
+      "id": "gsheets",
+      "name": "Google Sheets",
+      "url": "https://docs.google.com/spreadsheets/",
+      "icon": "https://ssl.gstatic.com/docs/spreadsheets/favicon3.ico"
+    },
+    {
+      "id": "gmaps",
+      "name": "Google Maps",
+      "url": "https://www.google.com/maps",
+      "icon": "https://www.google.com/s2/favicons?domain=maps.google.com&sz=64"
+    },
+    {
+      "id": "gphotos",
+      "name": "Google Fotos",
+      "url": "https://photos.google.com/"
+    },
+    {
+      "id": "deepl",
+      "name": "DeepL",
+      "url": "https://www.deepl.com/translator"
+    },
+    {
+      "id": "perplexity",
+      "name": "Perplexity",
+      "url": "https://www.perplexity.ai/"
+    },
+    {
+      "id": "instagram",
+      "name": "Instagram",
+      "url": "https://www.instagram.com/"
+    },
+    {
+      "id": "facebook",
+      "name": "Facebook",
+      "url": "https://www.facebook.com/"
+    },
+    {
+      "id": "reddit",
+      "name": "Reddit",
+      "url": "https://www.reddit.com/"
+    },
+    {
+      "id": "pinterest",
+      "name": "Pinterest",
+      "url": "https://www.pinterest.com/"
+    },
+    {
+      "id": "getresponse",
+      "name": "GetResponse",
+      "url": "https://app.getresponse.com/"
+    },
+    {
+      "id": "weclapp",
+      "name": "weclapp",
+      "url": "https://www.weclapp.com/"
+    },
+    {
+      "id": "microsoftcopilot",
+      "name": "Microsoft Copilot",
+      "url": "https://copilot.microsoft.com/"
+    },
+    {
+      "id": "grok",
+      "name": "Grok",
+      "url": "https://grok.com/"
+    },
+    {
+      "id": "mistrallechat",
+      "name": "Mistral / Le Chat",
+      "url": "https://chat.mistral.ai/"
+    },
+    {
+      "id": "notebooklm",
+      "name": "NotebookLM",
+      "url": "https://notebooklm.google.com/"
+    },
+    {
+      "id": "midjourney",
+      "name": "Midjourney",
+      "url": "https://www.midjourney.com/"
+    },
+    {
+      "id": "elevenlabs",
+      "name": "ElevenLabs",
+      "url": "https://elevenlabs.io/"
+    },
+    {
+      "id": "poe",
+      "name": "Poe",
+      "url": "https://poe.com/"
+    },
+    {
+      "id": "huggingface",
+      "name": "Hugging Face",
+      "url": "https://huggingface.co/"
+    },
+    {
+      "id": "suno",
+      "name": "Suno",
+      "url": "https://suno.com/"
+    },
+    {
+      "id": "ideogram",
+      "name": "Ideogram",
+      "url": "https://ideogram.ai/"
+    },
+    {
+      "id": "outlook",
+      "name": "Outlook",
+      "url": "https://outlook.office.com/mail/"
+    },
+    {
+      "id": "googlechat",
+      "name": "Google Chat",
+      "url": "https://chat.google.com/"
+    },
+    {
+      "id": "skype",
+      "name": "Skype",
+      "url": "https://web.skype.com/"
+    },
+    {
+      "id": "webex",
+      "name": "Webex",
+      "url": "https://web.webex.com/"
+    },
+    {
+      "id": "protonmail",
+      "name": "Proton Mail",
+      "url": "https://mail.proton.me/"
+    },
+    {
+      "id": "gmx",
+      "name": "GMX",
+      "url": "https://www.gmx.net/"
+    },
+    {
+      "id": "webde",
+      "name": "Web.de",
+      "url": "https://web.de/"
+    },
+    {
+      "id": "evernote",
+      "name": "Evernote",
+      "url": "https://www.evernote.com/client/web"
+    },
+    {
+      "id": "onenote",
+      "name": "OneNote",
+      "url": "https://www.onenote.com/"
+    },
+    {
+      "id": "googlekeep",
+      "name": "Google Keep",
+      "url": "https://keep.google.com/"
+    },
+    {
+      "id": "clickup",
+      "name": "ClickUp",
+      "url": "https://app.clickup.com/"
+    },
+    {
+      "id": "mondaycom",
+      "name": "monday.com",
+      "url": "https://monday.com/"
+    },
+    {
+      "id": "jira",
+      "name": "Jira",
+      "url": "https://www.atlassian.com/software/jira"
+    },
+    {
+      "id": "confluence",
+      "name": "Confluence",
+      "url": "https://www.atlassian.com/software/confluence"
+    },
+    {
+      "id": "coda",
+      "name": "Coda",
+      "url": "https://coda.io/"
+    },
+    {
+      "id": "calendly",
+      "name": "Calendly",
+      "url": "https://calendly.com/event_types/user/me"
+    },
+    {
+      "id": "zapier",
+      "name": "Zapier",
+      "url": "https://zapier.com/app/dashboard"
+    },
+    {
+      "id": "make",
+      "name": "Make",
+      "url": "https://www.make.com/"
+    },
+    {
+      "id": "smartsheet",
+      "name": "Smartsheet",
+      "url": "https://app.smartsheet.com/"
+    },
+    {
+      "id": "onedrive",
+      "name": "OneDrive",
+      "url": "https://onedrive.live.com/"
+    },
+    {
+      "id": "icloud",
+      "name": "iCloud",
+      "url": "https://www.icloud.com/"
+    },
+    {
+      "id": "box",
+      "name": "Box",
+      "url": "https://app.box.com/"
+    },
+    {
+      "id": "mega",
+      "name": "MEGA",
+      "url": "https://mega.nz/"
+    },
+    {
+      "id": "pcloud",
+      "name": "pCloud",
+      "url": "https://my.pcloud.com/"
+    },
+    {
+      "id": "wetransfer",
+      "name": "WeTransfer",
+      "url": "https://wetransfer.com/"
+    },
+    {
+      "id": "protondrive",
+      "name": "Proton Drive",
+      "url": "https://drive.proton.me/"
+    },
+    {
+      "id": "gitlab",
+      "name": "GitLab",
+      "url": "https://gitlab.com/"
+    },
+    {
+      "id": "bitbucket",
+      "name": "Bitbucket",
+      "url": "https://bitbucket.org/"
+    },
+    {
+      "id": "replit",
+      "name": "Replit",
+      "url": "https://replit.com/"
+    },
+    {
+      "id": "codepen",
+      "name": "CodePen",
+      "url": "https://codepen.io/"
+    },
+    {
+      "id": "codesandbox",
+      "name": "CodeSandbox",
+      "url": "https://codesandbox.io/"
+    },
+    {
+      "id": "stackblitz",
+      "name": "StackBlitz",
+      "url": "https://stackblitz.com/"
+    },
+    {
+      "id": "vercel",
+      "name": "Vercel",
+      "url": "https://vercel.com/dashboard"
+    },
+    {
+      "id": "netlify",
+      "name": "Netlify",
+      "url": "https://app.netlify.com/"
+    },
+    {
+      "id": "cloudflare",
+      "name": "Cloudflare",
+      "url": "https://dash.cloudflare.com/"
+    },
+    {
+      "id": "awsconsole",
+      "name": "AWS Console",
+      "url": "https://console.aws.amazon.com/"
+    },
+    {
+      "id": "googlecloud",
+      "name": "Google Cloud",
+      "url": "https://console.cloud.google.com/"
+    },
+    {
+      "id": "microsoftazure",
+      "name": "Microsoft Azure",
+      "url": "https://portal.azure.com/"
+    },
+    {
+      "id": "digitalocean",
+      "name": "DigitalOcean",
+      "url": "https://cloud.digitalocean.com/"
+    },
+    {
+      "id": "postman",
+      "name": "Postman",
+      "url": "https://web.postman.co/"
+    },
+    {
+      "id": "linear",
+      "name": "Linear",
+      "url": "https://linear.app/"
+    },
+    {
+      "id": "adobeexpress",
+      "name": "Adobe Express",
+      "url": "https://express.adobe.com/"
+    },
+    {
+      "id": "adobecreativecloud",
+      "name": "Adobe Creative Cloud",
+      "url": "https://creativecloud.adobe.com/"
+    },
+    {
+      "id": "photopea",
+      "name": "Photopea",
+      "url": "https://www.photopea.com/"
+    },
+    {
+      "id": "framer",
+      "name": "Framer",
+      "url": "https://www.framer.com/"
+    },
+    {
+      "id": "penpot",
+      "name": "Penpot",
+      "url": "https://design.penpot.app/"
+    },
+    {
+      "id": "dribbble",
+      "name": "Dribbble",
+      "url": "https://dribbble.com/"
+    },
+    {
+      "id": "behance",
+      "name": "Behance",
+      "url": "https://www.behance.net/"
+    },
+    {
+      "id": "hubspot",
+      "name": "HubSpot",
+      "url": "https://app.hubspot.com/"
+    },
+    {
+      "id": "salesforce",
+      "name": "Salesforce",
+      "url": "https://login.salesforce.com/"
+    },
+    {
+      "id": "pipedrive",
+      "name": "Pipedrive",
+      "url": "https://app.pipedrive.com/"
+    },
+    {
+      "id": "zoho",
+      "name": "Zoho",
+      "url": "https://www.zoho.com/"
+    },
+    {
+      "id": "shopify",
+      "name": "Shopify",
+      "url": "https://admin.shopify.com/"
+    },
+    {
+      "id": "mailchimp",
+      "name": "Mailchimp",
+      "url": "https://login.mailchimp.com/"
+    },
+    {
+      "id": "brevo",
+      "name": "Brevo",
+      "url": "https://app.brevo.com/"
+    },
+    {
+      "id": "lexoffice",
+      "name": "Lexoffice",
+      "url": "https://app.lexoffice.de/"
+    },
+    {
+      "id": "sevdesk",
+      "name": "sevDesk",
+      "url": "https://my.sevdesk.de/"
+    },
+    {
+      "id": "datev",
+      "name": "DATEV",
+      "url": "https://apps.datev.de/"
+    },
+    {
+      "id": "xero",
+      "name": "Xero",
+      "url": "https://login.xero.com/"
+    },
+    {
+      "id": "quickbooks",
+      "name": "QuickBooks",
+      "url": "https://qbo.intuit.com/"
+    },
+    {
+      "id": "zendesk",
+      "name": "Zendesk",
+      "url": "https://www.zendesk.com/"
+    },
+    {
+      "id": "intercom",
+      "name": "Intercom",
+      "url": "https://app.intercom.com/"
+    },
+    {
+      "id": "freshdesk",
+      "name": "Freshdesk",
+      "url": "https://freshdesk.com/"
+    },
+    {
+      "id": "personio",
+      "name": "Personio",
+      "url": "https://login.personio.com/"
+    },
+    {
+      "id": "docusign",
+      "name": "DocuSign",
+      "url": "https://account.docusign.com/"
+    },
+    {
+      "id": "paypal",
+      "name": "PayPal",
+      "url": "https://www.paypal.com/"
+    },
+    {
+      "id": "stripe",
+      "name": "Stripe",
+      "url": "https://dashboard.stripe.com/"
+    },
+    {
+      "id": "wise",
+      "name": "Wise",
+      "url": "https://wise.com/"
+    },
+    {
+      "id": "n26",
+      "name": "N26",
+      "url": "https://app.n26.com/"
+    },
+    {
+      "id": "revolut",
+      "name": "Revolut",
+      "url": "https://app.revolut.com/"
+    },
+    {
+      "id": "klarna",
+      "name": "Klarna",
+      "url": "https://app.klarna.com/"
+    },
+    {
+      "id": "comdirect",
+      "name": "Comdirect",
+      "url": "https://www.comdirect.de/"
+    },
+    {
+      "id": "dkb",
+      "name": "DKB",
+      "url": "https://www.dkb.de/"
+    },
+    {
+      "id": "ing",
+      "name": "ING",
+      "url": "https://www.ing.de/"
+    },
+    {
+      "id": "sparkasse",
+      "name": "Sparkasse",
+      "url": "https://www.sparkasse.de/"
+    },
+    {
+      "id": "commerzbank",
+      "name": "Commerzbank",
+      "url": "https://www.commerzbank.de/"
+    },
+    {
+      "id": "traderepublic",
+      "name": "Trade Republic",
+      "url": "https://app.traderepublic.com/"
+    },
+    {
+      "id": "scalablecapital",
+      "name": "Scalable Capital",
+      "url": "https://de.scalable.capital/"
+    },
+    {
+      "id": "coinbase",
+      "name": "Coinbase",
+      "url": "https://www.coinbase.com/"
+    },
+    {
+      "id": "binance",
+      "name": "Binance",
+      "url": "https://www.binance.com/"
+    },
+    {
+      "id": "netflix",
+      "name": "Netflix",
+      "url": "https://www.netflix.com/"
+    },
+    {
+      "id": "disney",
+      "name": "Disney+",
+      "url": "https://www.disneyplus.com/"
+    },
+    {
+      "id": "amazonprimevideo",
+      "name": "Amazon Prime Video",
+      "url": "https://www.primevideo.com/"
+    },
+    {
+      "id": "applemusic",
+      "name": "Apple Music",
+      "url": "https://music.apple.com/"
+    },
+    {
+      "id": "appletv",
+      "name": "Apple TV+",
+      "url": "https://tv.apple.com/"
+    },
+    {
+      "id": "twitch",
+      "name": "Twitch",
+      "url": "https://www.twitch.tv/"
+    },
+    {
+      "id": "soundcloud",
+      "name": "SoundCloud",
+      "url": "https://soundcloud.com/"
+    },
+    {
+      "id": "deezer",
+      "name": "Deezer",
+      "url": "https://www.deezer.com/"
+    },
+    {
+      "id": "amazonmusic",
+      "name": "Amazon Music",
+      "url": "https://music.amazon.de/"
+    },
+    {
+      "id": "youtubemusic",
+      "name": "YouTube Music",
+      "url": "https://music.youtube.com/"
+    },
+    {
+      "id": "dazn",
+      "name": "DAZN",
+      "url": "https://www.dazn.com/"
+    },
+    {
+      "id": "audible",
+      "name": "Audible",
+      "url": "https://www.audible.de/"
+    },
+    {
+      "id": "plex",
+      "name": "Plex",
+      "url": "https://app.plex.tv/"
+    },
+    {
+      "id": "wowsky",
+      "name": "WOW / Sky",
+      "url": "https://www.wowtv.de/"
+    },
+    {
+      "id": "crunchyroll",
+      "name": "Crunchyroll",
+      "url": "https://www.crunchyroll.com/"
+    },
+    {
+      "id": "tiktok",
+      "name": "TikTok",
+      "url": "https://www.tiktok.com/"
+    },
+    {
+      "id": "threads",
+      "name": "Threads",
+      "url": "https://www.threads.net/"
+    },
+    {
+      "id": "snapchat",
+      "name": "Snapchat",
+      "url": "https://web.snapchat.com/"
+    },
+    {
+      "id": "bluesky",
+      "name": "Bluesky",
+      "url": "https://bsky.app/"
+    },
+    {
+      "id": "xing",
+      "name": "Xing",
+      "url": "https://www.xing.com/"
+    },
+    {
+      "id": "mastodon",
+      "name": "Mastodon",
+      "url": "https://mastodon.social/"
+    },
+    {
+      "id": "tumblr",
+      "name": "Tumblr",
+      "url": "https://www.tumblr.com/"
+    },
+    {
+      "id": "googlenews",
+      "name": "Google News",
+      "url": "https://news.google.com/"
+    },
+    {
+      "id": "tagesschau",
+      "name": "Tagesschau",
+      "url": "https://www.tagesschau.de/"
+    },
+    {
+      "id": "spiegel",
+      "name": "Spiegel",
+      "url": "https://www.spiegel.de/"
+    },
+    {
+      "id": "zeitonline",
+      "name": "Zeit Online",
+      "url": "https://www.zeit.de/"
+    },
+    {
+      "id": "faz",
+      "name": "FAZ",
+      "url": "https://www.faz.net/"
+    },
+    {
+      "id": "handelsblatt",
+      "name": "Handelsblatt",
+      "url": "https://www.handelsblatt.com/"
+    },
+    {
+      "id": "bbc",
+      "name": "BBC",
+      "url": "https://www.bbc.com/"
+    },
+    {
+      "id": "cnn",
+      "name": "CNN",
+      "url": "https://www.cnn.com/"
+    },
+    {
+      "id": "reuters",
+      "name": "Reuters",
+      "url": "https://www.reuters.com/"
+    },
+    {
+      "id": "theguardian",
+      "name": "The Guardian",
+      "url": "https://www.theguardian.com/"
+    },
+    {
+      "id": "bloomberg",
+      "name": "Bloomberg",
+      "url": "https://www.bloomberg.com/"
+    },
+    {
+      "id": "wettercom",
+      "name": "Wetter.com",
+      "url": "https://www.wetter.com/"
+    },
+    {
+      "id": "accuweather",
+      "name": "AccuWeather",
+      "url": "https://www.accuweather.com/"
+    },
+    {
+      "id": "feedly",
+      "name": "Feedly",
+      "url": "https://feedly.com/"
+    },
+    {
+      "id": "pocket",
+      "name": "Pocket",
+      "url": "https://getpocket.com/"
+    },
+    {
+      "id": "duolingo",
+      "name": "Duolingo",
+      "url": "https://www.duolingo.com/"
+    },
+    {
+      "id": "coursera",
+      "name": "Coursera",
+      "url": "https://www.coursera.org/"
+    },
+    {
+      "id": "udemy",
+      "name": "Udemy",
+      "url": "https://www.udemy.com/"
+    },
+    {
+      "id": "khanacademy",
+      "name": "Khan Academy",
+      "url": "https://www.khanacademy.org/"
+    },
+    {
+      "id": "linkedinlearning",
+      "name": "LinkedIn Learning",
+      "url": "https://www.linkedin.com/learning/"
+    },
+    {
+      "id": "skillshare",
+      "name": "Skillshare",
+      "url": "https://www.skillshare.com/"
+    },
+    {
+      "id": "edx",
+      "name": "edX",
+      "url": "https://www.edx.org/"
+    },
+    {
+      "id": "babbel",
+      "name": "Babbel",
+      "url": "https://my.babbel.com/"
+    },
+    {
+      "id": "brilliant",
+      "name": "Brilliant",
+      "url": "https://brilliant.org/"
+    },
+    {
+      "id": "quizlet",
+      "name": "Quizlet",
+      "url": "https://quizlet.com/"
+    },
+    {
+      "id": "wikipedia",
+      "name": "Wikipedia",
+      "url": "https://www.wikipedia.org/"
+    },
+    {
+      "id": "googleclassroom",
+      "name": "Google Classroom",
+      "url": "https://classroom.google.com/"
+    },
+    {
+      "id": "amazon",
+      "name": "Amazon",
+      "url": "https://www.amazon.de/"
+    },
+    {
+      "id": "ebay",
+      "name": "eBay",
+      "url": "https://www.ebay.de/"
+    },
+    {
+      "id": "etsy",
+      "name": "Etsy",
+      "url": "https://www.etsy.com/"
+    },
+    {
+      "id": "aliexpress",
+      "name": "AliExpress",
+      "url": "https://www.aliexpress.com/"
+    },
+    {
+      "id": "zalando",
+      "name": "Zalando",
+      "url": "https://www.zalando.de/"
+    },
+    {
+      "id": "otto",
+      "name": "Otto",
+      "url": "https://www.otto.de/"
+    },
+    {
+      "id": "ikea",
+      "name": "IKEA",
+      "url": "https://www.ikea.com/de/"
+    },
+    {
+      "id": "mediamarkt",
+      "name": "MediaMarkt",
+      "url": "https://www.mediamarkt.de/"
+    },
+    {
+      "id": "idealo",
+      "name": "Idealo",
+      "url": "https://www.idealo.de/"
+    },
+    {
+      "id": "temu",
+      "name": "Temu",
+      "url": "https://www.temu.com/"
+    },
+    {
+      "id": "shein",
+      "name": "Shein",
+      "url": "https://www.shein.com/"
+    },
+    {
+      "id": "bookingcom",
+      "name": "Booking.com",
+      "url": "https://www.booking.com/"
+    },
+    {
+      "id": "airbnb",
+      "name": "Airbnb",
+      "url": "https://www.airbnb.de/"
+    },
+    {
+      "id": "googleflights",
+      "name": "Google Flights",
+      "url": "https://www.google.com/travel/flights"
+    },
+    {
+      "id": "skyscanner",
+      "name": "Skyscanner",
+      "url": "https://www.skyscanner.de/"
+    },
+    {
+      "id": "expedia",
+      "name": "Expedia",
+      "url": "https://www.expedia.de/"
+    },
+    {
+      "id": "tripadvisor",
+      "name": "TripAdvisor",
+      "url": "https://www.tripadvisor.de/"
+    },
+    {
+      "id": "deutschebahn",
+      "name": "Deutsche Bahn",
+      "url": "https://www.bahn.de/"
+    },
+    {
+      "id": "flixbus",
+      "name": "FlixBus",
+      "url": "https://www.flixbus.de/"
+    },
+    {
+      "id": "uber",
+      "name": "Uber",
+      "url": "https://www.uber.com/"
+    },
+    {
+      "id": "lufthansa",
+      "name": "Lufthansa",
+      "url": "https://www.lufthansa.com/"
+    },
+    {
+      "id": "kayak",
+      "name": "Kayak",
+      "url": "https://www.kayak.de/"
+    },
+    {
+      "id": "myfitnesspal",
+      "name": "MyFitnessPal",
+      "url": "https://www.myfitnesspal.com/"
+    },
+    {
+      "id": "strava",
+      "name": "Strava",
+      "url": "https://www.strava.com/"
+    },
+    {
+      "id": "fitbit",
+      "name": "Fitbit",
+      "url": "https://www.fitbit.com/"
+    },
+    {
+      "id": "googlefit",
+      "name": "Google Fit",
+      "url": "https://fit.google.com/"
+    },
+    {
+      "id": "peloton",
+      "name": "Peloton",
+      "url": "https://members.onepeloton.com/"
+    },
+    {
+      "id": "headspace",
+      "name": "Headspace",
+      "url": "https://www.headspace.com/"
+    },
+    {
+      "id": "calm",
+      "name": "Calm",
+      "url": "https://www.calm.com/"
+    },
+    {
+      "id": "doctolib",
+      "name": "Doctolib",
+      "url": "https://www.doctolib.de/"
+    },
+    {
+      "id": "oura",
+      "name": "Oura",
+      "url": "https://cloud.ouraring.com/"
+    }
+  ],
+  "standardApps": [
+    "browser",
+    "calendar",
+    "whatsapp",
+    "todoist",
+    "chatgpt"
+  ],
+  "imperio": [
+    "browser",
+    "calendar",
+    "stackfield",
+    "claude",
+    "chatgpt",
+    "imperio-tools",
+    "gdrive"
+  ],
+  "kategorien": {
+    "browser": "IMPERIO",
+    "imperio-tools": "IMPERIO",
+    "chatgpt": "KI",
+    "claude": "KI",
+    "gemini": "KI",
+    "perplexity": "KI",
+    "deepl": "KI",
+    "microsoftcopilot": "KI",
+    "grok": "KI",
+    "mistrallechat": "KI",
+    "notebooklm": "KI",
+    "midjourney": "KI",
+    "elevenlabs": "KI",
+    "poe": "KI",
+    "huggingface": "KI",
+    "suno": "KI",
+    "ideogram": "KI",
+    "whatsapp": "Kommunikation",
+    "telegram": "Kommunikation",
+    "slack": "Kommunikation",
+    "teams": "Kommunikation",
+    "discord": "Kommunikation",
+    "messenger": "Kommunikation",
+    "zoom": "Kommunikation",
+    "meet": "Kommunikation",
+    "gmail": "Kommunikation",
+    "outlook": "Kommunikation",
+    "googlechat": "Kommunikation",
+    "skype": "Kommunikation",
+    "webex": "Kommunikation",
+    "protonmail": "Kommunikation",
+    "gmx": "Kommunikation",
+    "webde": "Kommunikation",
+    "calendar": "Produktivität",
+    "todoist": "Produktivität",
+    "stackfield": "Produktivität",
+    "notion": "Produktivität",
+    "trello": "Produktivität",
+    "asana": "Produktivität",
+    "airtable": "Produktivität",
+    "miro": "Produktivität",
+    "office": "Produktivität",
+    "gdocs": "Produktivität",
+    "gsheets": "Produktivität",
+    "evernote": "Produktivität",
+    "onenote": "Produktivität",
+    "googlekeep": "Produktivität",
+    "clickup": "Produktivität",
+    "mondaycom": "Produktivität",
+    "jira": "Produktivität",
+    "confluence": "Produktivität",
+    "coda": "Produktivität",
+    "calendly": "Produktivität",
+    "zapier": "Produktivität",
+    "make": "Produktivität",
+    "smartsheet": "Produktivität",
+    "dropbox": "Cloud-Speicher",
+    "gdrive": "Cloud-Speicher",
+    "gphotos": "Cloud-Speicher",
+    "onedrive": "Cloud-Speicher",
+    "icloud": "Cloud-Speicher",
+    "box": "Cloud-Speicher",
+    "mega": "Cloud-Speicher",
+    "pcloud": "Cloud-Speicher",
+    "wetransfer": "Cloud-Speicher",
+    "protondrive": "Cloud-Speicher",
+    "github": "Developer-Tools",
+    "gitlab": "Developer-Tools",
+    "bitbucket": "Developer-Tools",
+    "replit": "Developer-Tools",
+    "codepen": "Developer-Tools",
+    "codesandbox": "Developer-Tools",
+    "stackblitz": "Developer-Tools",
+    "vercel": "Developer-Tools",
+    "netlify": "Developer-Tools",
+    "cloudflare": "Developer-Tools",
+    "awsconsole": "Developer-Tools",
+    "googlecloud": "Developer-Tools",
+    "microsoftazure": "Developer-Tools",
+    "digitalocean": "Developer-Tools",
+    "postman": "Developer-Tools",
+    "linear": "Developer-Tools",
+    "figma": "Design",
+    "canva": "Design",
+    "adobeexpress": "Design",
+    "adobecreativecloud": "Design",
+    "photopea": "Design",
+    "framer": "Design",
+    "penpot": "Design",
+    "dribbble": "Design",
+    "behance": "Design",
+    "weclapp": "Arbeit & Business",
+    "getresponse": "Arbeit & Business",
+    "hubspot": "Arbeit & Business",
+    "salesforce": "Arbeit & Business",
+    "pipedrive": "Arbeit & Business",
+    "zoho": "Arbeit & Business",
+    "shopify": "Arbeit & Business",
+    "mailchimp": "Arbeit & Business",
+    "brevo": "Arbeit & Business",
+    "lexoffice": "Arbeit & Business",
+    "sevdesk": "Arbeit & Business",
+    "datev": "Arbeit & Business",
+    "xero": "Arbeit & Business",
+    "quickbooks": "Arbeit & Business",
+    "zendesk": "Arbeit & Business",
+    "intercom": "Arbeit & Business",
+    "freshdesk": "Arbeit & Business",
+    "personio": "Arbeit & Business",
+    "docusign": "Arbeit & Business",
+    "paypal": "Banking & Finanzen",
+    "stripe": "Banking & Finanzen",
+    "wise": "Banking & Finanzen",
+    "n26": "Banking & Finanzen",
+    "revolut": "Banking & Finanzen",
+    "klarna": "Banking & Finanzen",
+    "comdirect": "Banking & Finanzen",
+    "dkb": "Banking & Finanzen",
+    "ing": "Banking & Finanzen",
+    "sparkasse": "Banking & Finanzen",
+    "commerzbank": "Banking & Finanzen",
+    "traderepublic": "Banking & Finanzen",
+    "scalablecapital": "Banking & Finanzen",
+    "coinbase": "Banking & Finanzen",
+    "binance": "Banking & Finanzen",
+    "youtube": "Unterhaltung",
+    "spotify": "Unterhaltung",
+    "netflix": "Unterhaltung",
+    "disney": "Unterhaltung",
+    "amazonprimevideo": "Unterhaltung",
+    "applemusic": "Unterhaltung",
+    "appletv": "Unterhaltung",
+    "twitch": "Unterhaltung",
+    "soundcloud": "Unterhaltung",
+    "deezer": "Unterhaltung",
+    "amazonmusic": "Unterhaltung",
+    "youtubemusic": "Unterhaltung",
+    "dazn": "Unterhaltung",
+    "audible": "Unterhaltung",
+    "plex": "Unterhaltung",
+    "wowsky": "Unterhaltung",
+    "crunchyroll": "Unterhaltung",
+    "x": "Soziales",
+    "linkedin": "Soziales",
+    "instagram": "Soziales",
+    "facebook": "Soziales",
+    "reddit": "Soziales",
+    "pinterest": "Soziales",
+    "tiktok": "Soziales",
+    "threads": "Soziales",
+    "snapchat": "Soziales",
+    "bluesky": "Soziales",
+    "xing": "Soziales",
+    "mastodon": "Soziales",
+    "tumblr": "Soziales",
+    "googlenews": "News & Wetter",
+    "tagesschau": "News & Wetter",
+    "spiegel": "News & Wetter",
+    "zeitonline": "News & Wetter",
+    "faz": "News & Wetter",
+    "handelsblatt": "News & Wetter",
+    "bbc": "News & Wetter",
+    "cnn": "News & Wetter",
+    "reuters": "News & Wetter",
+    "theguardian": "News & Wetter",
+    "bloomberg": "News & Wetter",
+    "wettercom": "News & Wetter",
+    "accuweather": "News & Wetter",
+    "feedly": "News & Wetter",
+    "pocket": "News & Wetter",
+    "duolingo": "Lernen",
+    "coursera": "Lernen",
+    "udemy": "Lernen",
+    "khanacademy": "Lernen",
+    "linkedinlearning": "Lernen",
+    "skillshare": "Lernen",
+    "edx": "Lernen",
+    "babbel": "Lernen",
+    "brilliant": "Lernen",
+    "quizlet": "Lernen",
+    "wikipedia": "Lernen",
+    "googleclassroom": "Lernen",
+    "amazon": "Shopping",
+    "ebay": "Shopping",
+    "etsy": "Shopping",
+    "aliexpress": "Shopping",
+    "zalando": "Shopping",
+    "otto": "Shopping",
+    "ikea": "Shopping",
+    "mediamarkt": "Shopping",
+    "idealo": "Shopping",
+    "temu": "Shopping",
+    "shein": "Shopping",
+    "gmaps": "Reise",
+    "bookingcom": "Reise",
+    "airbnb": "Reise",
+    "googleflights": "Reise",
+    "skyscanner": "Reise",
+    "expedia": "Reise",
+    "tripadvisor": "Reise",
+    "deutschebahn": "Reise",
+    "flixbus": "Reise",
+    "uber": "Reise",
+    "lufthansa": "Reise",
+    "kayak": "Reise",
+    "myfitnesspal": "Gesundheit & Fitness",
+    "strava": "Gesundheit & Fitness",
+    "fitbit": "Gesundheit & Fitness",
+    "googlefit": "Gesundheit & Fitness",
+    "peloton": "Gesundheit & Fitness",
+    "headspace": "Gesundheit & Fitness",
+    "calm": "Gesundheit & Fitness",
+    "doctolib": "Gesundheit & Fitness",
+    "oura": "Gesundheit & Fitness"
+  },
+  "kategorieReihenfolge": [
+    "IMPERIO",
+    "KI",
+    "Kommunikation",
+    "Produktivität",
+    "Cloud-Speicher",
+    "Developer-Tools",
+    "Design",
+    "Arbeit & Business",
+    "Banking & Finanzen",
+    "Unterhaltung",
+    "Soziales",
+    "News & Wetter",
+    "Lernen",
+    "Shopping",
+    "Reise",
+    "Gesundheit & Fitness"
+  ],
+  "titleBadge": [
+    "whatsapp",
+    "gmail",
+    "telegram",
+    "messenger",
+    "slack",
+    "linkedin",
+    "x",
+    "discord",
+    "teams",
+    "instagram",
+    "facebook"
+  ],
+  "farbwelten": [
+    "graphit",
+    "marine",
+    "wald",
+    "kupfer",
+    "pflaume",
+    "rubin"
+  ],
+  "fensterBg": {
+    "graphit": {
+      "dark": "#2a2c36",
+      "light": "#efece6"
+    },
+    "marine": {
+      "dark": "#232a3a",
+      "light": "#e9edf5"
+    },
+    "wald": {
+      "dark": "#232f2a",
+      "light": "#e8f0ea"
+    },
+    "kupfer": {
+      "dark": "#322a26",
+      "light": "#f4ece6"
+    },
+    "pflaume": {
+      "dark": "#2c2635",
+      "light": "#efe9f5"
+    },
+    "rubin": {
+      "dark": "#33262a",
+      "light": "#f6e9ec"
+    }
+  },
+  "appStatus": {
+    "geprueft": {
+      "calendar": "2026-08-28",
+      "gdrive": "2026-08-28",
+      "canva": "2026-08-29",
+      "chatgpt": "2026-08-29"
+    },
+    "experimentell": []
+  },
+  "feedback": {
+    "url": "https://dganalwiakzgrskkvrvs.supabase.co",
+    "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnYW5hbHdpYWt6Z3Jza2t2cnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NTU1NzksImV4cCI6MjEwMzQzMTU3OX0.tpCNNNLkWgbKoVAbeQ66VdfG6TxnndOUF1d_E4d8iTk"
+  }
+}

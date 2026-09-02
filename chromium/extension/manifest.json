@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Verti",
+  "version": "1.1.18",
+  "description": "Vertis Sidebar: Web-Apps dauerhaft eingeloggt neben einer schmalen Leiste.",
+  "permissions": [
+    "sidePanel",
+    "tabs",
+    "storage",
+    "alarms",
+    "notifications",
+    "management",
+    "downloads",
+    "history",
+    "browsingData"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "side_panel": { "default_path": "sidebar.html" },
+  "background": { "service_worker": "sw.js" },
+  "action": { "default_title": "Verti" }
+}

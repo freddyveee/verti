@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root {
+    --bg: #2a2c36; --panel: #2f313c; --card: rgba(255,255,255,0.05);
+    --text: #ffffff; --text-2: rgba(255,255,255,0.6); --text-faint: rgba(255,255,255,0.22);
+    --hover: rgba(255,255,255,0.08); --active: rgba(255,255,255,0.14); --divider: rgba(255,255,255,0.12);
+    --dash: rgba(255,255,255,0.30); --accent: #9257ff;
+  }
+  :root[data-theme="light"] {
+    --bg: #efece6; --panel: #f7f5f0; --card: #ffffff;
+    --text: #26262b; --text-2: rgba(0,0,0,0.55); --text-faint: rgba(0,0,0,0.30);
+    --hover: rgba(0,0,0,0.06); --active: rgba(0,0,0,0.10); --divider: rgba(0,0,0,0.14);
+    --dash: rgba(0,0,0,0.33); --accent: #7c3aed;
+  }
+
+  /* Farbwelten (Einstellungen -> Darstellung). Der Standard "graphit" ist
+     zugleich das neue, etwas hellere Dunkel. Jede Farbe hat einen dunklen
+     und einen hellen Satz, damit sie zu beiden Modi passt. */
+  :root[data-farbe="graphit"] { --bg: #2a2c36; --panel: #2f313c; }
+  :root[data-farbe="marine"] { --bg: #232a3a; --panel: #283041; }
+  :root[data-farbe="wald"] { --bg: #232f2a; --panel: #283630; }
+  :root[data-farbe="kupfer"] { --bg: #322a26; --panel: #3a302b; }
+  :root[data-farbe="pflaume"] { --bg: #2c2635; --panel: #332c3d; }
+  :root[data-farbe="rubin"] { --bg: #33262a; --panel: #3b2c31; }
+  :root[data-theme="light"][data-farbe="graphit"] { --bg: #efece6; --panel: #f7f5f0; }
+  :root[data-theme="light"][data-farbe="marine"] { --bg: #e9edf5; --panel: #f4f7fc; }
+  :root[data-theme="light"][data-farbe="wald"] { --bg: #e8f0ea; --panel: #f3f9f4; }
+  :root[data-theme="light"][data-farbe="kupfer"] { --bg: #f4ece6; --panel: #fbf5f0; }
+  :root[data-theme="light"][data-farbe="pflaume"] { --bg: #efe9f5; --panel: #f8f4fb; }
+  :root[data-theme="light"][data-farbe="rubin"] { --bg: #f6e9ec; --panel: #fcf4f6; }
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 100vw;
+    height: 100vh;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-user-select: none;
+    overflow: hidden;
+  }
+  .drag-region {
+    position: fixed;
+    top: 0; left: 0;
+    height: 44px;
+    width: 100vw;
+    -webkit-app-region: drag;
+    z-index: 10;
+  }
+  /* Verti-Schriftzug mittig in der Fensterleiste, wie auf der Landingpage */
+  .brandmark {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15.5px; font-weight: 700; color: var(--text);
+    letter-spacing: 0.2px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .brandmark em { font-style: normal; color: #b78aff; }
+  /* Rotes Etikett nur in der Dev-Version (npx electron .), sonst verwechselt
+     man sie mit der installierten App */
+  .dev-tag {
+    display: none;
+    margin-left: 8px;
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: #fff;
+    background: #e5484d;
+    vertical-align: 2px;
+    pointer-events: auto; /* Tooltip mit Versionsnummer, obwohl die Marke selbst Klicks durchlässt */
+  }
+  .dev-tag.show { display: inline-block; }
+  /* Lila Update-Hinweis oben rechts, wenn während des Betriebs ein Update kommt */
+  .update-pill {
+    position: fixed;
+    top: 8px; right: 200px;
+    z-index: 12;
+    -webkit-app-region: no-drag;
+    display: none;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, #8b5cf6, #6b2fe0);
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 6px 13px;
+    border-radius: 999px;
+    animation: pillPulse 2.6s ease-in-out infinite;
+  }
+  .update-pill.show { display: block; }
+  .update-pill:hover { background: linear-gradient(135deg, #9d73f8, #7c3aed); }
+  @keyframes pillPulse {
+    0%, 100% { box-shadow: 0 3px 12px rgba(131, 71, 255, 0.35); }
+    50% { box-shadow: 0 3px 20px rgba(131, 71, 255, 0.8); }
+  }
+  /* Windows: Platz für Minimieren/Maximieren/Schließen rechts */
+  body.win .update-pill { right: 330px; }
+  .nav {
+    position: fixed;
+    top: 7px;
+    left: 84px;
+    display: flex;
+    gap: 4px;
+    z-index: 11;
+    -webkit-app-region: no-drag;
+  }
+  .nav button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-2);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .nav button:hover { background: var(--hover); color: var(--text); }
+  .nav button:disabled { color: var(--text-faint); cursor: default; background: transparent; }
+  .nav button svg { pointer-events: none; }
+  /* Windows: keine Ampel-Buttons links, Navigation rückt an den Rand */
+  body.win .nav { left: 12px; }
+  .sidebar {
+    position: fixed;
+    top: 44px; left: 0; bottom: 0;
+    width: 68px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 14px 0;
+  }
+  /* Der Verti-Browser sitzt fix oben; die übrigen Apps sind unten und sortierbar */
+  #pinned, #apps { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  #apps { margin-top: auto; }
+  .pin-divider { width: 34px; height: 1px; background: var(--divider); border-radius: 1px; flex: 0 0 auto; }
+  .app-btn {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s, transform 0.18s ease;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  /* Sortieren per Ziehen: das gezogene Icon hebt sich ab und folgt dem Zeiger
+     ohne Verzögerung, die anderen rutschen animiert (transform-Transition) */
+  .app-btn.dragging {
+    transition: background 0.15s, box-shadow 0.15s;
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+    z-index: 5;
+    cursor: grabbing;
+  }
+  #apps.no-anim .app-btn { transition: none !important; }
+  .app-btn:hover { background: var(--hover); }
+  .app-btn.active { background: var(--active); }
+  .app-btn.active::before {
+    content: '';
+    position: absolute;
+    left: -11px;
+    top: 12px;
+    width: 3px;
+    height: 22px;
+    border-radius: 2px;
+    background: #9257ff;
+    box-shadow: 0 0 8px rgba(146, 87, 255, 0.7);
+  }
+  .app-btn img {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    pointer-events: none;
+  }
+  /* „spielt gerade": gläserner Equalizer unten rechts, wenn die App Ton ausgibt
+     (Spotify/YouTube im Hintergrund). Frosted Glass – das Logo schimmert blass
+     durch (backdrop-filter blur). Klar getrennt vom roten Ungelesen-Badge oben
+     rechts und vom lila Aktiv-Balken links. */
+  .playing {
+    position: absolute;
+    right: 5px; bottom: 5px;              /* auf dem Logo, nicht daneben – so schimmert es durch */
+    display: flex; align-items: center; gap: 2px;
+    height: 14px; padding: 0 3.5px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.08); /* fast klar: Logo bleibt sichtbar */
+    backdrop-filter: blur(4px) saturate(1.35);
+    -webkit-backdrop-filter: blur(4px) saturate(1.35);
+    border: 0.5px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 0.5px 0 rgba(255, 255, 255, 0.55);
+    pointer-events: none;
+  }
+  .playing i {
+    width: 2px; border-radius: 1px;
+    background: #fff;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.35); /* Kontrast auch über hellen Logos */
+    transform-origin: center;
+    animation: eq 1s ease-in-out infinite;
+  }
+  .playing i:nth-child(1) { height: 6px; animation-delay: 0s; }
+  .playing i:nth-child(2) { height: 10px; animation-delay: 0.22s; }
+  .playing i:nth-child(3) { height: 7px; animation-delay: 0.44s; }
+  @keyframes eq { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
+  @media (prefers-reduced-motion: reduce) { .playing i { animation: none; transform: scaleY(0.8); } }
+  .badge {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    box-shadow: 0 0 0 2px var(--bg);
+  }
+  .fallback {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #3a3f4b;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .plus-btn {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    border: 1.5px dashed var(--dash);
+    background: transparent;
+    color: var(--text-2);
+    font-size: 22px;
+    font-weight: 300;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+  .plus-btn:hover {
+    border-color: var(--text-2);
+    color: var(--text);
+    background: var(--hover);
+  }
+
+  /* App-Bibliothek */
+  .library {
+    position: fixed;
+    inset: 0;
+    background: var(--panel);
+    z-index: 5;
+    display: none;
+    flex-direction: column;
+    padding: 60px 40px 30px;
+    overflow-y: auto;
+  }
+  .library.open { display: flex; }
+  .library h1 {
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .library p.sub {
+    color: var(--text-2);
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  .close-btn {
+    position: absolute;
+    top: 54px;
+    right: 40px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: var(--hover);
+    color: var(--text);
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .close-btn:hover { background: var(--active); }
+  .gear-btn {
+    position: fixed; top: 9px; right: 26px; z-index: 13; -webkit-app-region: no-drag;
+    width: 30px; height: 30px; border: none; border-radius: 8px; background: transparent;
+    color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .gear-btn:hover { background: var(--hover); color: var(--text); }
+  .gear-btn svg { pointer-events: none; }
+  body.win .gear-btn { right: 150px; }
+  .feedback-btn {
+    position: fixed; top: 9px; right: 62px; z-index: 13; -webkit-app-region: no-drag;
+    display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px;
+    border: none; border-radius: 8px; background: var(--hover); color: var(--text-2);
+    font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .feedback-btn:hover { background: var(--active); color: var(--text); }
+  .feedback-btn svg { pointer-events: none; }
+  body.win .feedback-btn { right: 188px; }
+  .fbmodal { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); }
+  .fbmodal.open { display: flex; }
+  .fbcard { width: 420px; max-width: calc(100vw - 48px); background: var(--panel); border: 1px solid var(--divider); border-radius: 14px; padding: 22px 22px 18px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+  .fbcard h2 { margin: 0 0 4px; color: var(--text); font-size: 17px; font-weight: 600; }
+  .fbcard .fbsub { color: var(--text-2); font-size: 12.5px; margin: 0 0 4px; }
+  .fbcard label { display: block; color: var(--text-2); font-size: 12px; font-weight: 600; margin: 13px 0 5px; }
+  .fbcard input, .fbcard textarea { width: 100%; box-sizing: border-box; background: var(--card); border: 1px solid var(--divider); border-radius: 9px; padding: 9px 12px; color: var(--text); font-family: inherit; font-size: 13.5px; outline: none; }
+  .fbcard input:focus, .fbcard textarea:focus { border-color: var(--accent); }
+  .fbcard textarea { min-height: 92px; resize: vertical; line-height: 1.4; }
+  .fbclose { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border: none; border-radius: 7px; background: var(--hover); color: var(--text); font-size: 15px; cursor: pointer; }
+  .fbclose:hover { background: var(--active); }
+  .fbactions { display: flex; justify-content: flex-end; margin-top: 16px; }
+  .fbsend { border: none; border-radius: 9px; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; padding: 9px 18px; cursor: pointer; }
+  .fbsend:disabled { opacity: 0.55; cursor: default; }
+  .fbstatus { font-size: 12.5px; margin-top: 12px; min-height: 16px; }
+  .fbstatus.ok { color: #2ea36a; }
+  .fbstatus.err { color: #e5605e; }
+  .settings {
+    position: fixed; inset: 0; background: var(--panel); z-index: 6; display: none;
+    flex-direction: column; padding: 60px 40px 30px; overflow-y: auto;
+  }
+  .settings.open { display: flex; }
+  .settings h1 { color: var(--text); font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .settings .sub { color: var(--text-2); font-size: 13px; margin-bottom: 26px; }
+  .setrow { display: flex; align-items: center; justify-content: space-between; gap: 24px; max-width: 640px; padding: 18px 2px; border-top: 1px solid var(--divider); }
+  .setlabel b { color: var(--text); font-size: 15px; font-weight: 600; display: block; }
+  .setlabel span { color: var(--text-2); font-size: 12.5px; }
+  .setver { color: var(--text); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .verwrap { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+  .setbtn { border: none; background: var(--hover); color: var(--text); font-family: inherit; font-size: 12.5px; padding: 7px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+  .setbtn:hover { background: var(--active); }
+  .setbtn:disabled { opacity: 0.5; cursor: default; }
+  .setsection-title { color: var(--text-2); font-size: 11.5px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; margin: 34px 0 2px; }
+  .notifrow { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 640px; padding: 11px 2px; border-top: 1px solid var(--divider); }
+  .notifrow .nm { color: var(--text); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .switch { position: relative; width: 40px; height: 23px; flex: 0 0 auto; cursor: pointer; }
+  .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .switch .track { position: absolute; inset: 0; background: var(--active); border-radius: 999px; transition: background .15s; }
+  .switch .knob { position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 3px rgba(0,0,0,0.35); }
+  .switch input:checked ~ .track { background: var(--accent); }
+  .switch input:checked ~ .knob { transform: translateX(17px); }
+  .seg { display: inline-flex; background: var(--hover); border-radius: 10px; padding: 3px; gap: 2px; flex: 0 0 auto; }
+  .seg button { border: none; background: transparent; color: var(--text-2); font-family: inherit; font-size: 13px; padding: 7px 13px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+  .seg button.on { background: var(--accent); color: #fff; }
+  /* App-Kennzeichnung: beschreibt UNSERE Zusage, nicht die Qualitaet der App */
+  /* Browser-Seitenkarte (Schnellzugriff), Vorbild Shifts "Quick Settings".
+     Bewusst getrennt von den Verti-Einstellungen: hier steht nur, was den
+     Browser betrifft. Der Darstellungs-Schalter faerbt trotzdem ganz Verti um
+     (Freddys Entscheidung 31.08.2026) - ein zweites Design-Set nur fuer den
+     Browser waere fleckig und pflegeintensiv. */
+  .bpanel { position: fixed; top: 0; right: 0; width: 340px; height: 100vh; z-index: 60;
+    background: var(--panel); border-left: 1px solid var(--divider);
+    transform: translateX(100%); transition: transform .22s ease; overflow-y: auto;
+    display: flex; flex-direction: column; }
+  .bpanel.open { transform: none; }
+  .bpanel-kopf { display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 18px 10px; }
+  .bpanel-kopf h2 { font-size: 17px; font-weight: 800; margin: 0; }
+  .bpanel-x { background: transparent; border: 0; color: var(--text-2); font-size: 17px; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+  .bpanel-x:hover { background: var(--hover); color: var(--text); }
+  .bpanel-grp { font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+    color: var(--text-2); padding: 14px 18px 6px; }
+  .bpanel-item { display: flex; align-items: center; gap: 11px; width: 100%; background: transparent;
+    border: 0; color: var(--text); font: inherit; font-size: 14.5px; text-align: left;
+    padding: 10px 18px; cursor: pointer; }
+  .bpanel-item:hover { background: var(--hover); }
+  .bpanel-item .kbd { margin-left: auto; color: var(--text-2); font-size: 12px; }
+  .bpanel-item svg { width: 17px; height: 17px; flex: 0 0 auto; opacity: .85; }
+  .bpanel-hr { height: 1px; background: var(--divider); margin: 10px 18px; }
+  .bpanel-seg { padding: 4px 18px 18px; }
+  .farben { display: flex; gap: 9px; flex-wrap: wrap; padding-top: 2px; }
+  .farbe { width: 30px; height: 30px; border-radius: 9px; border: 2px solid transparent; cursor: pointer; padding: 0; }
+  .farbe.on { border-color: var(--accent); }
+  .stufe { display: inline-block; margin-top: 3px; font-size: 10.5px; font-weight: 700;
+    letter-spacing: .3px; border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+  .stufe.geprueft { color: #1f9d55; background: rgba(31,157,85,.14); }
+  .stufe.experimentell { color: #d97706; background: rgba(217,119,6,.16); }
+  .stufe.unterstuetzt { color: var(--text-2); background: rgba(128,128,128,.14); }
+  .app-search { width: 100%; max-width: 640px; box-sizing: border-box; margin-bottom: 22px; padding: 11px 14px; font-family: inherit; font-size: 14px; border-radius: 10px; border: 1px solid var(--divider); background: var(--card); color: var(--text); outline: none; }
+  .app-search:focus { border-color: var(--accent); }
+  .app-search::placeholder { color: var(--text-2); }
+  .cat-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .more-btn { border: none; background: transparent; color: var(--accent); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 2px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; flex: 0 0 auto; }
+  .more-btn:hover { text-decoration: underline; }
+  .more-btn .caret { display: inline-block; font-size: 9px; line-height: 1; transition: transform .22s ease; }
+  .more-btn.open .caret { transform: rotate(180deg); }
+  .no-hits { color: var(--text-2); font-size: 14px; padding: 8px 2px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 30px;
+    transition: max-height .3s cubic-bezier(.22,.61,.36,1);
+  }
+  .card {
+    /* Icon und voller Name oben, Knopf in ganzer Breite darunter —
+       damit lange App-Namen nicht abgeschnitten werden */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--divider);
+    border-radius: 12px;
+    padding: 14px 12px 12px;
+    text-align: center;
+  }
+  .card img, .card .fallback { width: 30px; height: 30px; }
+  .card .info { width: 100%; }
+  .card .name {
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.3;
+    overflow-wrap: break-word;
+  }
+  .card button {
+    border: none;
+    border-radius: 7px;
+    width: 100%;
+    padding: 7px 11px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .card button.add { background: #4a6fd4; color: #fff; }
+  .card button.add:hover { background: #5a7fe4; }
+  .card button.remove { background: var(--hover); color: var(--text-2); }
+  .card button.remove:hover { background: rgba(220, 80, 80, 0.35); color: #fff; }
+  .custom {
+    display: flex;
+    gap: 10px;
+    max-width: 560px;
+  }
+  .custom input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9px;
+    padding: 10px 14px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+  }
+  .custom input:focus { border-color: #4a6fd4; }
+  .custom button {
+    background: #4a6fd4;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .custom button:hover { background: #5a7fe4; }
+  h2 {
+    color: var(--text-2);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+  <div class="drag-region"></div>
+  <div class="brandmark">Verti<em>.</em><span class="dev-tag" id="devTag">Dev-Version</span></div>
+  <button class="update-pill" id="updatePill" title="Neue Version bereit – klicken für Details">Update verfügbar</button>
+  <button class="gear-btn" id="settingsBtn" title="Einstellungen"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></button>
+  <button class="feedback-btn" id="feedbackBtn" title="Verbesserung vorschlagen">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5"/></svg>
+    <span>Verbesserung</span>
+  </button>
+  <div class="nav">
+    <button id="navBack" title="Zurück (Cmd+[)">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 L4 7 L9 12"/></svg>
+    </button>
+    <button id="navForward" title="Vorwärts (Cmd+])">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2 L10 7 L5 12"/></svg>
+    </button>
+    <button id="navHome" title="Zur Startseite der App (Cmd+Shift+H)">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7 L7.5 2 L13 7 M3.5 6.5 V12.5 H6 V9 H9 V12.5 H11.5 V6.5"/></svg>
+    </button>
+  </div>
+  <div class="sidebar">
+    <div id="pinned"></div>
+    <div class="pin-divider"></div>
+    <div id="apps"></div>
+    <button class="plus-btn" id="plus" title="App-Bibliothek">+</button>
+  </div>
+
+  <div class="library" id="library">
+    <button class="close-btn" id="closeLib" title="Schließen">✕</button>
+    <h1>App-Bibliothek</h1>
+    <p class="sub">Apps hinzufügen oder entfernen. Alles wird automatisch gespeichert.</p>
+    <input id="appSearch" class="app-search" type="text" placeholder="Apps durchsuchen …" spellcheck="false">
+    <div id="catalog"></div>
+    <h2>Eigene App per URL</h2>
+    <div class="custom">
+      <input id="customUrl" type="text" placeholder="https://beispiel.de" spellcheck="false">
+      <button id="customAdd">Hinzufügen</button>
+    </div>
+  </div>
+
+  <div class="settings" id="settings">
+    <button class="close-btn" id="closeSettings" title="Schließen">✕</button>
+    <h1>Einstellungen</h1>
+    <p class="sub">Alles wird automatisch gespeichert.</p>
+    <div class="setrow">
+      <div class="setlabel"><b>Darstellung</b><span>Dunkel oder helles Sandgrau</span></div>
+      <div class="seg" id="segTheme"><button data-v="dark">Dunkel</button><button data-v="light">Hell</button></div>
+    </div>
+    <div class="setrow">
+      <div class="setlabel"><b>Farbe</b><span>Farbwelt der Oberfläche</span></div>
+      <div class="farben" id="farbWahl"></div>
+    </div>
+    <div class="setrow">
+      <div class="setlabel"><b>Externe Links</b><span>Wo Links aus Apps geöffnet werden</span></div>
+      <div class="seg" id="segLinks"><button data-v="verti">Verti-Browser</button><button data-v="system">System-Browser</button></div>
+    </div>
+    <div class="setrow">
+      <div class="setlabel"><b>Version</b><span id="updStatus">Installierte Version von Verti</span></div>
+      <div class="verwrap"><span class="setver" id="settingsVersion"></span><button class="setbtn" id="checkUpd">Nach Updates suchen</button></div>
+    </div>
+    <div class="setrow" id="adminRow" style="display:none">
+      <div class="setlabel"><b>Verbesserungen</b><span>Meldungen aus dem Team ansehen</span></div>
+      <div class="verwrap"><button class="setbtn" id="openCompat">Kompatibilität prüfen</button><button class="setbtn" id="openAdmin">Admin-Panel öffnen</button></div>
+    </div>
+    <div class="setsection-title">Erweiterungen</div>
+    <div class="setrow">
+      <div class="setlabel"><b>Chrome-Erweiterungen</b><span id="extHinweis">Entpackte Erweiterungen aus einem Ordner laden</span></div>
+      <div class="verwrap"><button class="setbtn" id="extAdd">Erweiterung hinzufügen …</button></div>
+    </div>
+    <div id="extList"></div>
+    <div class="setsection-title">Benachrichtigungen pro App</div>
+    <div id="notifList"></div>
+  </div>
+
+  <div class="bpanel" id="bpanel">
+    <div class="bpanel-kopf"><h2>Browser</h2><button class="bpanel-x" id="bpanelX" title="Schließen">✕</button></div>
+    <div id="bpHaupt">
+    <div class="bpanel-grp">Tabs</div>
+    <button class="bpanel-item" id="bpNewTab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Neuer Tab<span class="kbd" id="bpNewTabKbd"></span></button>
+    <div class="bpanel-grp">Einstellungen</div>
+    <button class="bpanel-item" id="bpExt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10 3.5a1.8 1.8 0 0 1 3.6 0V5h2.6a1 1 0 0 1 1 1v2.6h1.5a1.8 1.8 0 0 1 0 3.6H17.2V15a1 1 0 0 1-1 1h-2.6v1.5a1.8 1.8 0 0 1-3.6 0V16H7.4a1 1 0 0 1-1-1v-2.6H4.9a1.8 1.8 0 0 1 0-3.6h1.5V6a1 1 0 0 1 1-1H10z"/></svg>Erweiterungen</button>
+    <button class="bpanel-item" id="bpDown"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14"/></svg>Downloads-Ordner öffnen</button>
+    <button class="bpanel-item" id="bpHist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg>Verlauf löschen<span class="kbd" id="bpHistN"></span></button>
+    <div class="bpanel-hr"></div>
+    <button class="bpanel-item" id="bpAlle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>Alle Verti-Einstellungen</button>
+    <div class="bpanel-grp">Darstellung</div>
+    <div class="bpanel-seg"><div class="seg" id="bpTheme"><button data-v="dark">Dunkel</button><button data-v="light">Hell</button></div>
+      <div class="farben" id="bpFarben" style="margin-top:12px"></div></div>
+    </div>
+    <div id="bpErw" style="display:none">
+      <div class="bpanel-grp">Geladene Erweiterungen</div>
+      <div id="bpErwListe"></div>
+      <div class="bpanel-hr"></div>
+      <button class="bpanel-item" id="bpErwAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Erweiterung hinzufügen …</button>
+      <button class="bpanel-item" id="bpErwZurueck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l-6 6 6 6"/></svg>Zurück</button>
+    </div>
+  </div>
+
+  <div class="fbmodal" id="feedback">
+    <div class="fbcard">
+      <button class="fbclose" id="fbClose" title="Schliessen">✕</button>
+      <h2 id="fbTitel">Verbesserung vorschlagen</h2>
+      <p class="fbsub" id="fbSub">Was koennen wir an Verti besser machen? Geht direkt an Freddy.</p>
+      <div id="fbBrowserFrage" style="display:none">
+        <label>Geht es in deinem normalen Browser (Chrome, Safari)?</label>
+        <div class="seg" id="fbSegBrowser" style="margin:2px 0 12px">
+          <button type="button" data-v="ja">Ja, dort geht es</button>
+          <button type="button" data-v="nein">Nein, auch nicht</button>
+          <button type="button" data-v="unbekannt">Nicht probiert</button>
+        </div>
+      </div>
+      <label for="fbTopic">Thema</label>
+      <input id="fbTopic" type="text" maxlength="200" placeholder="Worum geht es?" spellcheck="false">
+      <label for="fbText">Dein Vorschlag</label>
+      <textarea id="fbText" maxlength="4000" placeholder="Beschreib kurz, was besser sein koennte …"></textarea>
+      <label for="fbName">Dein Name (optional)</label>
+      <input id="fbName" type="text" maxlength="120" placeholder="Damit Freddy nachfragen kann" spellcheck="false">
+      <div class="fbstatus" id="fbStatus"></div>
+      <div class="fbactions"><button class="fbsend" id="fbSend">Absenden</button></div>
+    </div>
+  </div>
+  <script src="verti-shim.js"></script>
+  <script src="sidebar.js"></script>
+</body>
+</html>
