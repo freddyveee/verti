@@ -100,8 +100,11 @@ Deno.serve(async (req: Request) => {
         pipelines: [{
           operations: [
             { type: 'download', urls: [{ url: rel.url }], out: { sha256: rel.sha256 }, size: rel.groesse },
-            // Im CRX3-Paket liegt das Skript, das die App austauscht.
-            { type: 'crx3', path: '.keystone_install', arguments: '', in: { sha256: rel.sha256 } },
+            // "." ist das ausgepackte Verzeichnis. Der Updater sucht darin
+            // selbst nach .keystone_install. Gibt man das Skript direkt an,
+            // bricht er mit "no handler for .keystone_install" ab - er waehlt
+            // den Handler naemlich nach der Dateiendung.
+            { type: 'crx3', path: '.', arguments: '', in: { sha256: rel.sha256 } },
           ],
         }],
       },

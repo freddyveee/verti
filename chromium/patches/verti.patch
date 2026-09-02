@@ -1,3 +1,86 @@
+diff --git a/build/apple/tweak_info_plist.py b/build/apple/tweak_info_plist.py
+index 23d3c4d244..3db8335b6a 100755
+--- a/build/apple/tweak_info_plist.py
++++ b/build/apple/tweak_info_plist.py
+@@ -235,12 +235,17 @@ def _TagSuffixes():
+     return tag_suffixes
+ 
+ 
+-def _AddKeystoneKeys(plist, bundle_identifier, base_tag):
++def _AddKeystoneKeys(plist, bundle_identifier, base_tag, update_url=None,
++                     product_id=None):
+     """Adds the Keystone keys. This must be called AFTER _AddVersionKeys() and
+-    also requires the |bundle_identifier| argument (com.example.product)."""
++    also requires the |bundle_identifier| argument (com.example.product).
++
++    Verti: |update_url| und |product_id| sind neu. Ohne sie zeigte die App auf
++    Googles Update-Server und meldete sich unter ihrer Bundle-Kennung an - fuer
++    einen eigenen Updater beides falsch."""
+     plist['KSVersion'] = plist['CFBundleShortVersionString']
+-    plist['KSProductID'] = bundle_identifier
+-    plist['KSUpdateURL'] = 'https://tools.google.com/service/update2'
++    plist['KSProductID'] = product_id or bundle_identifier
++    plist['KSUpdateURL'] = update_url or 'https://tools.google.com/service/update2'
+ 
+     _RemoveKeys(plist, 'KSChannelID')
+     if base_tag != '':
+@@ -370,6 +375,14 @@ def Main(argv):
+     parser.add_option(
+         '--keystone-base-tag', default='', help='Base Keystone tag to set'
+     )
++    parser.add_option(
++        '--keystone-update-url', default=None,
++        help='Adresse des Update-Servers (Verti)'
++    )
++    parser.add_option(
++        '--keystone-product-id', default=None,
++        help='Kennung, unter der sich die App beim Updater meldet (Verti)'
++    )
+     parser.add_option(
+         '--scm',
+         dest='add_scm_info',
+@@ -531,7 +544,8 @@ def Main(argv):
+             )
+             return 1
+         _AddKeystoneKeys(
+-            plist, options.bundle_identifier, options.keystone_base_tag
++            plist, options.bundle_identifier, options.keystone_base_tag,
++            options.keystone_update_url, options.keystone_product_id
+         )
+     else:
+         _RemoveKeystoneKeys(plist)
+diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
+index 6f97b7046d..1534d4c234 100644
+--- a/chrome/BUILD.gn
++++ b/chrome/BUILD.gn
+@@ -517,13 +517,20 @@ if (is_win) {
+     ]
+     if (enable_updater) {
+       args += [ "--privileged_helper_id=$privileged_helper_name" ]
+-      if (is_chrome_branded) {
+-        args += [ "--keystone=1" ]
+-        if (current_cpu == "arm64") {
+-          args += [ "--keystone-base-tag=arm64" ]
+-        }
+-      } else {
+-        args += [ "--keystone=0" ]
++
++      # Verti: die Keystone-Schluessel muessen auch bei uns ins Info.plist.
++      # Ohne KSProductID/KSVersion/KSUpdateURL bricht das Installationsskript
++      # mit "couldn't determine update_version_ks" ab, und der Browser bindet
++      # den Updater gar nicht erst ein (siehe BrowserHasKSProductID).
++      # Die Kennung ist bewusst browser_appid und NICHT die Bundle-Kennung -
++      # unter dieser Kennung fragt der Updater beim Server nach.
++      args += [
++        "--keystone=1",
++        "--keystone-update-url=$update_check_url",
++        "--keystone-product-id=$browser_appid",
++      ]
++      if (current_cpu == "arm64") {
++        args += [ "--keystone-base-tag=arm64" ]
+       }
+     } else {
+       args += [ "--keystone=0" ]
 diff --git a/chrome/app/theme/chromium/BRANDING b/chrome/app/theme/chromium/BRANDING
 index f8363d5b29..b1ef1586bb 100644
 --- a/chrome/app/theme/chromium/BRANDING
@@ -45,11 +128,54 @@ index ca0afc6fd0..dd56ed6011 100644
    registry->RegisterIntegerPref(prefs::kVerticalTabsUncollapsedWidth,
                                  kVerticalTabStripDefaultUncollapsedWidth);
  }
+diff --git a/chrome/installer/mac/keystone_install.sh b/chrome/installer/mac/keystone_install.sh
+index f7bc063859..e5147378e9 100755
+--- a/chrome/installer/mac/keystone_install.sh
++++ b/chrome/installer/mac/keystone_install.sh
+@@ -10,10 +10,10 @@
+ # version from a disk image.
+ #
+ # Environment variables:
+-# GOOGLE_CHROME_UPDATER_DEBUG
++# GOOGLE_CHROME_UPDATER_DEBUG (Name aus Chromium uebernommen)
+ #   When set to a non-empty value, additional information about this script's
+ #   actions will be logged to stderr.  The same debugging information will
+-#   also be enabled when "Library/Google/Google Chrome Updater Debug" in the
++#   also be enabled when "Library/IMPERIO/Verti Updater Debug" in the
+ #   root directory or in ${HOME} exists.
+ # GOOGLE_CHROME_UPDATER_TEST_PATH
+ #   When set to a non-empty value, the product at this path will be updated.
+@@ -484,19 +484,19 @@ main() {
+     trap "handle_signal \"${exit_signal}\"" "${exit_signal}"
+   done
+ 
+-  readonly APP_DIR_NAMES=( "Google Chrome.app" "Google Chrome Beta.app"
+-                           "Google Chrome Dev.app" "Google Chrome Canary.app" )
+-  readonly FRAMEWORK_NAME="Google Chrome Framework"
++  # Verti: eine App, ein Framework. Die Namen muessen zu BRANDING passen.
++  readonly APP_DIR_NAMES=( "Verti.app" )
++  readonly FRAMEWORK_NAME="Verti Framework"
+   readonly FRAMEWORK_DIR="${FRAMEWORK_NAME}.framework"
+   readonly CONTENTS_DIR="Contents"
+   readonly APP_PLIST="${CONTENTS_DIR}/Info"
+   readonly VERSIONS_DIR_NEW=\
+ "${CONTENTS_DIR}/Frameworks/${FRAMEWORK_DIR}/Versions"
+   readonly VERSIONS_DIR_OLD="${CONTENTS_DIR}/Versions"
+-  readonly UNROOTED_BRAND_PLIST="Library/Google/Google Chrome Brand"
+-  readonly UNROOTED_DEBUG_FILE="Library/Google/Google Chrome Updater Debug"
++  readonly UNROOTED_BRAND_PLIST="Library/IMPERIO/Verti Brand"
++  readonly UNROOTED_DEBUG_FILE="Library/IMPERIO/Verti Updater Debug"
+   readonly UNROOTED_KS_BUNDLE_DIR=\
+-"Library/Google/GoogleSoftwareUpdate/GoogleSoftwareUpdate.bundle"
++"Library/IMPERIO/VertiSoftwareUpdate/VertiSoftwareUpdate.bundle"
+ 
+   readonly APP_VERSION_KEY="CFBundleShortVersionString"
+   readonly APP_BUNDLEID_KEY="CFBundleIdentifier"
 diff --git a/chrome/updater/branding.gni b/chrome/updater/branding.gni
-index 2b6f9e23b2..4c0da2039f 100644
+index 2b6f9e23b2..b40f7b70e8 100644
 --- a/chrome/updater/branding.gni
 +++ b/chrome/updater/branding.gni
-@@ -7,42 +7,42 @@ import("//build/config/chrome_build.gni")
+@@ -7,42 +7,45 @@ import("//build/config/chrome_build.gni")
  if (is_chrome_branded) {
    import("//chrome/updater/internal/branding_google.gni")
  } else {
@@ -97,6 +223,7 @@ index 2b6f9e23b2..4c0da2039f 100644
 -  browser_appid = "{5d8d08af-2df9-4da2-86c1-eac353a0ca32}"
 -  qualification_appid = "{43f3a046-04b3-4443-a770-d67dae90e440}"
 -  platform_experience_helper_appid = "{b84ca560-bb0c-4ec9-a288-df67e15354c7}"
+-  crx_pkhash = ""
 +      "Copyright IMPERIO. Alle Rechte vorbehalten."
 +  updater_product_full_name = "VertiUpdater"
 +  updater_product_full_name_dashed_lowercase = "verti-updater"
@@ -107,7 +234,10 @@ index 2b6f9e23b2..4c0da2039f 100644
 +  browser_appid = "{b8ea4abe-da0c-4994-a8a5-a66cc7e21ccd}"
 +  qualification_appid = "{bfab1ee9-f671-4ddc-8eb7-9e4051a9aa4b}"
 +  platform_experience_helper_appid = "{7d1f205c-b4f3-4164-935e-ef02445a21ce}"
-   crx_pkhash = ""
++  # Fingerabdruck von Vertis CRX3-Signierschluessel (oeffentlich).
++    # Der private Schluessel liegt NUR in ~/Verti-Signing/verti-crx3.der.
++    # Damit nimmt der Updater ausschliesslich Pakete an, die wir signiert haben.
++    crx_pkhash = "aqarBlS0fpFTUz+agCuFiXQRJYSMXVj4OeOS+XnbL0s="
    legacy_service_name_prefix = "cupdate"
    prefs_access_mutex = "{A6B9ECD5-772A-4D3F-BFEB-CF9340534A3E}"
    setup_mutex_prefix = "{25569F82-3B67-4185-8127-88E4CF803680}"
@@ -120,3 +250,48 @@ index 2b6f9e23b2..4c0da2039f 100644
  
    UpdaterLegacyLibGUID = "4C61BB05-94D1-4BAB-B69C-C34195AF92CA"
    GoogleUpdate3WebUserClassGUID = "75828ED1-7BE8-45D0-8950-AA85CBF74510"
+diff --git a/chrome/updater/external_constants_default.cc b/chrome/updater/external_constants_default.cc
+index 4f4f80c4a3..a8c41518bf 100644
+--- a/chrome/updater/external_constants_default.cc
++++ b/chrome/updater/external_constants_default.cc
+@@ -48,7 +48,25 @@ class DefaultExternalConstants : public ExternalConstants {
+     return GURL(UPDATER_EVENT_LOGGING_URL);
+   }
+ 
+-  bool UseCUP() const override { return true; }
++  // Verti: CUP aus.
++  //
++  // CUP ist Omahas eigene Signatur ueber Anfrage und Antwort. Sie braucht ein
++  // ECDSA-Schluesselpaar, dessen oeffentlicher Teil im Programm steckt und
++  // dessen privater Teil auf dem Update-Server liegen muesste.
++  //
++  // Was uns ohne CUP schuetzt:
++  //  - Die Verbindung zum Update-Server laeuft ueber HTTPS.
++  //  - Das Paket selbst ist ein CRX3, signiert mit Vertis Schluessel, und
++  //    crx_pkhash nagelt genau diesen Schluessel fest. Der Updater installiert
++  //    also NUR, was wir selbst signiert haben - selbst wenn jemand die
++  //    Antwort faelschen koennte.
++  //
++  // Was ohne CUP offen bleibt: wer den Update-Server uebernimmt, koennte eine
++  // AELTERE, von uns signierte Fassung ausliefern (Rueckstufung). Wenn das
++  // spaeter stoert, ist der Weg: eigenes ECDSA-Paar erzeugen, den oeffentlichen
++  // Teil in components/client_update_protocol/ecdsa.cc eintragen und die
++  // Serverfunktion die Antwort signieren lassen.
++  bool UseCUP() const override { return false; }
+ 
+   base::TimeDelta InitialDelay() const override { return kInitialDelay; }
+ 
+@@ -57,7 +75,12 @@ class DefaultExternalConstants : public ExternalConstants {
+   }
+ 
+   crx_file::VerifierFormat CrxVerifierFormat() const override {
+-    return crx_file::VerifierFormat::CRX3_WITH_PUBLISHER_PROOF;
++    // Verti: der Herausgeberbeweis ist eine ZWEITE Signatur mit Googles
++    // eigenem Schluessel - den koennen wir nicht ausstellen. Stattdessen
++    // nagelt crx_pkhash (siehe branding.gni) unseren Signierschluessel fest:
++    // der Updater nimmt dann NUR Pakete an, die wir selbst signiert haben.
++    // Fuer ein Produkt mit einem einzigen Herausgeber ist das derselbe Schutz.
++    return crx_file::VerifierFormat::CRX3;
+   }
+ 
+   std::optional<std::vector<uint8_t>> CrxPublicKeyHash() const override {

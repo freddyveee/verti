@@ -278,19 +278,54 @@ Zwei Dinge, die beim Messen Zeit gekostet haben und im Skript stehen:
   koennte jeder die Update-Adresse umbiegen). Zum Testen nimmt man
   `VertiUpdater_test.app`.
 
-### Was zum Abschluss noch fehlt
+### Der komplette Durchlauf ist bewiesen (02.09.2026)
 
-1. **Server veroeffentlichen.** `server/verti-update/index.ts` ist geschrieben -
-   eine Supabase-Funktion im BESTEHENDEN Projekt, kein neuer Anbieter:
+`scripts/updater-test.js --update --echtes-paket` spielt alles durch. Damit das
+kein Selbstbetrug ist, wird NICHT in die gebaute App hineininstalliert (Quelle
+und Ziel waeren dieselbe Datei), sondern in eine Kopie, die vorher auf Version
+1.0.0.0 gesetzt wird:
+
+```
+Version in der Zielkopie: 1.0.0.0  ->  155.0.8038.0
+AUSGETAUSCHT. Der Updater hat die App wirklich ersetzt.
+```
+
+Alle Schritte: Anmeldung per ksadmin, Anfrage beim Server, Antwort "Update
+verfuegbar", Download von 234 MB, Signaturpruefung gegen Vertis Schluessel,
+Auspacken, Installationsskript, Austausch der App, Ticket neu geschrieben.
+
+### Vier Huerden auf dem Weg, alle im Protokoll gefunden
+
+Keine davon war an der Oberflaeche sichtbar - jede stand nur im `updater.log`.
+
+1. **`RESPONSE_NOT_TRUSTED` (-10000).** Der Updater verlangt CUP, eine zusaetzliche
+   Signatur ueber die Antwort. Abgeschaltet, Begruendung steht im Code:
+   HTTPS plus der festgenagelte CRX3-Schluessel decken den wichtigen Teil ab.
+   Offen bleibt nur eine moegliche Rueckstufung auf eine aeltere, von uns
+   signierte Fassung.
+2. **`no handler for .keystone_install`.** Der Updater waehlt den Installations-Weg
+   nach der DATEIENDUNG. Im Feld `path` gehoert deshalb `"."` (das ausgepackte
+   Verzeichnis), nicht der Name des Skripts - das Skript sucht er selbst.
+3. **`couldn't determine update_version_ks`.** Vertis Info.plist hatte keine
+   Keystone-Schluessel. Chromium setzt sie ab Werk nur fuer Googles Marke, und
+   die Update-Adresse war fest auf Google verdrahtet. Beides im Patch geloest,
+   `KSProductID` ist bewusst `browser_appid` und nicht die Bundle-Kennung.
+4. **`enable_updater = false`.** Der Schalter stand aus, deshalb blieb Punkt 3
+   wirkungslos, obwohl die Aenderung stimmte. Steht jetzt in `args.gn` und wird
+   von `chromium/bau.sh` geprueft.
+
+Ausserdem: Der Signierschluessel muss **PKCS#8** sein. `openssl genpkey -outform
+DER` liefert auf dem Mac PKCS#1, der Packer bricht dann mit "Malformed
+PrivateKeyInfo" ab. Der zweite Schritt mit `openssl pkcs8 -topk8` steht in
+`scripts/crx3-paket.sh`.
+
+### Was noch fehlt
+
+1. **Server veroeffentlichen** (macht Freddy):
    `supabase functions deploy verti-update --no-verify-jwt`
-2. **Releases als CRX3 packen.** Der Updater erwartet kein ZIP, sondern ein
-   CRX3-Paket mit `.keystone_install` darin. Werkzeug dafuer liegt im Baum
-   (`components/crx_file`).
-3. **Updater ins Verti-Paket legen** und Verti beim ersten Start anmelden.
-4. Danach der echte Durchlauf mit einem richtigen Paket.
-
-Bis dahin bleibt die Zwischenloesung: Verti laedt die neue Fassung herunter und
-zeigt sie im Finder.
+2. **Updater ins Verti-Paket legen** und Verti beim ersten Start anmelden -
+   bisher passiert die Anmeldung im Test von Hand per ksadmin.
+3. Signierung und Notarisierung des Chromium-Pakets.
 
 Der **einmalige Umstieg** von Electron auf Chromium ist davon unberuehrt: den
 liefert die heutige Electron-Fassung ueber electron-updater aus, mit einem

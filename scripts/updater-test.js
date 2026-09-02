@@ -36,6 +36,14 @@ const UPDATER = path.join(SRC, 'out/Release/VertiUpdater_test.app/Contents/MacOS
 const PORT = 9710;
 const VERTI_APPID = '{b8ea4abe-da0c-4994-a8a5-a66cc7e21ccd}';
 const mitUpdate = process.argv.includes('--update');
+// Mit --echtes-paket wird das wirklich gepackte Verti-Mac.crx3 ausgeliefert und
+// der Updater installiert es tatsaechlich. Das ist der einzige Test, der die
+// ganze Kette beweist - Signaturpruefung und Austausch eingeschlossen.
+const echtesPaket = process.argv.includes('--echtes-paket');
+const PAKET = path.join(SRC, 'out/Release/Verti-Mac.crx3');
+const PRUEFWERT = (() => {
+  try { return fs.readFileSync(PAKET + '.sha256', 'utf8').trim(); } catch (e) { return '0'.repeat(64); }
+})();
 
 // Muss zu GetInstallDirectory() passen: der Updater sucht overrides.json eine
 // Ebene UEBER seinem Installationsordner.
@@ -47,6 +55,15 @@ const OVERRIDES = path.join(path.dirname(INSTALL), 'overrides.json');
 const anfragen = [];
 
 const server = http.createServer((req, res) => {
+  // Das Paket ausliefern, wenn danach gefragt wird
+  if (req.url && req.url.includes('Verti-Mac.crx3')) {
+    if (!fs.existsSync(PAKET)) { res.writeHead(404); res.end(); return; }
+    const groesse = fs.statSync(PAKET).size;
+    console.log('  -> Updater holt das Paket (' + Math.round(groesse / 1048576) + ' MB)');
+    res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': groesse });
+    fs.createReadStream(PAKET).pipe(res);
+    return;
+  }
   let roh = '';
   req.on('data', (c) => (roh += c));
   req.on('end', () => {
@@ -70,8 +87,14 @@ const server = http.createServer((req, res) => {
           pipelines: [{
             operations: [
               { type: 'download', urls: [{ url: 'http://127.0.0.1:' + PORT + '/Verti-Mac.crx3' }],
-                out: { sha256: '0'.repeat(64) }, size: 1234 },
-              { type: 'crx3', path: '.keystone_install', arguments: '', in: { sha256: '0'.repeat(64) } },
+                out: { sha256: echtesPaket ? PRUEFWERT : '0'.repeat(64) },
+                size: echtesPaket && fs.existsSync(PAKET) ? fs.statSync(PAKET).size : 1234 },
+              // "." = das ausgepackte Verzeichnis. Der Updater waehlt den
+              // Handler nach der Dateiendung; ".keystone_install" ist keine,
+              // deshalb "Install failed: no handler". Mit "." greift
+              // InstallFromDir und ruft .keystone_install selbst auf.
+              { type: 'crx3', path: '.', arguments: '',
+                in: { sha256: echtesPaket ? PRUEFWERT : '0'.repeat(64) } },
             ],
           }],
         },
@@ -103,7 +126,20 @@ const server = http.createServer((req, res) => {
   if (!ks) { console.log('  ksadmin nicht gefunden'); server.close(); process.exit(1); }
   // Eine echte App-Kennung braucht einen Pfad, den es gibt - wir nehmen das
   // gebaute Verti.app.
-  const VERTI_APP = path.join(SRC, 'out/Release/Verti.app');
+  // Echter Beweis: NICHT in die gebaute App hineininstallieren (Quelle und Ziel
+  // waeren dieselbe Datei), sondern in eine Kopie, die auf eine alte Version
+  // gesetzt wurde. Steht danach die neue Version drin, wurde wirklich getauscht.
+  let VERTI_APP = path.join(SRC, 'out/Release/Verti.app');
+  if (echtesPaket) {
+    const alt = '/tmp/Verti-alt.app';
+    fs.rmSync(alt, { recursive: true, force: true });
+    execSync(`ditto "${VERTI_APP}" "${alt}"`);
+    for (const k of ['CFBundleShortVersionString', 'KSVersion']) {
+      execSync(`/usr/libexec/PlistBuddy -c "Set :${k} 1.0.0.0" "${alt}/Contents/Info.plist"`);
+    }
+    VERTI_APP = alt;
+    console.log('  Zielkopie angelegt: ' + alt + ' (auf Version 1.0.0.0 gesetzt)');
+  }
   const reg = await laufe(ks, ['--register', '--productid', VERTI_APPID, '--version', '1.0.0.0',
     '--xcpath', VERTI_APP, '--url', 'http://127.0.0.1:' + PORT + '/'], 60000);
   console.log('  Verti angemeldet, Version 1.0.0.0 (Rueckgabe ' + reg.code + ')');
@@ -130,6 +166,24 @@ const server = http.createServer((req, res) => {
         + '  Aktion: ' + Object.keys(app).filter((k) => ['updatecheck', 'ping', 'event'].includes(k)).join(','));
     }
   }
+  if (echtesPaket) {
+    // Der eigentliche Beweis: welche Version steht jetzt in der Zielkopie?
+    let nachher = '?';
+    try {
+      nachher = execSync(`/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "/tmp/Verti-alt.app/Contents/Info.plist"`).toString().trim();
+    } catch (e) { nachher = 'Zielkopie nicht lesbar'; }
+    console.log('\n  Version in der Zielkopie: 1.0.0.0  ->  ' + nachher);
+    console.log('  ' + (nachher === '155.0.8038.0'
+      ? 'AUSGETAUSCHT. Der Updater hat die App wirklich ersetzt.'
+      : 'NICHT ausgetauscht.'));
+
+    const L = path.join(INSTALL, 'updater.log');
+    const log = fs.existsSync(L) ? fs.readFileSync(L, 'utf8') : '';
+    const zeilen = log.split('\n').filter((z) => /install|crx|verif|error:|Verti\.app/i.test(z)).slice(-8);
+    console.log('\n  Was der Updater mit dem Paket gemacht hat:');
+    for (const z of zeilen) console.log('    ' + z.slice(0, 165));
+  }
+
   console.log('\n  ' + (anfragen.length
     ? 'Vertis Updater spricht mit unserem Server - die Kette steht.'
     : 'KEINE Anfrage angekommen. Der Updater erreicht den Server nicht.'));

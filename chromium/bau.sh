@@ -41,10 +41,11 @@ fi
 if [ "${1:-}" = "--nur-patch" ]; then exit 0; fi
 
 # Die Bau-Schalter muessen stehen, sonst fehlen Widevine und H.264/AAC
-for schalter in "proprietary_codecs = true" 'ffmpeg_branding = "Chrome"' "enable_widevine = true"; do
+for schalter in "proprietary_codecs = true" 'ffmpeg_branding = "Chrome"' "enable_widevine = true" "enable_updater = true"; do
   if ! grep -qF "$schalter" out/Release/args.gn; then
     echo "ACHTUNG: '$schalter' fehlt in out/Release/args.gn"
-    echo "Ohne diesen Schalter spielt Spotify nicht bzw. fehlt MP4-Video."
+    echo "Ohne diese Schalter spielt Spotify nicht, fehlt MP4-Video, oder Verti"
+    echo "kann sich nicht beim Updater anmelden."
     exit 1
   fi
 done
