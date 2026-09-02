@@ -109,15 +109,16 @@ index f8363d5b29..b1ef1586bb 100644
 -MAC_TEAM_ID=
 +MAC_TEAM_ID=CHS9G483R4
 diff --git a/chrome/browser/chrome_browser_main_mac.mm b/chrome/browser/chrome_browser_main_mac.mm
-index b269f1610a..c14f53eaae 100644
+index b269f1610a..38ec2fbb4b 100644
 --- a/chrome/browser/chrome_browser_main_mac.mm
 +++ b/chrome/browser/chrome_browser_main_mac.mm
-@@ -26,6 +26,13 @@
+@@ -26,6 +26,14 @@
  #include "chrome/browser/browser_process.h"
  #include "chrome/browser/browser_process_platform_part.h"
  #include "chrome/browser/buildflags.h"
 +// Verti: fuer die Selbstanmeldung beim Updater
 +#include "base/functional/callback_helpers.h"
++#include "base/task/sequenced_task_runner.h"
 +#include "base/task/thread_pool.h"
 +#include "base/time/time.h"
 +#if BUILDFLAG(ENABLE_UPDATER)
@@ -126,7 +127,7 @@ index b269f1610a..c14f53eaae 100644
  #import "chrome/browser/chrome_browser_application_mac.h"
  #include "chrome/browser/first_run/first_run.h"
  #include "chrome/browser/mac/install_from_dmg.h"
-@@ -179,6 +186,28 @@
+@@ -179,6 +187,35 @@
  void ChromeBrowserMainPartsMac::PostProfileInit(Profile* profile,
                                                  bool is_initial_profile) {
    ChromeBrowserMainPartsPosix::PostProfileInit(profile, is_initial_profile);
@@ -141,11 +142,18 @@ index b269f1610a..c14f53eaae 100644
 +  // Der Aufruf ist gutmuetig: ist der Updater schon da und Verti angemeldet,
 +  // tut er nichts. Er laeuft mit niedrigster Prioritaet und erst 20 Sekunden
 +  // nach dem Start, damit der Start nicht langsamer wird.
++  //
++  // WICHTIG: EnsureUpdater() gehoert auf den OBERFLAECHEN-Strang. Chromium
++  // selbst ruft es aus der "Ueber"-Seite heraus, also von dort
++  // (version_updater_mac.mm). Zwei Fehlversuche am 02.09.2026, beide gemessen:
++  //   - ThreadPool::PostDelayedTask  -> SIGSEGV nach 20 s (gar kein Strang)
++  //   - eigener sequenzierter Strang -> SIGABRT, "DCHECK failed:
++  //     checker.CalledOnValidSequence" (falscher Strang)
++  // PostProfileInit laeuft bereits auf dem Oberflaechen-Strang, wir haengen
++  // die Aufgabe also einfach dort verzoegert an.
 +  if (is_initial_profile) {
-+    base::ThreadPool::PostDelayedTask(
++    base::SequencedTaskRunner::GetCurrentDefault()->PostDelayedTask(
 +        FROM_HERE,
-+        {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
-+         base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
 +        base::BindOnce(&updater::EnsureUpdater,
 +                       base::TaskPriority::BEST_EFFORT, base::DoNothing(),
 +                       base::DoNothing()),

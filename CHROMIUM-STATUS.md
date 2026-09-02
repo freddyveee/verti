@@ -340,6 +340,31 @@ productID=rocks.imperio.verti  version=155.0.8038.0
 Verti hat sich VON ALLEIN angemeldet. Der Nutzer muss nichts tun.
 ```
 
+### Der Absturz, der fast durchgerutscht waere
+
+Die Anmeldung liess Verti **20 Sekunden nach dem Start abstuerzen**. Drei
+Anlaeufe, jeder mit einer eigenen Fehlermeldung:
+
+| Versuch | Ergebnis |
+|---|---|
+| `base::ThreadPool::PostDelayedTask` | `SIGSEGV` - gar kein Arbeitsstrang gesetzt |
+| eigener sequenzierter Strang | `SIGABRT`, `DCHECK failed: checker.CalledOnValidSequence` - falscher Strang |
+| **Oberflaechen-Strang** (`SequencedTaskRunner::GetCurrentDefault()`) | laeuft |
+
+Richtig ist der Oberflaechen-Strang, weil Chromium `EnsureUpdater()` selbst von
+dort ruft (`version_updater_mac.mm`, aus der "Ueber"-Seite).
+
+**Zwei Lehren, beide teuer bezahlt:**
+
+1. **Einmal testen reicht nicht.** Nach dem zweiten Versuch war der erste Lauf
+   sauber und der zweite abgestuerzt. Ein einzelner Lauf haette "behoben"
+   gemeldet. `scripts/selbstanmeldung-test.js` wird deshalb mehrfach laufen
+   gelassen, und dabei wird die ZAHL der Absturzberichte in
+   `~/Library/Logs/DiagnosticReports` vorher/nachher verglichen.
+2. **Die Ausgabe des Testskripts sagt nichts ueber Abstuerze.** Der Test meldete
+   jedes Mal brav "Verti hat sich VON ALLEIN angemeldet" - waehrend das Programm
+   danach abstuerzte. Absturzberichte muss man getrennt anschauen.
+
 **Wichtig, beim ersten Versuch falsch gemacht:** Die Kennung ist die
 **Bundle-Kennung** `rocks.imperio.verti`, NICHT `browser_appid` aus
 `branding.gni`. `BrowserUpdaterClient::GetAppId()` gibt auf dem Mac die

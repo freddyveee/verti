@@ -29,11 +29,33 @@ const warte = (ms) => new Promise((r) => setTimeout(r, ms));
   fs.rmSync(PROFIL, { recursive: true, force: true });
   console.log('  Ausgangslage: kein Updater installiert, frisches Profil');
 
+  // Mit Fernsteuerungs-Anschluss starten, damit der Test das Fenster am Ende
+  // SAUBER schliessen kann. Ein simples kill() beendet Chromium hart, und
+  // macOS meldet danach "Verti wurde unerwartet beendet" - ein Schreck fuer
+  // jeden, der zufaellig davorsitzt.
+  const PORT = 9720;
   const kind = spawn(BIN, [
+    '--remote-debugging-port=' + PORT,
     '--user-data-dir=' + PROFIL,
     '--no-first-run', '--no-default-browser-check',
     'about:blank',
   ], { stdio: ['ignore', 'ignore', 'ignore'] });
+
+  // Sauber beenden ueber das DevTools-Protokoll
+  async function sauberBeenden() {
+    try {
+      const ziel = await fetch('http://127.0.0.1:' + PORT + '/json/version').then((r) => r.json());
+      if (ziel && ziel.webSocketDebuggerUrl) {
+        const ws = new WebSocket(ziel.webSocketDebuggerUrl);
+        await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
+        ws.send(JSON.stringify({ id: 1, method: 'Browser.close' }));
+        await warte(3000);
+        try { ws.close(); } catch (e) {}
+      }
+    } catch (e) { /* Rueckfall unten */ }
+    await warte(1500);
+    try { kind.kill(); } catch (e) {}
+  }
 
   // Die Anmeldung ist absichtlich auf 20 s nach dem Start gelegt, damit der
   // Start nicht langsamer wird. Also mit Reserve warten.
@@ -44,7 +66,7 @@ const warte = (ms) => new Promise((r) => setTimeout(r, ms));
   }
   await warte(20000);
 
-  try { kind.kill(); } catch (e) {}
+  await sauberBeenden();
   await warte(2000);
 
   console.log('');
