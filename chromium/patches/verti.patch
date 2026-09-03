@@ -84,6 +84,28 @@ index 6f97b7046d..4ff859ea4f 100644
        }
      } else {
        args += [ "--keystone=0" ]
+diff --git a/chrome/app/app-Info.plist b/chrome/app/app-Info.plist
+index 6fada0a2b1..0da0a81257 100644
+--- a/chrome/app/app-Info.plist
++++ b/chrome/app/app-Info.plist
+@@ -149,8 +149,15 @@
+ 	<string>${EXECUTABLE_NAME}</string>
+ 	<key>CFBundleIconFile</key>
+ 	<string>app.icns</string>
+-	<key>CFBundleIconName</key>
+-	<string>AppIcon</string>
++	<!-- Verti: CFBundleIconName ist absichtlich entfernt.
++	     Der Schluessel zeigt auf den Eintrag "AppIcon" in Assets.car, und macOS
++	     zieht den dem klassischen app.icns vor. Unser actool-Lauf bekommt dort
++	     aber nur leere Bilder hinein (jede Groesse 330 Bytes, am 03.09.2026 mit
++	     assetutil nachgemessen) - im Dock erschien deshalb weiter Chromiums
++	     blaue Kugel. Ohne diesen Schluessel nimmt macOS CFBundleIconFile, also
++	     app.icns, und das ist Vertis Symbol.
++	     ACHTUNG: in XML-Kommentaren sind zwei Bindestriche hintereinander
++	     verboten. Ein Schalter wie minus minus info bricht den Bau. -->
+ 	<key>CFBundleIdentifier</key>
+ 	<string>${CHROMIUM_BUNDLE_ID}</string>
+ 	<key>CFBundleInfoDictionaryVersion</key>
 diff --git a/chrome/app/chromium_strings.grd b/chrome/app/chromium_strings.grd
 index d5f9a09fc0..3a4eaa4300 100644
 --- a/chrome/app/chromium_strings.grd
@@ -3856,6 +3878,36 @@ index 933690858a..3da5bc8b03 100644
 +        # scripts/signatur-pruefen.sh fragt Gatekeeper NACH Notarisierung und
 +        # Anheften - dort ist die Antwort auch erst aussagekraeftig.
 +        return False
+diff --git a/chrome/installer/mac/signing/pipeline.py b/chrome/installer/mac/signing/pipeline.py
+index 3282a9deb9..18261a20c1 100644
+--- a/chrome/installer/mac/signing/pipeline.py
++++ b/chrome/installer/mac/signing/pipeline.py
+@@ -533,13 +533,21 @@ def _package_dmg(paths, dist, config):
+             '{}/inflation.bin:/.background/inflation.bin'.format(packaging_dir),
+         ]
+ 
+-    if config.is_chrome_branded():
+-        background_image = '{}/chrome_dmg_background.png'.format(packaging_dir)
++    # Verti: die Gestaltung des Installationsfensters gilt IMMER, nicht nur fuer
++    # Googles Marke. Ohne das ist die DMG ein nacktes weisses Fenster mit zwei
++    # willkuerlich platzierten Symbolen - genau so sah sie am 03.09.2026 aus.
++    #
++    # Die drei Dateien legt chromium/bau.sh aus build/ in den Packordner:
++    #   verti_dmg_background.png  Hintergrund mit Logo, Text und Pfeil
++    #   verti_dmg_icon.icns       Symbol des Datentraegers
++    #   verti_dmg_dsstore         Fenstergroesse und Position der Symbole
++    if True:
++        background_image = '{}/verti_dmg_background.png'.format(packaging_dir)
++        icon_file = 'verti_dmg_icon.icns'
++        dsstore_file = 'verti_dmg_dsstore'
+         # yapf: disable
+         pkg_dmg += [
+             '--icon', os.path.join(packaging_dir, icon_file),
+-            '--copy',
+-                '{}/keystone_install.sh:/.keystone_install'.format(packaging_dir),
+             '--mkdir', '.background',
+             '--copy',
+                 '{}:/.background/background.png'.format(background_image),
 diff --git a/chrome/updater/branding.gni b/chrome/updater/branding.gni
 index 2b6f9e23b2..b40f7b70e8 100644
 --- a/chrome/updater/branding.gni

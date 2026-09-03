@@ -38,6 +38,16 @@ else
   git apply --3way "$PATCH"
 fi
 
+# Die drei Dateien fuer die Gestaltung des Installationsfensters bereitlegen.
+# pipeline.py erwartet sie im Packordner; im offenen Chromium gibt es nur
+# Googles interne Fassungen, die bei uns fehlen.
+DMG_ZIEL="$SRC/out/Release/Verti Packaging"
+if [ -d "$DMG_ZIEL" ]; then
+  cp "$REPO/build/dmg-bg.png"    "$DMG_ZIEL/verti_dmg_background.png"
+  cp "$REPO/build/icon.icns"     "$DMG_ZIEL/verti_dmg_icon.icns"
+  cp "$REPO/build/dmg-dsstore"   "$DMG_ZIEL/verti_dmg_dsstore"
+fi
+
 # Vertis Symbol setzen. Das gehoert NICHT in den Patch: git diff speichert
 # Bilder nicht mit (am 03.09.2026 nachgesehen, null Binaerbloecke). Ohne diesen
 # Schritt traegt Verti Chromiums blaue Kugel.
@@ -56,7 +66,11 @@ for schalter in "proprietary_codecs = true" 'ffmpeg_branding = "Chrome"' "enable
 done
 
 echo "Baue … (Erstbau ~4 h, Aenderungsbau 6 min bis gut 1 h)"
-caffeinate -i autoninja -C out/Release chrome
+# "chrome" allein reicht NICHT: die Signier- und Packskripte liegen als KOPIE
+# in out/Release/Verti Packaging und werden nur von diesem Ziel aufgefrischt.
+# Ohne das signiert man mit veralteten Skripten - am 03.09.2026 kam deshalb
+# eine DMG ohne Gestaltung heraus, obwohl der Quelltext stimmte.
+caffeinate -i autoninja -C out/Release chrome chrome/installer/mac
 
 # Die Sidebar-Erweiterung in die fertige App legen.
 #

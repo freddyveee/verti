@@ -44,7 +44,11 @@ mkdir -p "$TMP/inhalt/.background"
 cp "$HG" "$TMP/inhalt/.background/background.png"
 # Platzhalter statt der echten App - fuer die Vorlage zaehlt nur der Name
 mkdir -p "$TMP/inhalt/Verti.app"
-ln -s /Applications "$TMP/inhalt/Applications"
+# WICHTIG: Der Name muss exakt dem entsprechen, den Chromiums Packskript
+# vergibt - und das ist ein einzelnes LEERZEICHEN ("--symlink /Applications:/ ").
+# Heisst die Verknuepfung in der Vorlage "Applications", findet der Finder in
+# der echten DMG keine Position dafuer und legt sie oben links ab.
+ln -s /Applications "$TMP/inhalt/ "
 
 hdiutil create -srcfolder "$TMP/inhalt" -volname "$NAME" -fs HFS+ \
   -format UDRW -size 50m "$TMP/vorlage.dmg" >/dev/null
@@ -63,9 +67,14 @@ tell application "Finder"
     set viewOptions to the icon view options of container window
     set arrangement of viewOptions to not arranged
     set icon size of viewOptions to $SYMBOLGROESSE
-    set background picture of viewOptions to file ".background:background.png"
+    -- Hintergrundbild ueber den echten Dateipfad setzen. Die Kurzformen
+    -- file ".background:background.png" und
+    -- file "background.png" of folder ".background" of disk "..." lehnt der
+    -- Finder beide mit Fehler -10006 ab (das zweite, weil wir schon im
+    -- tell-Block der Platte stehen und der Pfad dadurch doppelt wird).
+    set background picture of viewOptions to POSIX file "/Volumes/$NAME/.background/background.png"
     set position of item "Verti.app" of container window to {$X_APP, $Y}
-    set position of item "Applications" of container window to {$X_ORDNER, $Y}
+    set position of item " " of container window to {$X_ORDNER, $Y}
     update without registering applications
     close
   end tell
