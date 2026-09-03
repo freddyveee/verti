@@ -19,18 +19,19 @@ const path = require('path');
 const wurzel = path.join(__dirname, '..');
 const zielOrdner = path.join(wurzel, 'chromium', 'extension');
 
-// In Chromium zeichnet die eingebaute vertikale Tableiste Vertis App-Leiste.
-// Die Leiste aus sidebar.html waere sonst doppelt da. Statt sidebar.html zu
-// aendern (dort ist sie fuer Electron richtig) legen wir hier eine kleine
-// Ergaenzung darueber - eine Quelle bleibt eine Quelle.
-const SIDEBAR_CSS = `
-  <style>
-  /* --- von scripts/chromium-port.js ergaenzt, nur fuer die Chromium-Fassung --- */
-  /* Die App-Leiste zeichnet Chromiums vertikale Tableiste. */
-  .sidebar { display: none !important; }
-  /* Bibliothek und Einstellungen bekommen dadurch den Platz ganz links. */
-  .library, .settings { left: 0 !important; }
-  </style>`;
+// Vertis Leiste bleibt, wie sie ist.
+//
+// Zwischenzeitlich stand hier eine Ergaenzung, die sie ausgeblendet hat - damals
+// sollte Chromiums eingebaute vertikale Tableiste ihre Rolle uebernehmen. Das
+// ist am 03.09.2026 verworfen worden (falsche Richtung, zu kleine Symbole,
+// falsche Farbe, fremde Knoepfe). Chromium zeigt jetzt gar keine Tableiste mehr,
+// und sidebar.html bringt Kopfzeile und Leiste wieder selbst mit - genau wie in
+// der Electron-Fassung.
+//
+// Der Chromium-Patch rueckt den Seiteninhalt passend ein: 68 px links fuer die
+// Leiste, 44 px oben fuer die Kopfzeile. Diese Zahlen stehen in
+// browser_view_layout_impl.cc und muessen zu den Werten in sidebar.html passen.
+const SIDEBAR_CSS = '';
 
 const SEITEN = [
   { quelle: 'sidebar.html', js: 'sidebar.js', bruecke: 'verti-shim.js', css: SIDEBAR_CSS },

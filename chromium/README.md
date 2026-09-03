@@ -24,6 +24,9 @@ chromium/
 | `chrome/app/theme/chromium/BRANDING` | Produktname "Verti", Bundle-Kennung `rocks.imperio.verti` (identisch zur heutigen Verti-App, damit ein Update nahtlos druebergeht), Team-Kennung |
 | `chrome/browser/ui/tabs/tab_strip_prefs.cc` | Vertikale Tableiste von Anfang an an und eingeklappt - das IST Vertis App-Leiste |
 | `chrome/browser/extensions/component_loader.*` | Verti laedt seine Sidebar selbst aus den Framework-Resources |
+| `chrome/browser/ui/views/frame/browser_view.*` | Vertis App-Leiste als eigene Ansicht im Fenster; Tableiste und Adressleiste aus |
+| `chrome/browser/ui/views/frame/layout/browser_view_layout_impl.*` | Leiste ueber das ganze Fenster, Inhalt eingerueckt: 68 px links, 44 px oben |
+| `chrome/browser/ui/views/session_restore_infobar/...` | Hinweis "Continue where you left off" aus - Verti stellt immer wieder her |
 | `chrome/browser/ui/startup/first_run_service.cc` | Chromiums Willkommensseite aus (Animation mit Musik, Standardbrowser-Frage) |
 | `chrome/app/chromium_strings.grd` | Alle sichtbaren Texte sagen "Verti" statt "Chromium" |
 | `components/os_crypt/common/keychain_password_mac.mm` | Schluesselbund heisst "Verti Safe Storage" - genau wie beim Electron-Verti, sonst waeren die Anmeldungen weg |

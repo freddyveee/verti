@@ -3418,10 +3418,42 @@ index ca0afc6fd0..de3e6da66a 100644
    registry->RegisterBooleanPref(
        prefs::kVerticalTabsExpandOnHoverEnabled,
 diff --git a/chrome/browser/ui/views/frame/browser_view.cc b/chrome/browser/ui/views/frame/browser_view.cc
-index 24eca1ab9a..689522c529 100644
+index 24eca1ab9a..8697c442d6 100644
 --- a/chrome/browser/ui/views/frame/browser_view.cc
 +++ b/chrome/browser/ui/views/frame/browser_view.cc
-@@ -1404,35 +1404,17 @@ bool BrowserView::ShouldDrawTabStrokes() const {
+@@ -418,6 +418,13 @@ using web_modal::WebContentsModalDialogHost;
+ 
+ namespace {
+ 
++// Verti: Adresse von Vertis App-Leiste. Die Kennung ergibt sich fest aus dem
++// Schluessel in chromium/extension/manifest.json - deshalb darf dieser
++// Schluessel nie wechseln, sonst finden Nutzer ihre App-Auswahl nicht wieder.
++constexpr char kVertiSidebarUrl[] =
++    "chrome-extension://llkndemojkecdcnpbmkegbopmaafiach/sidebar.html";
++
++
+ // The visible height of the shadow above the tabs. Clicks in this area are
+ // treated as clicks to the frame, rather than clicks to the tab.
+ const int kTabShadowSize = 2;
+@@ -937,6 +944,17 @@ BrowserView::BrowserView(BrowserWindowInterface* browser)
+   top_container_separator_->SetProperty(views::kElementIdentifierKey,
+                                         kContentsSeparatorTopEdgeElementId);
+ 
++  // Verti: die eigene App-Leiste. Sie kommt VOR dem Inhalt in die Liste, damit
++  // sie dahinter liegt - der Inhalt wird spaeter eingerueckt und laesst links
++  // und oben genau so viel frei, wie die Leiste braucht.
++  {
++    auto sidebar = std::make_unique<views::WebView>(GetProfile());
++    sidebar->SetVisible(false);   // erst zeigen, wenn die Seite geladen ist
++    verti_sidebar_ = AddChildView(std::move(sidebar));
++    verti_sidebar_->LoadInitialURL(GURL(kVertiSidebarUrl));
++    verti_sidebar_->SetVisible(true);
++  }
++
+   auto multi_contents_view = std::make_unique<MultiContentsView>(
+       this, std::make_unique<MultiContentsViewDelegateImpl>(*browser_));
+   multi_contents_view_ = AddChildView(std::move(multi_contents_view));
+@@ -1404,35 +1422,17 @@ bool BrowserView::ShouldDrawTabStrokes() const {
  }
  
  bool BrowserView::ShouldDrawTabStrip() const {
@@ -3468,7 +3500,7 @@ index 24eca1ab9a..689522c529 100644
  }
  
  bool BrowserView::ShouldDrawVerticalTabStrip() const {
-@@ -3044,26 +3026,12 @@ void BrowserView::DisableTabStripEditingForTesting() {
+@@ -3044,26 +3044,12 @@ void BrowserView::DisableTabStripEditingForTesting() {
  }
  
  bool BrowserView::IsToolbarVisible() const {
@@ -3501,6 +3533,217 @@ index 24eca1ab9a..689522c529 100644
  }
  
  bool BrowserView::IsToolbarShowing() const {
+@@ -5066,6 +5052,7 @@ void BrowserView::AddedToWidget() {
+   layout_views.toolbar = toolbar_;
+   layout_views.infobar_container = infobar_container_;
+   layout_views.multi_contents_view = multi_contents_view_;
++  layout_views.verti_sidebar = verti_sidebar_;
+   layout_views.side_panel = side_panel_;
+   layout_views.top_container_separator = top_container_separator_;
+   // LINT.ThenChange(//chrome/browser/ui/views/frame/layout/browser_view_layout.h:BrowserViewLayoutViews)
+diff --git a/chrome/browser/ui/views/frame/browser_view.h b/chrome/browser/ui/views/frame/browser_view.h
+index 38dae976bf..7a9b6d71ac 100644
+--- a/chrome/browser/ui/views/frame/browser_view.h
++++ b/chrome/browser/ui/views/frame/browser_view.h
+@@ -1206,6 +1206,14 @@ class BrowserView : public BrowserWindow,
+   // The view that contains all visible WebContents.
+   raw_ptr<MultiContentsView> multi_contents_view_ = nullptr;
+ 
++  // Verti: Vertis eigene App-Leiste (sidebar.html aus der mitgelieferten
++  // Erweiterung). Sie liegt HINTER dem Inhalt und nimmt das ganze Fenster ein;
++  // der Inhalt wird nach rechts und unten eingerueckt, sodass links die
++  // 68-px-Leiste und oben die 44-px-Kopfzeile frei bleiben. Genau so war es in
++  // der Electron-Fassung: ein Renderer ueber das ganze Fenster, die App-
++  // Ansichten darueber gelegt.
++  raw_ptr<views::WebView> verti_sidebar_ = nullptr;
++
+   // The view responsible for housing the contents of the vertical tab strip.
+   raw_ptr<VerticalTabStripRegionView> vertical_tab_strip_region_view_ = nullptr;
+   raw_ptr<VerticalTabStripBackgroundBlurBackdrop>
+diff --git a/chrome/browser/ui/views/frame/layout/browser_view_layout.h b/chrome/browser/ui/views/frame/layout/browser_view_layout.h
+index 04ce33b996..fb1eeecba7 100644
+--- a/chrome/browser/ui/views/frame/layout/browser_view_layout.h
++++ b/chrome/browser/ui/views/frame/layout/browser_view_layout.h
+@@ -77,6 +77,8 @@ struct BrowserViewLayoutViews {
+   raw_ptr<views::View> toolbar = nullptr;
+   raw_ptr<InfoBarContainerView> infobar_container = nullptr;
+   raw_ptr<MultiContentsView> multi_contents_view = nullptr;
++  // Verti: die eigene App-Leiste, siehe browser_view.h
++  raw_ptr<views::View> verti_sidebar = nullptr;
+   raw_ptr<SidePanel> side_panel = nullptr;
+   raw_ptr<SidePanelAnimationContentView> side_panel_animation_content = nullptr;
+ 
+diff --git a/chrome/browser/ui/views/frame/layout/browser_view_layout_impl.cc b/chrome/browser/ui/views/frame/layout/browser_view_layout_impl.cc
+index 32dc2739b9..42c48b2ff7 100644
+--- a/chrome/browser/ui/views/frame/layout/browser_view_layout_impl.cc
++++ b/chrome/browser/ui/views/frame/layout/browser_view_layout_impl.cc
+@@ -3,6 +3,9 @@
+ // found in the LICENSE file.
+ 
+ #include "chrome/browser/ui/views/frame/layout/browser_view_layout_impl.h"
++#include "chrome/browser/ui/views/infobars/infobar_container_view.h"
++#include "ui/gfx/geometry/rect.h"
++#include "ui/gfx/geometry/insets.h"
+ 
+ #include "base/functional/bind.h"
+ #include "build/build_config.h"
+@@ -304,6 +307,10 @@ void BrowserViewLayoutImpl::Layout(views::View* host) {
+   // Do any additional adjustments required by the specific layout.
+   DoPostLayoutVisualAdjustments(params);
+ 
++  // Verti: zuletzt die eigene App-Leiste einpassen - nach allem anderen, damit
++  // nichts sie wieder ueberschreibt.
++  LayoutVertiSidebar();
++
+   // Update bubbles (like the find bar).
+   UpdateBubbles();
+ 
+@@ -332,6 +339,52 @@ void BrowserViewLayoutImpl::DoPreLayoutComputations(
+ void BrowserViewLayoutImpl::DoPostLayoutVisualAdjustments(
+     const BrowserLayoutParams& params) {}
+ 
++// Verti: die eigene App-Leiste einpassen.
++//
++// Aufbau wie in der Electron-Fassung: sidebar.html nimmt das GANZE Fenster ein
++// (sie bringt Kopfzeile, Leiste und die Ueberlagerungen fuer Bibliothek und
++// Einstellungen selbst mit), der Inhalt liegt darueber - eingerueckt um die
++// Leistenbreite links und die Kopfzeilenhoehe oben. Was der Nutzer als "L"
++// wahrnimmt, sind die freigelassenen Raender.
++//
++// Die Zahlen muessen zu sidebar.html passen:
++//   .sidebar { width: 68px; top: 44px; }
++//
++// WICHTIG: Das gehoert NICHT in DoPostLayoutVisualAdjustments(). Fuer normale
++// Fenster ueberschreibt BrowserViewTabbedLayoutImpl diesen Haken, ohne die
++// Basis zu rufen - der Code lief dort nie, und die Leiste blieb unsichtbar,
++// obwohl sie geladen war (am 03.09.2026 genau so gemessen).
++void BrowserViewLayoutImpl::LayoutVertiSidebar() {
++  if (!views().verti_sidebar || !views().browser_view) {
++    return;
++  }
++  constexpr int kVertiLeisteBreite = 68;
++  constexpr int kVertiKopfzeileHoehe = 44;
++
++  const gfx::Rect fenster = views().browser_view->GetLocalBounds();
++  views().verti_sidebar->SetBoundsRect(fenster);
++  views().verti_sidebar->SetVisible(true);
++
++  gfx::Rect inhalt = fenster;
++  inhalt.Inset(
++      gfx::Insets::TLBR(kVertiKopfzeileHoehe, kVertiLeisteBreite, 0, 0));
++
++  // Hinweisleisten (z.B. "Sitzung wiederhergestellt") gehoeren ebenfalls in den
++  // Inhaltsbereich. Ohne das legen sie sich ueber Vertis Kopfzeile und
++  // verdecken Wortmarke, Navigation und Zahnrad.
++  if (views().infobar_container && views().infobar_container->GetVisible()) {
++    const int hoehe = views().infobar_container->GetPreferredSize().height();
++    gfx::Rect leiste = inhalt;
++    leiste.set_height(hoehe);
++    views().infobar_container->SetBoundsRect(leiste);
++    inhalt.Inset(gfx::Insets::TLBR(hoehe, 0, 0, 0));
++  }
++
++  if (views().multi_contents_view) {
++    views().multi_contents_view->SetBoundsRect(inhalt);
++  }
++}
++
+ void BrowserViewLayoutImpl::DoPostLayoutCleanup() {}
+ 
+ void BrowserViewLayoutImpl::OnLayoutParamsChanged(
+diff --git a/chrome/browser/ui/views/frame/layout/browser_view_layout_impl.h b/chrome/browser/ui/views/frame/layout/browser_view_layout_impl.h
+index c3470b949b..861ef0c471 100644
+--- a/chrome/browser/ui/views/frame/layout/browser_view_layout_impl.h
++++ b/chrome/browser/ui/views/frame/layout/browser_view_layout_impl.h
+@@ -158,6 +158,10 @@ class BrowserViewLayoutImpl : public BrowserViewLayout {
+   // rendering, overlay configuration, etc.
+   virtual void DoPostLayoutVisualAdjustments(const BrowserLayoutParams& params);
+ 
++  // Verti: passt Vertis App-Leiste ein. Bewusst NICHT virtuell - siehe
++  // Kommentar in der .cc-Datei.
++  void LayoutVertiSidebar();
++
+   // Clear any transient values that are only valid during layout. This is
+   // performed last after all other layout steps.
+   virtual void DoPostLayoutCleanup();
+diff --git a/chrome/browser/ui/views/session_restore_infobar/session_restore_infobar_manager.cc b/chrome/browser/ui/views/session_restore_infobar/session_restore_infobar_manager.cc
+index fbbc47de4f..3523c09e41 100644
+--- a/chrome/browser/ui/views/session_restore_infobar/session_restore_infobar_manager.cc
++++ b/chrome/browser/ui/views/session_restore_infobar/session_restore_infobar_manager.cc
+@@ -128,61 +128,18 @@ void SessionRestoreInfoBarManager::OnInfoBarResult(
+   }
+ }
+ 
+-void SessionRestoreInfoBarManager::ShowInfoBar(
+-    Profile& profile,
+-    InfobarMessageType message_type) {
+-  if (infobars::IsInfoBarMigrated(
+-          infobars::InfoBarDelegate::SESSION_RESTORE_INFOBAR_DELEGATE)) {
+-    if (profile_) {
+-      return;
+-    }
+-
+-    profile_ = &profile;
+-    profile_->AddObserver(this);
+-    message_type_ = message_type;
+-
+-    pref_change_registrar_ = std::make_unique<PrefChangeRegistrar>();
+-    pref_change_registrar_->Init(profile_->GetPrefs());
+-    pref_change_registrar_->Add(
+-        prefs::kRestoreOnStartup,
+-        base::BindRepeating(
+-            &SessionRestoreInfoBarManager::OnSessionRestorePreferenceChanged,
+-            base::Unretained(this)));
+-
+-    if (!shown_metric_recorded_for_session_) {
+-      shown_metric_recorded_for_session_ = true;
+-      ignored_metric_recorded_for_session_ = false;
+-      action_taken_for_session_ = false;
+-      RecordInfoBarAction(message_type_, InfobarAction::kShown);
+-    }
+-
+-    auto* browser_infobar_manager =
+-        infobars::BrowserInfoBarManager::From(g_browser_process);
+-    if (browser_infobar_manager) {
+-      browser_infobar_manager->ShowGlobally(
+-          infobars::InfoBarDelegate::SESSION_RESTORE_INFOBAR_DELEGATE);
+-    }
+-    return;
+-  }
+-
+-  // Don't show a new infobar if one is already active.
+-  if (browser_tab_strip_tracker_) {
+-    return;
+-  }
+-
+-  profile_ = &profile;
+-  profile_->AddObserver(this);
+-  message_type_ = message_type;
+-
+-  pref_change_registrar_ = std::make_unique<PrefChangeRegistrar>();
+-  pref_change_registrar_->Init(profile_->GetPrefs());
+-  pref_change_registrar_->Add(
+-      prefs::kRestoreOnStartup,
+-      base::BindRepeating(
+-          &SessionRestoreInfoBarManager::OnSessionRestorePreferenceChanged,
+-          base::Unretained(this)));
+-
+-  InitTabStripTracker();
++void SessionRestoreInfoBarManager::ShowInfoBar(Profile& /*profile*/,
++                                               InfobarMessageType
++                                               /*message_type*/) {
++  // Verti: kein Hinweis auf die Wiederherstellung.
++  //
++  // Verti stellt die Apps bei jedem Start wieder her - das ist der Sinn der
++  // Sache und keine Besonderheit, ueber die man aufklaeren muesste. Der Hinweis
++  // nahm ausserdem Platz direkt unter Vertis Kopfzeile weg.
++  //
++  // Der urspruengliche Rumpf ist ERSETZT, nicht nur uebersprungen: ein
++  // vorangestelltes return laesst den Rest unerreichbar, und Chromium bricht
++  // den Bau dann ab (-Werror,-Wunreachable-code).
+ }
+ 
+ void SessionRestoreInfoBarManager::CloseAllInfoBars() {
 diff --git a/chrome/installer/mac/keystone_install.sh b/chrome/installer/mac/keystone_install.sh
 index f7bc063859..e5147378e9 100755
 --- a/chrome/installer/mac/keystone_install.sh
