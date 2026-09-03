@@ -27,6 +27,7 @@ chromium/
 | `chrome/browser/ui/views/frame/browser_view.*` | Vertis App-Leiste als eigene Ansicht im Fenster; Tableiste und Adressleiste aus |
 | `chrome/browser/ui/views/frame/layout/browser_view_layout_impl.*` | Leiste ueber das ganze Fenster, Inhalt eingerueckt: 68 px links, 44 px oben |
 | `chrome/browser/ui/views/session_restore_infobar/...` | Hinweis "Continue where you left off" aus - Verti stellt immer wieder her |
+| `chrome/browser/ui/views/frame/browser_native_widget_mac.mm` | Titelleistenhoehe 44 px, damit die Ampel-Knoepfe mittig in Vertis Kopfzeile sitzen |
 | `chrome/browser/ui/startup/first_run_service.cc` | Chromiums Willkommensseite aus (Animation mit Musik, Standardbrowser-Frage) |
 | `chrome/app/chromium_strings.grd` | Alle sichtbaren Texte sagen "Verti" statt "Chromium" |
 | `components/os_crypt/common/keychain_password_mac.mm` | Schluesselbund heisst "Verti Safe Storage" - genau wie beim Electron-Verti, sonst waeren die Anmeldungen weg |
@@ -54,6 +55,11 @@ Von Hand gepflegt werden nur `manifest.json`, `sw.js` (Gegenstueck zu
 ```bash
 ./chromium/bau.sh
 ```
+
+**Immer `bau.sh` benutzen, nicht `autoninja` von Hand.** Jeder Bau erzeugt das
+Framework neu und loescht dabei die eingelegte Sidebar - Verti startet dann als
+nacktes Chromium mit Googles Neuer-Tab-Seite. `bau.sh` legt sie danach wieder
+hinein.
 
 `bau.sh` spielt den Patch ein, setzt Vertis Symbol
 (`scripts/chromium-symbole.sh`), prueft die Bau-Schalter, baut und legt die

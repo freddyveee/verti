@@ -3417,6 +3417,39 @@ index ca0afc6fd0..de3e6da66a 100644
    registry->RegisterBooleanPref(prefs::kVerticalTabsEnabled, false);
    registry->RegisterBooleanPref(
        prefs::kVerticalTabsExpandOnHoverEnabled,
+diff --git a/chrome/browser/ui/views/frame/browser_native_widget_mac.mm b/chrome/browser/ui/views/frame/browser_native_widget_mac.mm
+index fb1e87f834..15eac7f5ed 100644
+--- a/chrome/browser/ui/views/frame/browser_native_widget_mac.mm
++++ b/chrome/browser/ui/views/frame/browser_native_widget_mac.mm
+@@ -267,15 +267,19 @@ - (NSTouchBar*)makeTouchBar {
+   if (browser_view_ && browser_view_->browser_widget() &&
+       browser_view_->browser_widget()->GetFrameView()) {
+     *override_titlebar_height = true;
+-    const auto top_element_info = browser_view_->GetFrameElementInfo();
+-
+-    *titlebar_height =
+-        std::max(top_element_info.tabstrip_preferred_height,
+-                 top_element_info.toolbar_minimum_height) +
+-        browser_view_->browser_widget()->GetFrameView()->GetTopInset(true);
+-    if (!browser_view_->ShouldDrawTabStrip()) {
+-      *titlebar_height += kWebAppMenuMargin * 2;
+-    }
++
++    // Verti: die Hoehe von Vertis Kopfzeile.
++    //
++    // Chromium rechnet sie sonst aus Tableiste und Adressleiste zusammen -
++    // beide gibt es bei Verti nicht mehr, also bliebe fast nichts uebrig, und
++    // macOS klebt die Ampel-Knoepfe angeschnitten an den oberen Rand (am
++    // 03.09.2026 genau so gesehen). Mit der richtigen Hoehe sitzen sie mittig
++    // in der Kopfzeile, wie in der Electron-Fassung.
++    //
++    // Muss zur Kopfzeile in sidebar.html passen (und zu kVertiKopfzeileHoehe
++    // in browser_view_layout_impl.cc).
++    constexpr float kVertiKopfzeileHoehe = 44.f;
++    *titlebar_height = kVertiKopfzeileHoehe;
+   } else {
+     *override_titlebar_height = false;
+     *titlebar_height = 0;
 diff --git a/chrome/browser/ui/views/frame/browser_view.cc b/chrome/browser/ui/views/frame/browser_view.cc
 index 24eca1ab9a..8697c442d6 100644
 --- a/chrome/browser/ui/views/frame/browser_view.cc
