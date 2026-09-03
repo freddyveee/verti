@@ -167,31 +167,67 @@ Updater, Onboarding, Erweiterungen von der Platte laden, Verti-Browser-
 Seitenkarte. Der Rechtsklick auf ein App-Symbol oeffnet jetzt ein selbst
 gebautes Menue - Erweiterungen duerfen kein natives oeffnen.
 
-## Der Rahmen: Chromiums vertikale Tableiste IST Vertis App-Leiste
+## Vertis Oberflaeche (03.09.2026)
 
-Freddys Entscheidung am 02.09.2026. Statt eine eigene Leiste danebenzubauen,
-uebernimmt Chromiums eingebaute vertikale Tableiste die Rolle - Vertis Apps sind
-ohnehin angeheftete Tabs.
+Verti bringt seine EIGENE Leiste mit, nicht Chromiums. Zwischenzeitlich war
+Chromiums eingebaute vertikale Tableiste im Einsatz - nach dem ersten Blick
+darauf verworfen: Apps wachsen von oben statt von unten, Symbole zu klein,
+falsche Farbe, fremde Knoepfe, dazu eine Adressleiste. Vertis Aussehen steckt
+in `sidebar.html` und soll dort bleiben, wo es ohne Chromium-Bau aenderbar ist.
 
-Der Patch setzt in `chrome/browser/ui/tabs/tab_strip_prefs.cc` zwei Standards:
+**Aufbau, genau wie in der Electron-Fassung:** `sidebar.html` nimmt das ganze
+Fenster ein und bringt Kopfzeile, Leiste und die Ueberlagerungen fuer
+Bibliothek und Einstellungen mit. Der Seiteninhalt liegt darueber, eingerueckt
+um **68 px links** und **44 px oben**. Die Zahlen stehen in
+`browser_view_layout_impl.cc` und muessen zu `sidebar.html` passen.
 
-```
-kVerticalTabsEnabled        false -> true    (Leiste von Anfang an da)
-kVerticalTabsCollapsedState false -> true    (eingeklappt = schmale Symbolleiste)
-```
+Chromiums Tableiste, Adressleiste, Willkommensseite und der Hinweis
+"Continue where you left off" sind aus.
 
-Gemessen mit `scripts/vtabs-probe.js`, frisches Profil, nichts eingestellt,
-Fenster 1200 x 800:
+### Fallen, die dabei Zeit gekostet haben
 
-| | Seitenbreite | Seitenhoehe |
-|---|---|---|
-| Chromium ohne Aenderung | 1200 px | 713 px |
-| Verti, aufgeklappt | 960 px | 753 px |
-| **Verti, wie ausgeliefert** | **1144 px** | **753 px** |
+- **Die Positionierung darf nicht in `DoPostLayoutVisualAdjustments()`.** Fuer
+  normale Fenster ueberschreibt `BrowserViewTabbedLayoutImpl` diesen Haken ohne
+  die Basis zu rufen - die Leiste war geladen, wurde aber nie positioniert.
+  Sie haengt jetzt fest in `Layout()`.
+- **Hinweisleisten muessen mit eingerueckt werden**, sonst legen sie sich ueber
+  Vertis Kopfzeile.
+- **`raw_ptr` auf Kindansichten im Abbau nullen.** Sonst meldet Chromiums
+  Zeiger-Schutz beim Schliessen einen haengenden Zeiger und beendet das
+  Programm mit SIGTRAP ("Verti wurde unerwartet beendet").
+- **Titelleistenhoehe selbst melden.** Chromium rechnet sie aus Tableiste und
+  Adressleiste zusammen; ohne beide bleibt fast nichts, und die Ampel-Knoepfe
+  kleben angeschnitten am Fensterrand. `browser_native_widget_mac.mm` meldet
+  jetzt 44 px.
+- **Dreimal `-Werror,-Wunreachable-code`.** Ein vorangestelltes `return` laesst
+  den Rest der Funktion unerreichbar und bricht den Bau ab. Funktionsruempfe
+  ersetzen, nicht ein return davorsetzen.
+- **Das Symbol steckt nicht im Patch.** `git diff` speichert keine Bilder;
+  `scripts/chromium-symbole.sh` setzt es aus `build/` in den Chromium-Baum.
+- **`CFBundleIconName` musste raus.** Es zeigt auf `Assets.car`, und macOS zieht
+  den Katalog dem `app.icns` vor - unser `actool`-Lauf bekam dort aber nur leere
+  Bilder hinein (jede Groesse 330 Bytes, mit `assetutil` nachgemessen). Im Dock
+  blieb sonst Chromiums blaue Kugel.
 
-Also **56 px Leiste links** (Vertis bisherige Leiste war 68 px breit) und
-40 px mehr Hoehe, weil die waagerechte Tableiste wegfaellt. Genau Vertis
-Aufteilung, ohne eigenen Unterbau.
+## Installationsfenster
+
+Chromium koppelt die ganze DMG-Gestaltung an Googles Marke - ohne Patch kommt
+ein nacktes weisses Fenster heraus. Jetzt gilt sie immer, mit Vertis
+Hintergrund (540 x 380), fester Fenstergroesse und den Symbolen links und
+rechts vom Pfeil. `scripts/dmg-vorlage.sh` erzeugt die Fenstervorlage
+(`.DS_Store`) einmalig ueber den Finder.
+
+Zwei Fallen:
+
+- Die Verknuepfung zum Programme-Ordner heisst in Chromiums Packskript nicht
+  "Applications", sondern **ein einzelnes Leerzeichen**. Mit falschem Namen
+  findet der Finder keine Position und legt sie oben links ab.
+- **`bau.sh` muss auch `chrome/installer/mac` bauen.** Die Signier- und
+  Packskripte liegen als KOPIE in `out/Release/Verti Packaging` - sonst wird mit
+  veralteten Skripten signiert, obwohl der Quelltext stimmt.
+
+Und beim Kommentieren: **in XML-Kommentaren sind zwei Bindestriche verboten.**
+Ein Kommentar mit einem Schalter darin bricht den Bau.
 
 ### Ungelesen-Zahlen: ins Favicon gemalt
 
