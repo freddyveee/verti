@@ -185,24 +185,29 @@ async function vertiStartAufbauen() {
   try {
     const s = await zustand();
 
-    // 1. Vertis eigene Flaeche ganz oben
-    await vertiTabOeffnen();
-
-    // 2. Alle eingerichteten Apps als angeheftete Tabs
-    for (const app of s.apps) {
-      if (app.id === 'browser') continue;   // der Browser ist Verti selbst
+    // 1. Alle eingerichteten Apps als angeheftete Tabs.
+    //
+    //    Vertis eigene Flaeche wird BEWUSST nicht geoeffnet (Freddys
+    //    Entscheidung am 03.09.2026): Verti soll direkt mit einer App
+    //    dastehen, nicht mit einer fast leeren Seite. Bibliothek und
+    //    Einstellungen holt man ueber Vertis Knopf in der Werkzeugleiste.
+    const apps = s.apps.filter((a) => a.id !== 'browser');
+    for (const app of apps) {
       await appOeffnen(app.id, false);
     }
 
-    // 3. Die leere Startseite wegraeumen, mit der Chromium aufmacht
+    // 2. Die leere Startseite wegraeumen, mit der Chromium aufmacht
     for (const t of await chrome.tabs.query({})) {
       if (/^chrome:\/\/(newtab|new-tab-page)/.test(t.url || '') && !t.pinned) {
         try { await chrome.tabs.remove(t.id); } catch (e) {}
       }
     }
 
-    // 4. Auf die zuletzt benutzte App stellen
-    if (s.activeApp) await appOeffnen(s.activeApp, true);
+    // 3. Nach vorn stellen: zuletzt benutzte App, sonst die erste
+    const zeigen = apps.some((a) => a.id === s.activeApp)
+      ? s.activeApp
+      : (apps[0] && apps[0].id);
+    if (zeigen) await appOeffnen(zeigen, true);
   } catch (e) {
     console.warn('[verti] Start konnte nicht aufgebaut werden', e);
   }
