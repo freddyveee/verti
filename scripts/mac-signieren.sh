@@ -46,8 +46,14 @@ QUELLE=$(find "$TMP" -maxdepth 2 -name "VertiUpdater.app" | head -1)
 ZIEL=$(find "out/Release/Verti.app/Contents/Frameworks" -maxdepth 5 -type d -name "VertiUpdater.app" | head -1)
 [ -n "$ZIEL" ] || { echo "Kein Platz fuer den Updater im Framework gefunden."; exit 1; }
 rm -rf "$ZIEL"; ditto "$QUELLE" "$ZIEL"
-codesign -dv --verbose=2 "$ZIEL" 2>&1 | grep -q "Authority=Developer ID Application" \
-  || { echo "Der eingelegte Updater ist nicht richtig signiert."; exit 1; }
+# Erst einfangen, dann pruefen: codesign schreibt auf den FEHLERKANAL, und mit
+# `set -o pipefail` reisst das eine Pipe-Pruefung mit, obwohl alles stimmt.
+SIGINFO=$(codesign -dv --verbose=2 "$ZIEL" 2>&1 || true)
+printf '%s' "$SIGINFO" | grep -q "Authority=Developer ID Application" || {
+  echo "Der eingelegte Updater ist nicht richtig signiert. codesign meldet:"
+  printf '%s\n' "$SIGINFO" | head -6 | sed 's/^/  /'
+  exit 1
+}
 
 echo "3/3  Verti signieren, notarisieren und verpacken (dauert, Mac wach lassen) …"
 rm -rf "$OUT"

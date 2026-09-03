@@ -3401,28 +3401,106 @@ index 7e1709c674..33c1af6d77 100644
 +  return false;
  }
 diff --git a/chrome/browser/ui/tabs/tab_strip_prefs.cc b/chrome/browser/ui/tabs/tab_strip_prefs.cc
-index ca0afc6fd0..dd56ed6011 100644
+index ca0afc6fd0..de3e6da66a 100644
 --- a/chrome/browser/ui/tabs/tab_strip_prefs.cc
 +++ b/chrome/browser/ui/tabs/tab_strip_prefs.cc
-@@ -24,12 +24,16 @@ void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
+@@ -24,6 +24,12 @@ void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
    registry->RegisterBooleanPref(prefs::kOrganizerPanelPinnedToTabstrip, true);
    registry->RegisterBooleanPref(prefs::kEverythingMenuPinnedToTabstrip, true);
    registry->RegisterBooleanPref(prefs::kTabScrollButtonsPinnedToTabstrip, true);
--  registry->RegisterBooleanPref(prefs::kVerticalTabsEnabled, false);
-+  // Verti: die vertikale Tableiste IST Vertis App-Leiste, deshalb von Anfang
-+  // an an. Ohne diese Zeile muesste jeder Nutzer sie erst selbst einschalten.
-+  registry->RegisterBooleanPref(prefs::kVerticalTabsEnabled, true);
++  // Verti: AUS. Zwischenzeitlich war sie an, weil sie Vertis App-Leiste
++  // ersetzen sollte. Am 03.09.2026 nebeneinandergelegt und verworfen: Apps
++  // wachsen bei Chromium von oben statt von unten, die Symbole sind zu klein,
++  // die Farbe passt nicht, und oben sitzen fremde Knoepfe. Verti bringt seine
++  // eigene Leiste mit (sidebar.html) - die sieht richtig aus und laesst sich
++  // ohne Chromium-Bau aendern.
+   registry->RegisterBooleanPref(prefs::kVerticalTabsEnabled, false);
    registry->RegisterBooleanPref(
        prefs::kVerticalTabsExpandOnHoverEnabled,
-       tabs::kVerticalTabsExpandOnHoverDefaultEnabled.Get());
-   registry->RegisterBooleanPref(prefs::kVerticalTabsEnabledFirstTime, false);
--  registry->RegisterBooleanPref(prefs::kVerticalTabsCollapsedState, false);
-+  // Verti: eingeklappt = schmale Symbolleiste, so wie Verti es bisher hatte.
-+  // Aufklappen bleibt dem Nutzer ueberlassen.
-+  registry->RegisterBooleanPref(prefs::kVerticalTabsCollapsedState, true);
-   registry->RegisterIntegerPref(prefs::kVerticalTabsUncollapsedWidth,
-                                 kVerticalTabStripDefaultUncollapsedWidth);
+diff --git a/chrome/browser/ui/views/frame/browser_view.cc b/chrome/browser/ui/views/frame/browser_view.cc
+index 24eca1ab9a..689522c529 100644
+--- a/chrome/browser/ui/views/frame/browser_view.cc
++++ b/chrome/browser/ui/views/frame/browser_view.cc
+@@ -1404,35 +1404,17 @@ bool BrowserView::ShouldDrawTabStrokes() const {
  }
+ 
+ bool BrowserView::ShouldDrawTabStrip() const {
+-  // Return false if this window does not normally display a tabstrip or if the
+-  // tabstrip is currently hidden, e.g. because we're in fullscreen.
+-  if (!WindowFeatureController::From(browser_)->SupportsWindowFeature(
+-          WindowFeatureController::WindowFeature::kFeatureTabStrip)) {
+-    return false;
+-  }
+-
+-  // Return false if the tabstrip has not yet been created (by InitViews()),
+-  // since callers may otherwise try to access it.
+-  // Under the TabStripUnification feature, we only initialize the tab strip
+-  // region view that is active (horizontal or vertical). When the feature is
+-  // disabled, the horizontal tab strip is created unconditionally.
+-  if (base::FeatureList::IsEnabled(tabs::kTabStripUnification)) {
+-    const auto* controller =
+-        tabs::VerticalTabStripStateController::From(browser_);
+-    const bool displays_vertical_tabs =
+-        controller && controller->ShouldDisplayVerticalTabs() &&
+-        browser_->GetType() == BrowserWindowInterface::Type::TYPE_NORMAL;
+-
+-    if (displays_vertical_tabs) {
+-      return vertical_tab_strip_region_view_ &&
+-             vertical_tab_strip_region_view_->GetTabStripView() != nullptr;
+-    }
+-
+-    return horizontal_tab_strip_region_view_ &&
+-           horizontal_tab_strip_region_view_->GetTabStripView() != nullptr;
+-  }
+-
+-  return horizontal_tab_strip_region_view_->GetTabStripView() != nullptr;
++  // Verti: keine Tableiste.
++  //
++  // Vertis App-Leiste ist die eigene Sidebar (sidebar.html). Die Tabs bleiben
++  // als Technik dahinter bestehen - jede App ist ein Tab -, aber der Nutzer
++  // sieht und bedient sie ueber Vertis Leiste.
++  //
++  // Der ganze urspruengliche Rumpf ist bewusst entfernt und nicht nur
++  // uebersprungen: ein vorangestelltes `return false` laesst den Rest
++  // unerreichbar, und Chromium bricht den Bau dann ab
++  // (-Werror,-Wunreachable-code).
++  return false;
+ }
+ 
+ bool BrowserView::ShouldDrawVerticalTabStrip() const {
+@@ -3044,26 +3026,12 @@ void BrowserView::DisableTabStripEditingForTesting() {
+ }
+ 
+ bool BrowserView::IsToolbarVisible() const {
+-#if BUILDFLAG(IS_MAC)
+-  // Immersive full screen makes it possible to display the toolbar when
+-  // kShowFullscreenToolbar is not set.
+-  if (!WindowFeatureController::From(browser())
+-           ->UsesImmersiveFullscreenMode()) {
+-    if (IsFullscreen() &&
+-        !fullscreen_utils::IsAlwaysShowToolbarEnabled(browser())) {
+-      return false;
+-    }
+-  }
+-#endif
+-
+-  // It's possible to reach here before we've been notified of being added to a
+-  // widget, so |toolbar_| is still null.  Return false in this case so callers
+-  // don't assume they can access the toolbar yet.
+-  return (WindowFeatureController::From(browser_)->SupportsWindowFeature(
+-              WindowFeatureController::WindowFeature::kFeatureToolbar) ||
+-          WindowFeatureController::From(browser_)->SupportsWindowFeature(
+-              WindowFeatureController::WindowFeature::kFeatureLocationBar)) &&
+-         toolbar_;
++  // Verti: keine Adressleiste.
++  //
++  // Verti zeigt Apps, keine Webseiten, die man eintippt. Wer surfen will,
++  // nimmt den Verti-Browser als App. Auch hier der ganze Rumpf entfernt statt
++  // uebersprungen, sonst bricht der Bau wegen unerreichbarem Code ab.
++  return false;
+ }
+ 
+ bool BrowserView::IsToolbarShowing() const {
 diff --git a/chrome/installer/mac/keystone_install.sh b/chrome/installer/mac/keystone_install.sh
 index f7bc063859..e5147378e9 100755
 --- a/chrome/installer/mac/keystone_install.sh
