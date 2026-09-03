@@ -23,6 +23,10 @@ chromium/
 |---|---|
 | `chrome/app/theme/chromium/BRANDING` | Produktname "Verti", Bundle-Kennung `rocks.imperio.verti` (identisch zur heutigen Verti-App, damit ein Update nahtlos druebergeht), Team-Kennung |
 | `chrome/browser/ui/tabs/tab_strip_prefs.cc` | Vertikale Tableiste von Anfang an an und eingeklappt - das IST Vertis App-Leiste |
+| `chrome/browser/extensions/component_loader.*` | Verti laedt seine Sidebar selbst aus den Framework-Resources |
+| `chrome/browser/ui/startup/first_run_service.cc` | Chromiums Willkommensseite aus (Animation mit Musik, Standardbrowser-Frage) |
+| `chrome/app/chromium_strings.grd` | Alle sichtbaren Texte sagen "Verti" statt "Chromium" |
+| `components/os_crypt/common/keychain_password_mac.mm` | Schluesselbund heisst "Verti Safe Storage" - genau wie beim Electron-Verti, sonst waeren die Anmeldungen weg |
 | `chrome/updater/branding.gni` | Updater heisst Verti, eigene Kennungen, eigener Update-Server; Absturzberichte und Nutzungsprotokoll NICHT mehr an Google |
 | `chrome/updater/external_constants_default.cc` | CUP aus (Begruendung im Code), CRX3 statt Google-Herausgeberbeweis |
 | `chrome/installer/mac/keystone_install.sh` | Googles Installationsskript auf Verti umgestellt (App-Name, Framework, drei Pfade) |
@@ -47,6 +51,14 @@ Von Hand gepflegt werden nur `manifest.json`, `sw.js` (Gegenstueck zu
 ```bash
 ./chromium/bau.sh
 ```
+
+`bau.sh` spielt den Patch ein, setzt Vertis Symbol
+(`scripts/chromium-symbole.sh`), prueft die Bau-Schalter, baut und legt die
+Sidebar in die Framework-Resources.
+
+**Das Symbol steckt bewusst NICHT im Patch:** `git diff` speichert Bilder nicht
+mit - am 03.09.2026 nachgesehen, der Patch enthielt null Binaerbloecke. Die
+Bilder kommen aus `build/` in diesem Repo.
 
 Erstbau dauert etwa vier Stunden, ein Aenderungsbau je nach Umfang sechs
 Minuten bis gut eine Stunde.

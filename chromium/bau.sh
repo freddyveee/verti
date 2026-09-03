@@ -38,6 +38,11 @@ else
   git apply --3way "$PATCH"
 fi
 
+# Vertis Symbol setzen. Das gehoert NICHT in den Patch: git diff speichert
+# Bilder nicht mit (am 03.09.2026 nachgesehen, null Binaerbloecke). Ohne diesen
+# Schritt traegt Verti Chromiums blaue Kugel.
+"$REPO/scripts/chromium-symbole.sh"
+
 if [ "${1:-}" = "--nur-patch" ]; then exit 0; fi
 
 # Die Bau-Schalter muessen stehen, sonst fehlen Widevine und H.264/AAC
