@@ -452,11 +452,37 @@ Und die ausgetauschte App danach:
 Also: **nach dem Update ist Verti immer noch notarisiert und startet ohne
 Warnung.** Damit ist die Kette vom Bau bis zum Nutzer vollstaendig.
 
+## Offener Punkt: das Chromium-Verti startet mit LEEREM Profil
+
+Am 03.09.2026 nachgesehen: Vertis Info.plist hat **kein** `CrProductDirName`.
+Chromium faellt dann laut `chrome/common/chrome_paths_mac.mm` auf den festen
+Namen **"Chromium"** zurueck. Das Chromium-Verti legt sein Profil also unter
+`~/Library/Application Support/Chromium` an - NICHT unter
+`~/Library/Application Support/Verti`, wo die 1,3 GB des Electron-Vertis mit
+allen Anmeldungen liegen.
+
+**Fuer die Testfassung ist das genau richtig:** beide Fassungen stoeren sich
+nicht, und Freddys echtes Profil bleibt unberuehrt. Er kann Chromium-Verti in
+Ruhe ausprobieren und danach das alte weiterbenutzen.
+
+**Fuer die echte Umstellung muss das geaendert werden**, sonst stehen alle
+Nutzer ploetzlich ohne ihre Anmeldungen da. Zu tun:
+
+1. `CrProductDirName = Verti` ins Info.plist (ueber `tweak_info_plist.py`,
+   analog zu den Keystone-Schluesseln).
+2. **Vorher das Profil sichern.** Chromium 155 ist neuer als Electrons
+   Chromium 150 und wertet das Profil beim ersten Start auf. Danach ist ein
+   Rueckschritt auf das alte Verti nicht mehr verlaesslich moeglich.
+3. Erst mit einem gesicherten Profil messen, ob die Anmeldungen wirklich
+   uebernommen werden.
+
 ### Was noch fehlt
 
-1. Der erste echte Release: DMG, `Verti-Mac.crx3` und `Verti-Mac.crx3.sha256`
-   ins GitHub-Release legen.
-2. Kompletter Windows-Zweig.
+1. Der erste echte Release: DMG, `Verti-Mac.crx3`, `Verti-Mac.crx3.sha256` und
+   `Verti-Mac.crx3.version` ins GitHub-Release legen (als Vorab-Release, damit
+   die bestehenden Nutzer es NICHT automatisch bekommen).
+2. Profilordner umstellen (siehe oben), bevor umgestellt wird.
+3. Kompletter Windows-Zweig.
 
 Der **einmalige Umstieg** von Electron auf Chromium ist davon unberuehrt: den
 liefert die heutige Electron-Fassung ueber electron-updater aus, mit einem
