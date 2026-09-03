@@ -53,8 +53,15 @@ done
 echo "Baue … (Erstbau ~4 h, Aenderungsbau 6 min bis gut 1 h)"
 caffeinate -i autoninja -C out/Release chrome
 
-# Die Sidebar-Erweiterung in die fertige App legen
-ZIEL="$SRC/out/Release/Verti.app/Contents/Resources/verti-sidebar"
+# Die Sidebar-Erweiterung in die fertige App legen.
+#
+# WICHTIG: in die Resources des FRAMEWORKS, nicht in die der aeusseren App.
+# Chromiums DIR_RESOURCES zeigt auf dem Mac dorthin, und genau von dort laedt
+# component_loader.cc sie beim Start. Liegt sie woanders, startet Verti als
+# nacktes Chromium.
+FW=$(find "$SRC/out/Release/Verti.app/Contents/Frameworks" -maxdepth 4 -type d -name "Resources" -path "*Verti Framework.framework*" | head -1)
+[ -n "$FW" ] || { echo "Framework-Resources nicht gefunden"; exit 1; }
+ZIEL="$FW/verti-sidebar"
 rm -rf "$ZIEL"
 mkdir -p "$ZIEL"
 cp -R "$REPO/chromium/extension/." "$ZIEL/"

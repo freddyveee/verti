@@ -3,6 +3,7 @@
   "name": "Verti",
   "version": "1.1.18",
   "description": "Vertis Sidebar: Web-Apps dauerhaft eingeloggt neben einer schmalen Leiste.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5hA/jsYfQYDF0J9TGYm8fRh2ymI8dxbdcGCWZPLp80lB2R9h/BwZcPxB16pzEwOQngNiwdyNPBsPoZAKVaeWMu8E0iJdqBMneBouydMyAVO0Qkdf8l1ga9sovpcKDFVqyg/GlBY8jVrqDJGWI2G0r/HRy6ntCY99lcanUtVxFcWA/mjN4dB4HsNlOP+BvDdoxODPnBlIgf6mptcoZ8tWE6IZ0hAwld57kzztW7j6Ad0zqLMnUxkZw8/pbBUhZ2mC6wHYaztbFZLTl2Lby8k7Zu8qCavxsSNCOUlHxsRP2A7/dbFyBHv6a1Cu4hxayUS0XcANMSeemyVrfbyKmVhIMwIDAQAB",
   "permissions": [
     "tabs",
     "storage",
