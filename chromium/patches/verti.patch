@@ -3733,6 +3733,53 @@ index c3470b949b..861ef0c471 100644
    // Clear any transient values that are only valid during layout. This is
    // performed last after all other layout steps.
    virtual void DoPostLayoutCleanup();
+diff --git a/chrome/browser/ui/views/session_crashed_bubble_view.cc b/chrome/browser/ui/views/session_crashed_bubble_view.cc
+index 23b6072245..6e965b274c 100644
+--- a/chrome/browser/ui/views/session_crashed_bubble_view.cc
++++ b/chrome/browser/ui/views/session_crashed_bubble_view.cc
+@@ -200,29 +200,19 @@ class SessionCrashedBubbleView::BrowserRemovalObserver
+ 
+ // static
+ void SessionCrashedBubble::ShowIfNotOffTheRecordProfile(
+-    BrowserWindowInterface* browser,
+-    bool skip_tab_checking) {
+-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+-  if (browser->GetProfile()->IsOffTheRecord()) {
+-    return;
+-  }
+-
+-  // Observes possible browser removal before Show is called.
+-  auto browser_observer =
+-      std::make_unique<SessionCrashedBubbleView::BrowserRemovalObserver>(
+-          browser);
+-
+-  if (DoesSupportConsentCheck()) {
+-    GoogleUpdateSettings::CollectStatsConsentTaskRunner()
+-        ->PostTaskAndReplyWithResult(
+-            FROM_HERE,
+-            base::BindOnce(&GoogleUpdateSettings::GetCollectStatsConsent),
+-            base::BindOnce(&SessionCrashedBubbleView::Show,
+-                           std::move(browser_observer), skip_tab_checking));
+-  } else {
+-    SessionCrashedBubbleView::Show(std::move(browser_observer),
+-                                   skip_tab_checking, false);
+-  }
++    BrowserWindowInterface* /*browser*/,
++    bool /*skip_tab_checking*/) {
++  // Verti: keine Frage nach dem Wiederherstellen.
++  //
++  // Verti stellt seine Apps bei jedem Start wieder her - das ist der Sinn der
++  // Sache, nicht die Ausnahme. Dieselbe Ueberlegung wie beim Hinweis
++  // "Continue where you left off", der ebenfalls aus ist.
++  //
++  // Ausserdem war diese Frage gefaehrlich: sie haengt sich an Chromiums
++  // Drei-Punkte-Menue, und das gibt es bei Verti nicht mehr (Adressleiste ist
++  // aus). Ergebnis war eine ABSTURZSCHLEIFE - Verti stuerzte ab, macOS bot
++  // "Erneut oeffnen" an, die Frage schlug wieder fehl. Am 03.09.2026 bei
++  // Freddy genau so passiert.
+ }
+ 
+ // static
 diff --git a/chrome/browser/ui/views/session_restore_infobar/session_restore_infobar_manager.cc b/chrome/browser/ui/views/session_restore_infobar/session_restore_infobar_manager.cc
 index fbbc47de4f..3523c09e41 100644
 --- a/chrome/browser/ui/views/session_restore_infobar/session_restore_infobar_manager.cc
