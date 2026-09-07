@@ -3439,6 +3439,50 @@ index ca0afc6fd0..de3e6da66a 100644
    registry->RegisterBooleanPref(prefs::kVerticalTabsEnabled, false);
    registry->RegisterBooleanPref(
        prefs::kVerticalTabsExpandOnHoverEnabled,
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view.cc b/chrome/browser/ui/views/frame/browser_frame_view.cc
+index 840b7a2de5..9f30fc4add 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view.cc
++++ b/chrome/browser/ui/views/frame/browser_frame_view.cc
+@@ -3,6 +3,7 @@
+ // found in the LICENSE file.
+ 
+ #include "chrome/browser/ui/views/frame/browser_frame_view.h"
++#include "ui/gfx/geometry/insets.h"
+ 
+ #include <string_view>
+ 
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_mac.mm b/chrome/browser/ui/views/frame/browser_frame_view_mac.mm
+index 39c36aab3c..959694d195 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_mac.mm
++++ b/chrome/browser/ui/views/frame/browser_frame_view_mac.mm
+@@ -393,6 +393,27 @@ FullscreenToolbarStyle GetUserPreferredToolbarStyle(bool always_show) {
+     return super_component;
+   }
+ 
++  // Verti: das Fenster laesst sich an der Kopfzeile verschieben.
++  //
++  // Vertis Leiste deckt das ganze Fenster ab, deshalb meldet die Pruefung
++  // weiter unten nie "hier ist nichts" - und ohne das gibt es keine
++  // Titelleiste zum Anfassen. Bei Freddy liess sich das Fenster gar nicht
++  // bewegen (07.09.2026).
++  //
++  // Freigegeben wird nur der freie MITTELTEIL der Kopfzeile. Links sitzen die
++  // Ampel-Knoepfe und die Navigation (ab 84 px, siehe .nav in sidebar.html),
++  // rechts der Verbesserungs-Knopf und das Zahnrad (zusammen rund 230 px, siehe
++  // .feedback-btn und .gear-btn). Diese Bereiche muessen anklickbar bleiben.
++  {
++    constexpr int kKopfzeileHoehe = 44;
++    constexpr int kFreiLinks = 200;    // Ampel-Knoepfe und Navigation
++    constexpr int kFreiRechts = 240;   // Verbesserung und Zahnrad
++    if (point.y() >= 0 && point.y() < kKopfzeileHoehe &&
++        point.x() >= kFreiLinks && point.x() < width() - kFreiRechts) {
++      return HTCAPTION;
++    }
++  }
++
+   // BrowserView::NonClientHitTest will return HTNOWHERE for points that hit
+   // the native title bar. On Mac, we need to explicitly return HTCAPTION for
+   // those points.
 diff --git a/chrome/browser/ui/views/frame/browser_native_widget_mac.mm b/chrome/browser/ui/views/frame/browser_native_widget_mac.mm
 index fb1e87f834..15eac7f5ed 100644
 --- a/chrome/browser/ui/views/frame/browser_native_widget_mac.mm
@@ -3641,7 +3685,7 @@ index 04ce33b996..fb1eeecba7 100644
    raw_ptr<SidePanelAnimationContentView> side_panel_animation_content = nullptr;
  
 diff --git a/chrome/browser/ui/views/frame/layout/browser_view_layout_impl.cc b/chrome/browser/ui/views/frame/layout/browser_view_layout_impl.cc
-index 32dc2739b9..42c48b2ff7 100644
+index 32dc2739b9..c415b53f1d 100644
 --- a/chrome/browser/ui/views/frame/layout/browser_view_layout_impl.cc
 +++ b/chrome/browser/ui/views/frame/layout/browser_view_layout_impl.cc
 @@ -3,6 +3,9 @@
@@ -3654,7 +3698,30 @@ index 32dc2739b9..42c48b2ff7 100644
  
  #include "base/functional/bind.h"
  #include "build/build_config.h"
-@@ -304,6 +307,10 @@ void BrowserViewLayoutImpl::Layout(views::View* host) {
+@@ -224,6 +227,22 @@ void BrowserViewLayoutImpl::Layout(views::View* host) {
+     return;
+   }
+ 
++  // Verti: Platz fuer die eigene App-Leiste reservieren, BEVOR gerechnet wird -
++  // 68 px links, 44 px oben. Alles Weitere ordnet sich dann von selbst ein.
++  //
++  // Inset() ist die dafuer vorgesehene Methode; sie zieht die zusammenhaengenden
++  // Werte (Ausschlussbereiche der Fensterecken) mit. Nur `visual_client_area`
++  // direkt zu verkleinern bricht eine Zusicherung weiter unten
++  // ("Check failed: visual_client_area.Contains(new_client_area)").
++  //
++  // Frueher wurden die Groessen NACH dem Layout ueberschrieben. Das fordert ein
++  // neues Layout an, das die Werte zurueckschreibt - eine Endlosschleife. Bei
++  // Freddy flackerte die Oberflaeche, und der Browser-Prozess lag im Leerlauf
++  // bei ueber 25 % Rechenlast (07.09.2026 gemessen).
++  //
++  // Die Zahlen muessen zu sidebar.html passen.
++  params.Inset(gfx::Insets::TLBR(44, 68, 0, 0));
++
+   DoPreLayoutComputations(params);
+ 
+   // If the top container is separate from the browser view, lay it out now.
+@@ -304,6 +323,10 @@ void BrowserViewLayoutImpl::Layout(views::View* host) {
    // Do any additional adjustments required by the specific layout.
    DoPostLayoutVisualAdjustments(params);
  
@@ -3665,7 +3732,7 @@ index 32dc2739b9..42c48b2ff7 100644
    // Update bubbles (like the find bar).
    UpdateBubbles();
  
-@@ -332,6 +339,52 @@ void BrowserViewLayoutImpl::DoPreLayoutComputations(
+@@ -332,6 +355,43 @@ void BrowserViewLayoutImpl::DoPreLayoutComputations(
  void BrowserViewLayoutImpl::DoPostLayoutVisualAdjustments(
      const BrowserLayoutParams& params) {}
  
@@ -3685,33 +3752,24 @@ index 32dc2739b9..42c48b2ff7 100644
 +// Basis zu rufen - der Code lief dort nie, und die Leiste blieb unsichtbar,
 +// obwohl sie geladen war (am 03.09.2026 genau so gemessen).
 +void BrowserViewLayoutImpl::LayoutVertiSidebar() {
++  // Verti: die eigene App-Leiste ueber das ganze Fenster legen.
++  //
++  // Der Seiteninhalt wird NICHT mehr hier verschoben - dafuer reserviert
++  // BrowserFrameView::GetBrowserLayoutParams() den Platz von vornherein.
++  // Hier nachtraeglich Groessen zu setzen hat eine Layout-Endlosschleife
++  // ausgeloest (Flackern, hohe Rechenlast im Leerlauf).
++  //
++  // Auch das Folgende setzt nur dann etwas, wenn es sich wirklich aendert -
++  // sonst faengt dieselbe Schleife von vorn an.
 +  if (!views().verti_sidebar || !views().browser_view) {
 +    return;
 +  }
-+  constexpr int kVertiLeisteBreite = 68;
-+  constexpr int kVertiKopfzeileHoehe = 44;
-+
 +  const gfx::Rect fenster = views().browser_view->GetLocalBounds();
-+  views().verti_sidebar->SetBoundsRect(fenster);
-+  views().verti_sidebar->SetVisible(true);
-+
-+  gfx::Rect inhalt = fenster;
-+  inhalt.Inset(
-+      gfx::Insets::TLBR(kVertiKopfzeileHoehe, kVertiLeisteBreite, 0, 0));
-+
-+  // Hinweisleisten (z.B. "Sitzung wiederhergestellt") gehoeren ebenfalls in den
-+  // Inhaltsbereich. Ohne das legen sie sich ueber Vertis Kopfzeile und
-+  // verdecken Wortmarke, Navigation und Zahnrad.
-+  if (views().infobar_container && views().infobar_container->GetVisible()) {
-+    const int hoehe = views().infobar_container->GetPreferredSize().height();
-+    gfx::Rect leiste = inhalt;
-+    leiste.set_height(hoehe);
-+    views().infobar_container->SetBoundsRect(leiste);
-+    inhalt.Inset(gfx::Insets::TLBR(hoehe, 0, 0, 0));
++  if (views().verti_sidebar->bounds() != fenster) {
++    views().verti_sidebar->SetBoundsRect(fenster);
 +  }
-+
-+  if (views().multi_contents_view) {
-+    views().multi_contents_view->SetBoundsRect(inhalt);
++  if (!views().verti_sidebar->GetVisible()) {
++    views().verti_sidebar->SetVisible(true);
 +  }
 +}
 +
