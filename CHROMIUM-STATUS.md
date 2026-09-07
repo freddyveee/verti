@@ -525,6 +525,60 @@ liefert die heutige Electron-Fassung ueber electron-updater aus, mit einem
 `Verti-Mac.zip`, in dem das Chromium-Verti steckt. Die Bundle-Kennung ist
 absichtlich dieselbe (`rocks.imperio.verti`).
 
+## Ueberlagerungen: Bibliothek, Einstellungen, Verbesserung (07.09.2026)
+
+Freddy meldete drei Fehler, die alle DIESELBE Ursache hatten: "Zahnrad geht
+nicht, Verbesserung geht nicht, und wenn ich eine App hinzufuegen moechte, dann
+oeffnet sich die App-Bibliothek im Hintergrund."
+
+Die Knoepfe funktionierten in Wirklichkeit die ganze Zeit. Nur liegt alles, was
+Verti einblendet, IN `sidebar.html` - und Vertis Leiste liegt hinter dem
+App-Inhalt, sonst wuerde sie die Apps verdecken. Die Bibliothek oeffnete sich
+also unsichtbar hinter ChatGPT. Genau die Falle, die in CLAUDE.md steht.
+
+In Electron blendete `window.verti.openLibrary()` dafuer die App-Ansichten aus.
+In der Bruecke `verti-shim.js` war das ein leerer Aufruf geblieben.
+
+**Wie es jetzt geht:** die Leiste meldet ueber den Seitentitel
+(`verti:overlay:an` / `:aus`), Chromium schiebt sie daraufhin in der
+Reihenfolge der Ansichten nach vorn und wieder zurueck
+(`VertiUeberlagerungsWaechter` in `browser_view.cc`). Der Titel ist der einzige
+Weg von einer Erweiterungsseite zum Fenster, der ohne eine neue
+Mojo-Schnittstelle auskommt; `sidebar.html` benutzt ihn sonst fuer nichts.
+
+**Zwei Sackgassen, beide gemessen:**
+
+1. **Den Inhalt ausblenden geht nicht.** `multi_contents_view_->SetVisible(false)`
+   laesst Verti beim naechsten Neuberechnen abstuerzen:
+   `Check failed: IsParentedToAndVisible(views().multi_contents_view, ...)` in
+   `browser_view_tabbed_layout_impl.cc`. Deshalb Umsortieren statt Ausblenden.
+2. **Auf die Aufrufe hoeren reicht nicht.** `sidebar.html` schliesst die
+   Bibliothek beim App-Wechsel absichtlich ohne Meldung (`closeLibrary(false)`,
+   weil in Electron der Hauptprozess die Ansichten schon selbst wieder
+   eingeblendet hatte). Die Bruecke beobachtet deshalb den ZUSTAND der drei
+   Elemente (`MutationObserver` auf die Klasse `open`), nicht die Aufrufe.
+
+**Nachmessbar:** `VLOG(1)` in `browser_view.cc` schreibt bei jedem Umschalten
+die Plaetze mit. Sichtbar mit `--enable-logging=stderr --v=1`:
+
+```
+Verti: Ueberlagerung an  - Leiste an Stelle 14, Inhalt an Stelle 2 von 15
+Verti: Ueberlagerung aus - Leiste an Stelle 2,  Inhalt an Stelle 3 von 15
+```
+
+Das ist noetig, weil Chromiums UI-DevTools im Release-Bau keine Klassennamen
+liefert (alles heisst "View") und `screencapture` hier nur Schwarz gibt.
+
+Geprueft wurden elf Wege mit `scripts/chromium-sonde.js`: Plus, ✕, Zahnrad,
+Escape, Verbesserung, Klick auf den Hintergrund, Zurueck-Pfeil und - der
+wichtigste - eine App in der Leiste anklicken, waehrend die Bibliothek offen
+ist. Alle richtig, kein Absturz.
+
+**Nebenbei behoben:** in den Einstellungen stand als Version dauerhaft 1.1.18,
+die Nummer der Electron-Fassung aus dem Erweiterungs-Manifest. `bau.sh`
+stempelt jetzt beim Einlegen die echte Nummer der gebauten App hinein.
+Chromiums Kennung taugt dafuer nicht, die ist gekuerzt ("Chrome/155.0.0.0").
+
 ## Offen ausser DRM
 
 Signierung, Notarisierung, das Austauschen beim Update (siehe oben), Onboarding,

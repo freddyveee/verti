@@ -21,10 +21,20 @@ fi
 export PATH="$DEPOT:$PATH"
 export DEPOT_TOOLS_UPDATE=0
 
-# Aenderungen zurueck in den Patch schreiben
+# Aenderungen zurueck in den Patch schreiben.
+#
+# Die Symbol-Dateien bleiben AUSSEN VOR. git diff schreibt fuer Bilder nur
+# "Binary files a/... and b/... differ" ohne die Daten - ein Patch mit so einer
+# Zeile laesst sich hinterher nicht mehr anwenden, git apply bricht ab. Die
+# Bilder kommen ohnehin aus build/ in diesem Repo (scripts/chromium-symbole.sh).
 if [ "${1:-}" = "--patch-neu" ]; then
-  (cd "$SRC" && git diff) > "$PATCH"
-  echo "Patch aufgefrischt: $PATCH"
+  (cd "$SRC" && git diff -- . ':(exclude)chrome/app/theme/chromium/mac') > "$PATCH"
+  if grep -q "^Binary files" "$PATCH"; then
+    echo "ACHTUNG: Der Patch enthaelt Binaerzeilen ohne Daten und waere unbrauchbar."
+    grep -n "^Binary files" "$PATCH"
+    exit 1
+  fi
+  echo "Patch aufgefrischt: $PATCH ($(grep -c '^diff --git' "$PATCH") Dateien)"
   exit 0
 fi
 
@@ -84,4 +94,23 @@ ZIEL="$FW/verti-sidebar"
 rm -rf "$ZIEL"
 mkdir -p "$ZIEL"
 cp -R "$REPO/chromium/extension/." "$ZIEL/"
+
+# Die echte Versionsnummer der gebauten App ins Manifest stempeln.
+#
+# In chromium/extension/manifest.json steht nur ein Platzhalter. Ohne diesen
+# Schritt zeigt Verti unter Einstellungen -> Version die alte Nummer der
+# Electron-Fassung an (1.1.18), waehrend "Nach Updates suchen" gegen die
+# echte prueft. Chromiums Kennung hilft nicht weiter: die ist gekuerzt
+# ("Chrome/155.0.0.0", am 07.09.2026 gemessen).
+VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
+  "$SRC/out/Release/Verti.app/Contents/Info.plist")
+python3 - "$ZIEL/manifest.json" "$VERSION" <<'PYTHON'
+import json, sys
+pfad, version = sys.argv[1], sys.argv[2]
+m = json.load(open(pfad))
+m['version'] = version
+json.dump(m, open(pfad, 'w'), indent=2, ensure_ascii=False)
+PYTHON
+echo "Erweiterung eingelegt, Version $VERSION"
+
 echo "Fertig: $SRC/out/Release/Verti.app"

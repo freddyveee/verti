@@ -24,7 +24,7 @@ chromium/
 | `chrome/app/theme/chromium/BRANDING` | Produktname "Verti", Bundle-Kennung `rocks.imperio.verti` (identisch zur heutigen Verti-App, damit ein Update nahtlos druebergeht), Team-Kennung |
 | `chrome/browser/ui/tabs/tab_strip_prefs.cc` | Vertikale Tableiste von Anfang an an und eingeklappt - das IST Vertis App-Leiste |
 | `chrome/browser/extensions/component_loader.*` | Verti laedt seine Sidebar selbst aus den Framework-Resources |
-| `chrome/browser/ui/views/frame/browser_view.*` | Vertis App-Leiste als eigene Ansicht im Fenster; Tableiste und Adressleiste aus |
+| `chrome/browser/ui/views/frame/browser_view.*` | Vertis App-Leiste als eigene Ansicht im Fenster; Tableiste und Adressleiste aus; Ueberlagerungen (Bibliothek, Einstellungen, Verbesserung) holen die Leiste nach vorn |
 | `chrome/browser/ui/views/frame/layout/browser_view_layout_impl.*` | Leiste ueber das ganze Fenster, Inhalt eingerueckt: 68 px links, 44 px oben |
 | `chrome/browser/ui/views/session_restore_infobar/...` | Hinweis "Continue where you left off" aus - Verti stellt immer wieder her |
 | `chrome/browser/ui/views/frame/browser_native_widget_mac.mm` | Titelleistenhoehe 44 px, damit die Ampel-Knoepfe mittig in Vertis Kopfzeile sitzen |
@@ -49,6 +49,10 @@ node scripts/chromium-port.js
 Von Hand gepflegt werden nur `manifest.json`, `sw.js` (Gegenstueck zu
 `main.js`), `badge-content.js` und die beiden Bruecken `verti-shim.js`
 (`window.verti`) und `update-shim.js` (`window.vertiUpdate`).
+
+Die `version` in `manifest.json` ist nur ein **Platzhalter**: `bau.sh` schreibt
+beim Einlegen die echte Nummer der gebauten App hinein. Sie steht in Vertis
+Einstellungen unter "Version".
 
 ## Bauen
 

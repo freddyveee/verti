@@ -3517,10 +3517,18 @@ index fb1e87f834..15eac7f5ed 100644
      *override_titlebar_height = false;
      *titlebar_height = 0;
 diff --git a/chrome/browser/ui/views/frame/browser_view.cc b/chrome/browser/ui/views/frame/browser_view.cc
-index 24eca1ab9a..b54723968c 100644
+index 24eca1ab9a..dbe8bf0770 100644
 --- a/chrome/browser/ui/views/frame/browser_view.cc
 +++ b/chrome/browser/ui/views/frame/browser_view.cc
-@@ -418,6 +418,13 @@ using web_modal::WebContentsModalDialogHost;
+@@ -298,6 +298,7 @@
+ #include "content/public/browser/render_widget_host.h"
+ #include "content/public/browser/render_widget_host_view.h"
+ #include "content/public/browser/web_contents.h"
++#include "content/public/browser/web_contents_observer.h"
+ #include "content/public/common/content_features.h"
+ #include "content/public/common/content_switches.h"
+ #include "content/public/common/drop_data.h"
+@@ -418,6 +419,13 @@ using web_modal::WebContentsModalDialogHost;
  
  namespace {
  
@@ -3534,7 +3542,93 @@ index 24eca1ab9a..b54723968c 100644
  // The visible height of the shadow above the tabs. Clicks in this area are
  // treated as clicks to the frame, rather than clicks to the tab.
  const int kTabShadowSize = 2;
-@@ -937,6 +944,17 @@ BrowserView::BrowserView(BrowserWindowInterface* browser)
+@@ -882,6 +890,85 @@ class BrowserView::PipExclusionObserverImpl
+ ///////////////////////////////////////////////////////////////////////////////
+ // BrowserView, public:
+ 
++// Verti: horcht auf den Seitentitel der App-Leiste.
++//
++// Alles, was Verti einblendet - App-Bibliothek, Einstellungen, das
++// Verbesserungs-Formular - lebt IN sidebar.html. Die Leiste liegt aber hinter
++// dem App-Inhalt, also oeffnet sich die Bibliothek sonst unsichtbar hinter
++// ChatGPT (von Freddy am 07.09.2026 genau so gemeldet und fotografiert).
++//
++// In Electron blendete window.verti.openLibrary() dafuer die App-Ansichten
++// aus. Hier tut es dieselbe Stelle: verti-shim.js setzt den Titel auf
++// "verti:overlay:an" bzw. "verti:overlay:aus", und dieser Waechter reicht das
++// ans Fenster weiter. Der Titel ist der einzige Weg von einer
++// Erweiterungsseite zum Fenster, der ohne eine neue Mojo-Schnittstelle
++// auskommt; sidebar.html benutzt ihn sonst fuer nichts (kein <title>, kein
++// document.title - am 07.09.2026 nachgesehen).
++class BrowserView::VertiUeberlagerungsWaechter
++    : public content::WebContentsObserver {
++ public:
++  VertiUeberlagerungsWaechter(content::WebContents* contents,
++                              BrowserView* browser_view)
++      : content::WebContentsObserver(contents), browser_view_(browser_view) {}
++
++  void TitleWasSet(content::NavigationEntry* entry) override {
++    // Nicht ueber den Eintrag gehen: der kann null sein. Der Titel der Seite
++    // ist immer da.
++    const std::u16string titel = web_contents()->GetTitle();
++    if (titel == u"verti:overlay:an") {
++      browser_view_->VertiUeberlagerungZeigen(true);
++    } else if (titel == u"verti:overlay:aus") {
++      browser_view_->VertiUeberlagerungZeigen(false);
++    }
++  }
++
++ private:
++  const raw_ptr<BrowserView> browser_view_;
++};
++
++void BrowserView::VertiUeberlagerungZeigen(bool an) {
++  if (!verti_sidebar_ || !multi_contents_view_) {
++    return;
++  }
++  // Den Inhalt AUSBLENDEN geht nicht: Chromium besteht darauf, dass er
++  // sichtbar ist. Ein SetVisible(false) laesst das Programm beim naechsten
++  // Neuberechnen abstuerzen -
++  // "Check failed: IsParentedToAndVisible(views().multi_contents_view, ...)"
++  // in browser_view_tabbed_layout_impl.cc, am 07.09.2026 gemessen.
++  //
++  // Stattdessen wandert Vertis Leiste in der Reihenfolge der Kinder nach vorn
++  // und deckt den Inhalt zu. Das genuegt: die Leiste nimmt ohnehin das ganze
++  // Fenster ein, und solange eine Ueberlagerung offen ist, gehoeren ihr alle
++  // Klicks. ReorderChildView sortiert dabei auch die nativen Ansichten um
++  // (View::ReorderLayers ruft Widget::ReorderNativeViews), sonst bliebe der
++  // Seiteninhalt auf dem Mac trotzdem obenauf.
++  const std::optional<size_t> inhalt = GetIndexOf(multi_contents_view_);
++  const std::optional<size_t> leiste = GetIndexOf(verti_sidebar_);
++  if (!inhalt.has_value() || !leiste.has_value()) {
++    return;
++  }
++
++  const bool leiste_ist_vorn = leiste.value() > inhalt.value();
++  if (leiste_ist_vorn == an) {
++    return;  // steht schon richtig
++  }
++
++  if (an) {
++    ReorderChildView(verti_sidebar_, children().size() - 1);
++  } else {
++    ReorderChildView(verti_sidebar_, inhalt.value());
++  }
++
++  // Nachmessbar machen: von aussen laesst sich die Reihenfolge der Ansichten
++  // sonst nicht pruefen (Chromiums UI-DevTools nennt im Release-Bau keine
++  // Klassennamen). Sichtbar mit --enable-logging=stderr --v=1.
++  VLOG(1) << "Verti: Ueberlagerung " << (an ? "an" : "aus")
++          << " - Leiste an Stelle " << GetIndexOf(verti_sidebar_).value_or(0)
++          << ", Inhalt an Stelle "
++          << GetIndexOf(multi_contents_view_).value_or(0) << " von "
++          << children().size();
++}
++
+ BrowserView::BrowserView(BrowserWindowInterface* browser)
+     : views::ClientView(nullptr, nullptr),
+       exclusive_access_context_(
+@@ -937,6 +1024,19 @@ BrowserView::BrowserView(BrowserWindowInterface* browser)
    top_container_separator_->SetProperty(views::kElementIdentifierKey,
                                          kContentsSeparatorTopEdgeElementId);
  
@@ -3547,12 +3641,14 @@ index 24eca1ab9a..b54723968c 100644
 +    verti_sidebar_ = AddChildView(std::move(sidebar));
 +    verti_sidebar_->LoadInitialURL(GURL(kVertiSidebarUrl));
 +    verti_sidebar_->SetVisible(true);
++    verti_ueberlagerung_ = std::make_unique<VertiUeberlagerungsWaechter>(
++        verti_sidebar_->GetWebContents(), this);
 +  }
 +
    auto multi_contents_view = std::make_unique<MultiContentsView>(
        this, std::make_unique<MultiContentsViewDelegateImpl>(*browser_));
    multi_contents_view_ = AddChildView(std::move(multi_contents_view));
-@@ -1130,6 +1148,11 @@ BrowserView::~BrowserView() {
+@@ -1130,6 +1230,12 @@ BrowserView::~BrowserView() {
    find_bar_host_view_ = nullptr;
    infobar_container_ = nullptr;
    multi_contents_view_ = nullptr;
@@ -3560,11 +3656,12 @@ index 24eca1ab9a..b54723968c 100644
 +  // meldet Chromiums Zeiger-Schutz beim Schliessen einen haengenden Zeiger und
 +  // beendet das Programm mit SIGTRAP - der Nutzer sieht "Verti wurde
 +  // unerwartet beendet" (am 03.09.2026 genau so passiert).
++  verti_ueberlagerung_.reset();
 +  verti_sidebar_ = nullptr;
    main_shadow_overlay_ = nullptr;
    window_scrim_view_ = nullptr;
    side_panel_content_transition_scrim_view_ = nullptr;
-@@ -1404,35 +1427,17 @@ bool BrowserView::ShouldDrawTabStrokes() const {
+@@ -1404,35 +1510,17 @@ bool BrowserView::ShouldDrawTabStrokes() const {
  }
  
  bool BrowserView::ShouldDrawTabStrip() const {
@@ -3611,7 +3708,7 @@ index 24eca1ab9a..b54723968c 100644
  }
  
  bool BrowserView::ShouldDrawVerticalTabStrip() const {
-@@ -3044,26 +3049,12 @@ void BrowserView::DisableTabStripEditingForTesting() {
+@@ -3044,26 +3132,12 @@ void BrowserView::DisableTabStripEditingForTesting() {
  }
  
  bool BrowserView::IsToolbarVisible() const {
@@ -3644,7 +3741,7 @@ index 24eca1ab9a..b54723968c 100644
  }
  
  bool BrowserView::IsToolbarShowing() const {
-@@ -5066,6 +5057,7 @@ void BrowserView::AddedToWidget() {
+@@ -5066,6 +5140,7 @@ void BrowserView::AddedToWidget() {
    layout_views.toolbar = toolbar_;
    layout_views.infobar_container = infobar_container_;
    layout_views.multi_contents_view = multi_contents_view_;
@@ -3653,10 +3750,10 @@ index 24eca1ab9a..b54723968c 100644
    layout_views.top_container_separator = top_container_separator_;
    // LINT.ThenChange(//chrome/browser/ui/views/frame/layout/browser_view_layout.h:BrowserViewLayoutViews)
 diff --git a/chrome/browser/ui/views/frame/browser_view.h b/chrome/browser/ui/views/frame/browser_view.h
-index 38dae976bf..7a9b6d71ac 100644
+index 38dae976bf..307c7c1770 100644
 --- a/chrome/browser/ui/views/frame/browser_view.h
 +++ b/chrome/browser/ui/views/frame/browser_view.h
-@@ -1206,6 +1206,14 @@ class BrowserView : public BrowserWindow,
+@@ -1206,6 +1206,25 @@ class BrowserView : public BrowserWindow,
    // The view that contains all visible WebContents.
    raw_ptr<MultiContentsView> multi_contents_view_ = nullptr;
  
@@ -3667,6 +3764,17 @@ index 38dae976bf..7a9b6d71ac 100644
 +  // der Electron-Fassung: ein Renderer ueber das ganze Fenster, die App-
 +  // Ansichten darueber gelegt.
 +  raw_ptr<views::WebView> verti_sidebar_ = nullptr;
++
++  // Verti: horcht auf den Seitentitel der Leiste. Oeffnet die Leiste eine
++  // Ueberlagerung (App-Bibliothek, Einstellungen, Verbesserungs-Formular),
++  // muss der App-Inhalt weichen - sonst liegt sie dahinter und der Nutzer
++  // sieht nichts. Umsetzung in browser_view.cc, Gegenstueck in
++  // chromium/extension/verti-shim.js.
++  class VertiUeberlagerungsWaechter;
++  std::unique_ptr<VertiUeberlagerungsWaechter> verti_ueberlagerung_;
++
++  // Blendet den App-Inhalt aus (an == true) oder wieder ein.
++  void VertiUeberlagerungZeigen(bool an);
 +
    // The view responsible for housing the contents of the vertical tab strip.
    raw_ptr<VerticalTabStripRegionView> vertical_tab_strip_region_view_ = nullptr;

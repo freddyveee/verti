@@ -593,7 +593,7 @@
           fbTopic.value = appDef && appDef.name ? appDef.name : '';
         } else {
           fbTitel.textContent = 'Verbesserung vorschlagen';
-          fbSub.textContent = 'Was koennen wir an Verti besser machen? Geht direkt an Freddy.';
+          fbSub.textContent = 'Was können wir an Verti besser machen? Geht direkt an Freddy.';
           fbFrage.style.display = 'none';
         }
         fbStatus.className = 'fbstatus'; fbStatus.textContent = '';

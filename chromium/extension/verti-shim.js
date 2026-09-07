@@ -152,9 +152,11 @@
     // nicht gibt. Sie tun bewusst nichts Sinnvolles, statt zu fehlen - so
     // laeuft die Sidebar vollstaendig, und die Luecken bleiben benennbar.
 
-    // In Electron blendeten diese Aufrufe die App-Ansichten aus, damit die
-    // Bibliothek darueber sichtbar wird. Die Sidebar ist hier eine eigene
-    // Flaeche - es liegt nichts davor, also ist nichts auszublenden.
+    // In Electron blendeten diese Aufrufe die App-Ansichten aus, damit
+    // Bibliothek, Einstellungen und Verbesserungs-Formular darueber sichtbar
+    // werden. Hier erledigt das der Waechter weiter unten - er schaut auf den
+    // Zustand der Seite statt auf einzelne Aufrufe und ist damit in jedem Fall
+    // richtig.
     openLibrary: () => {},
     closeLibrary: () => {},
 
@@ -170,4 +172,50 @@
     onOpenBrowserPanel: () => {},
     onOpenSettingsSection: (cb) => auf('open-settings-section', cb),
   };
+
+  // ---------- Ueberlagerungen nach vorn holen ----------
+  //
+  // Alles, was Verti einblendet - App-Bibliothek, Einstellungen,
+  // Verbesserungs-Formular - lebt IN dieser Seite. Vertis Leiste liegt aber
+  // hinter dem Seiteninhalt, sonst wuerde sie die Apps verdecken. Ohne Zutun
+  // oeffnet sich die Bibliothek also unsichtbar hinter ChatGPT (Freddy am
+  // 07.09.2026).
+  //
+  // Chromium hoert dafuer auf den Seitentitel und schiebt Vertis Leiste vor
+  // den Inhalt (VertiUeberlagerungsWaechter in browser_view.cc). Der Titel ist
+  // der einzige Weg von einer Erweiterungsseite zum Fenster, der ohne neue
+  // Schnittstelle auskommt; sidebar.html benutzt ihn sonst fuer nichts.
+  //
+  // Beobachtet wird der ZUSTAND, nicht der Aufruf von openLibrary(). Denn
+  // sidebar.html schliesst beim App-Wechsel absichtlich ohne Meldung
+  // (closeLibrary(false), weil in Electron der Hauptprozess die Ansichten
+  // schon selbst wieder eingeblendet hatte), und Escape, ein Klick auf den
+  // Hintergrund und der Zurueck-Pfeil gehen jeweils eigene Wege. Ueber die
+  // Klasse 'open' stimmt es bei allen.
+  function ueberlagerungenBeobachten() {
+    const teile = ['library', 'settings', 'feedback']
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+    if (!teile.length) return;
+
+    let zuletzt = null;
+    const melden = () => {
+      const an = teile.some((el) => el.classList.contains('open'));
+      if (an === zuletzt) return;
+      zuletzt = an;
+      document.title = an ? 'verti:overlay:an' : 'verti:overlay:aus';
+    };
+
+    const waechter = new MutationObserver(melden);
+    for (const el of teile) {
+      waechter.observe(el, { attributes: true, attributeFilter: ['class'] });
+    }
+    melden();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ueberlagerungenBeobachten);
+  } else {
+    ueberlagerungenBeobachten();
+  }
 })();

@@ -589,9 +589,9 @@
 
   <div class="fbmodal" id="feedback">
     <div class="fbcard">
-      <button class="fbclose" id="fbClose" title="Schliessen">✕</button>
+      <button class="fbclose" id="fbClose" title="Schließen">✕</button>
       <h2 id="fbTitel">Verbesserung vorschlagen</h2>
-      <p class="fbsub" id="fbSub">Was koennen wir an Verti besser machen? Geht direkt an Freddy.</p>
+      <p class="fbsub" id="fbSub">Was können wir an Verti besser machen? Geht direkt an Freddy.</p>
       <div id="fbBrowserFrage" style="display:none">
         <label>Geht es in deinem normalen Browser (Chrome, Safari)?</label>
         <div class="seg" id="fbSegBrowser" style="margin:2px 0 12px">
@@ -603,7 +603,7 @@
       <label for="fbTopic">Thema</label>
       <input id="fbTopic" type="text" maxlength="200" placeholder="Worum geht es?" spellcheck="false">
       <label for="fbText">Dein Vorschlag</label>
-      <textarea id="fbText" maxlength="4000" placeholder="Beschreib kurz, was besser sein koennte …"></textarea>
+      <textarea id="fbText" maxlength="4000" placeholder="Beschreib kurz, was besser sein könnte …"></textarea>
       <label for="fbName">Dein Name (optional)</label>
       <input id="fbName" type="text" maxlength="120" placeholder="Damit Freddy nachfragen kann" spellcheck="false">
       <div class="fbstatus" id="fbStatus"></div>
@@ -1202,7 +1202,7 @@
           fbTopic.value = appDef && appDef.name ? appDef.name : '';
         } else {
           fbTitel.textContent = 'Verbesserung vorschlagen';
-          fbSub.textContent = 'Was koennen wir an Verti besser machen? Geht direkt an Freddy.';
+          fbSub.textContent = 'Was können wir an Verti besser machen? Geht direkt an Freddy.';
           fbFrage.style.display = 'none';
         }
         fbStatus.className = 'fbstatus'; fbStatus.textContent = '';

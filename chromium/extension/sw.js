@@ -260,7 +260,16 @@ const RUFE = {
 
   'get-apps': async () => (await zustand()).apps,
   'get-active-app': async () => { navStandMelden(); return (await zustand()).activeApp; },
-  'get-app-info': async () => ({ version: chrome.runtime.getManifest().version, packaged: true, admin: false }),
+  // Die Versionsnummer traegt das Manifest - aber nicht die aus dem Repo:
+  // chromium/bau.sh stempelt beim Einlegen der Erweiterung die echte Nummer
+  // der gebauten App hinein. Ohne das stuende in Vertis Einstellungen ewig die
+  // alte Nummer der Electron-Fassung. Chromiums Kennung taugt dafuer nicht,
+  // die ist gekuerzt ("Chrome/155.0.0.0", am 07.09.2026 nachgesehen).
+  'get-app-info': async () => ({
+    version: chrome.runtime.getManifest().version,
+    packaged: true,
+    admin: false,
+  }),
   'get-catalog': async () => {
     const k = await ladeKatalog();
     // Gleiche Regel wie appStatus() in main.js: die Stufe beschreibt UNSERE
