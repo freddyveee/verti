@@ -584,7 +584,28 @@ Chromiums Kennung taugt dafuer nicht, die ist gekuerzt ("Chrome/155.0.0.0").
 Signierung, Notarisierung, das Austauschen beim Update (siehe oben), Onboarding,
 Verti-Browser, kompletter Windows-Zweig.
 
-Ausserdem: `screencapture` liefert auf diesem Mac gerade "could not create image
-from display" - Bildschirmfotos des ganzen Fensters gehen deshalb nicht. Die
-Sidebar selbst laesst sich ueber das DevTools-Protokoll trotzdem abfotografieren,
-fuer den Gesamteindruck fehlt aber die Bildschirmaufnahme-Berechtigung.
+Ausserdem zu Bildschirmfotos: `screencapture` liefert hier zeitweise ein
+komplett schwarzes Bild. Die Ursache ist am 07.09.2026 gemessen worden - der
+Bildschirm war gesperrt:
+
+```
+ioreg -n Root -d1 -r | grep CGSSessionScreenIsLocked   ->   =Yes
+```
+
+Bei gesperrtem Bildschirm gibt macOS nichts heraus, und aus demselben Grund
+findet `notarytool` das Schluesselbund-Profil nicht (siehe CLAUDE.md). Vor
+jedem Bildschirmfoto und vor jedem Signierlauf also erst nachsehen, ob der Mac
+entsperrt ist, statt gleich auf eine fehlende Berechtigung zu schliessen.
+
+Unabhaengig davon laesst sich Vertis Leiste immer ueber das DevTools-Protokoll
+abfotografieren, auch bei gesperrtem Bildschirm:
+
+```bash
+"/Volumes/VertiBuild/chromium/src/out/Release/Verti.app/Contents/MacOS/Verti" \
+  --user-data-dir=/tmp/verti-sonde --remote-debugging-port=9222 &
+node scripts/chromium-sonde.js "document.getElementById('plus').click()"
+```
+
+Danach `Page.captureScreenshot` auf dem Ziel `sidebar.html`. Das zeigt die
+Leiste selbst, aber nicht, was davor oder dahinter liegt - dafuer braucht es
+ein echtes Bildschirmfoto.
