@@ -416,7 +416,21 @@ chrome.runtime.onMessage.addListener((msg, absender, antwort) => {
 //
 // Geprueft wird gegen GitHub Releases, also gegen denselben Kanal, den die
 // heutige Verti-Version schon benutzt.
-const RELEASE_API = 'https://api.github.com/repos/freddyveee/verti/releases/latest';
+//
+// NICHT /releases/latest: das laesst Vorab-Fassungen weg, und die
+// Chromium-Fassung ist genau eine - absichtlich, damit die Kollegen auf der
+// Electron-Fassung sie nicht angeboten bekommen. Der Hinweis erschien dadurch
+// NIE: /releases/latest lieferte v1.1.18 (Electron), verglichen mit der
+// installierten 1.2.1 ist das aelter (am 08.09.2026 nach der Veroeffentlichung
+// von 1.2.2 gemessen). Genau dieselbe Falle hatte der Update-Server, siehe
+// supabase/functions/verti-update/index.ts.
+//
+// Stattdessen die Liste holen - GitHub liefert sie neueste zuerst - und das
+// erste Release nehmen, das ein CRX3-Paket mitbringt. Damit beschreibt die
+// Meldung immer GENAU die Fassung, die der Updater auch installiert, und
+// Electron-Releases werden uebersprungen, ohne dass irgendwo eine Version fest
+// eingetragen werden muss.
+const RELEASE_API = 'https://api.github.com/repos/freddyveee/verti/releases?per_page=15';
 const UPDATE_ABSTAND_MIN = 60;   // hoechstens einmal pro Stunde nachschauen
 
 // Vergleicht "1.2.10" mit "1.2.9" richtig - ein Zeichenkettenvergleich wuerde
@@ -470,7 +484,15 @@ async function updatePruefen(vonHand) {
   try {
     const r = await fetch(RELEASE_API, { headers: { Accept: 'application/vnd.github+json' } });
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    const rel = await r.json();
+    const liste = await r.json();
+    // Dieselbe Regel wie im Update-Server: das erste Release mit einem
+    // CRX3-Paket gewinnt. Entwuerfe liefert GitHub ohne Anmeldung ohnehin nicht.
+    const rel = (Array.isArray(liste) ? liste : []).find(
+      (x) => (x.assets || []).some((a) => /Verti-Mac\.crx3$/i.test(a.name)));
+    if (!rel) {
+      if (vonHand) return { ok: false, error: 'Kein Release mit Paket gefunden.' };
+      return null;
+    }
     const neu = String(rel.tag_name || '').replace(/^v/, '');
     const hier = chrome.runtime.getManifest().version;
     if (!neu || !versionNeuer(neu, hier)) {
@@ -498,11 +520,16 @@ async function updatePruefen(vonHand) {
 
 // Was der Dialog ausloest.
 //
-// ACHTUNG, offener Punkt: 'update' kann die neue Fassung herunterladen, aber
-// eine Erweiterung darf das Programm NICHT selbst austauschen. Dafuer fehlt
-// noch der letzte Baustein (siehe CHROMIUM-STATUS.md). Bis dahin laden wir die
-// Datei herunter und zeigen sie im Finder - der Nutzer zieht sie selbst
-// hinueber. Das ist ehrlicher als so zu tun, als sei es fertig.
+// Zum Austauschen: eine Erweiterung darf das Programm nicht selbst ersetzen.
+// Das erledigt inzwischen Vertis eigener Updater von sich aus - am 08.09.2026
+// erstmals ganz durchgelaufen, 1.2.1 -> 1.2.2 auf einer installierten App
+// (siehe CHROMIUM-STATUS.md). Dieser Knopf laedt zusaetzlich die DMG herunter
+// und zeigt sie im Finder, fuer den Fall, dass der Updater nicht zum Zug kommt.
+//
+// OFFEN: hat der Updater schon getauscht, ist der Download ueberfluessig - dann
+// muesste hier "Verti neu starten" stehen statt "herunterladen". Dafuer muesste
+// die Erweiterung die installierte Fassung sehen koennen, und das geht nur mit
+// einer Bruecke aus dem Browserprozess. Steht in BACKLOG.md.
 async function updateAktion(name) {
   const z = await updateZustandLesen();
   if (name === 'close') {
