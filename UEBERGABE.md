@@ -46,7 +46,9 @@ Damit Freddy sie sieht:
   Chromium-Bau überschrieben). Sein Profil dafür ist vollständig da, 1,6 GB
   unter `~/Library/Application Support/Verti`. Er kann es als zweite App
   zurückbekommen, wenn er will.
-- Die QA-Checkliste ist noch nicht auf der Chromium-Fassung durchgeklickt.
+- **QA-Checkliste: ungeprüft.** In `QA-CHECKLISTE.md` steht nichts zur
+  Chromium-Fassung, und kein Commit sagt, dass sie darauf durchgeklickt wurde.
+  Vor der echten Umstellung einmal ganz durchgehen.
 
 ## Was man wissen muss, um weiterzuarbeiten
 
