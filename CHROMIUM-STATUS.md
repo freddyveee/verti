@@ -704,6 +704,70 @@ der sichtbaren App, Bibliothek und Einstellungen decken wie vorher alles ab,
 und das Verbesserungs-Formular liegt jetzt als richtiger Dialog ueber der
 abgedunkelten App - das ist besser als vorher, nicht schlechter.
 
+## Update-Kette einmal ganz durchgelaufen (08.09.2026) - BEWIESEN
+
+Erstmals ist ein Update bei einem echten Nutzer angekommen, nicht nur in einer
+Sonde: `/Applications/Verti.app` 155.0.8038.1 -> 155.0.8038.2 (Verti 1.2.1 ->
+1.2.2), auf Freddys MacBook.
+
+Jedes Glied nachgewiesen, aus `updater.log`:
+
+| Schritt | Beleg |
+|---|---|
+| Anmeldung | `RegisterApp: app version 155.0.8038.1`, Ticket zeigt auf `/Applications/Verti.app` |
+| Anfrage | POST an die Supabase-Funktion, `version: 155.0.8038.1` |
+| Antwort | `nextversion 155.0.8038.2`, URL und sha256 des Release |
+| Herunterladen | `downloaded: 244110565`, `download_time_ms: 16579`, `eventresult: 1` |
+| CRX3-Signatur | angenommen (sonst liefe `.keystone_install` nicht an) |
+| Austausch | neuer Ordner `Versions/155.0.8038.2`, `Current` zeigt darauf |
+| danach | Gatekeeper `accepted / Notarized Developer ID`, Manifest 1.2.2 |
+
+### Die Falle: aus der Shell angestossen schlaegt der Austausch IMMER fehl
+
+Der erste Versuch lief bis zum letzten Schritt und brach ab:
+
+```
+Output from .keystone_install: rsync: /Applications/Verti.app/Contents/Frameworks/
+  Verti Framework.framework/Versions/155.0.8038.2: mkpath: Operation not permitted
+.keystone_install: rsync of versioned directory failed, status 11
+errorcode 74103, extracode1 7
+```
+
+Das ist **kein Fehler in Verti**. Seit macOS Sonoma schuetzt die App-Verwaltung
+(TCC) fremde Programmpakete in `/Applications`, und geprueft wird der
+*verantwortliche* Prozess - bei einem Start aus dem Terminal also das Terminal,
+nicht der Updater. Gegenprobe: ein schlichtes `mkdir` in denselben Ordner
+scheitert genauso, obwohl die Rechte (`freddy:staff`, `rwxr-xr-x`) es erlauben.
+
+Wird derselbe Befehl von launchd gestartet, ist der Updater sein eigener
+Absender, und macOS laesst den Austausch zu (gleiche Team-ID wie die Ziel-App -
+derselbe Weg, den Chrome benutzt):
+
+```bash
+U=~/Library/Application\ Support/IMPERIO/VertiUpdater/Current/VertiUpdater.app/Contents/MacOS/VertiUpdater
+launchctl submit -l verti-update-probe -- "$U" --update-apps --enable-logging
+# danach aufraeumen:
+launchctl remove verti-update-probe
+```
+
+`launchctl kickstart -k gui/$UID/rocks.imperio.verti.Updater.wake` reicht dafuer
+NICHT: der Weck-Auftrag ruft nur `--wake-all`, und der Updater haelt einen
+Mindestabstand zwischen zwei Pruefungen ein - kurz nach einer Pruefung tut er
+gar nichts.
+
+### Wer sich beim Updater eintraegt, entscheidet der letzte Start
+
+Das Ticket traegt den Pfad der App, die sich zuletzt gemeldet hat. Jeder Start
+des gebauten Binaries (`out/Release/Verti.app`) schreibt sich selbst hinein -
+danach zeigt der Updater auf die Bauplatte, und die installierte App bekommt
+nie wieder ein Update. Am 08.09.2026 genau so passiert, ausgeloest von
+Testlaeufen.
+
+**Nach jedem Testlauf mit dem gebauten Binary die installierte App einmal
+oeffnen.** Sie traegt sich beim Start selbst wieder ein (im Log:
+`RegisterApp`). Das dauert ein paar Sekunden - direkt nach dem Start gelesen,
+steht im Ticket noch der alte Pfad.
+
 ## Offen ausser DRM
 
 Signierung, Notarisierung, das Austauschen beim Update (siehe oben), Onboarding,
