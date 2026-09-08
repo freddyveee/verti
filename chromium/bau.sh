@@ -12,9 +12,12 @@ DEPOT=/Volumes/VertiBuild/depot_tools
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 PATCH="$REPO/chromium/patches/verti.patch"
 
+# Die Bauplatte meldet sich von allein ab (Ruhezustand, SSD abgezogen). Statt
+# hier abzubrechen, wird sie wieder angehaengt.
+"$REPO/scripts/bauplatte-anhaengen.sh"
+
 if [ ! -d "$SRC" ]; then
   echo "Chromium-Quelltext nicht gefunden: $SRC"
-  echo "Haengt die externe SSD (VertiBuild) dran?"
   exit 1
 fi
 

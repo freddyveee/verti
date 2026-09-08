@@ -18,10 +18,38 @@
 # notarytool den Schluesselbund nicht.
 set -euo pipefail
 
+# Den Bildschirm waehrend des ganzen Laufs wachhalten.
+#
+# Geht der Mac in die Sperre, findet notarytool das Schluesselbund-Profil nicht
+# mehr ("No Keychain password item found") und die Notarisierung bricht ab -
+# am 07.09.2026 zweimal passiert, beim zweiten Mal erst NACH dem Hochladen zu
+# Apple. Die Notarisierung dauert 5 bis 15 Minuten, so lange liegt der Rechner
+# sonst leicht still.
+#
+# caffeinate -d verhindert Bildschirmschoner und Ruhezustand des Bildschirms,
+# solange dieses Skript laeuft. Gegen ein Zuklappen oder manuelles Sperren
+# hilft es nicht - deshalb steht die Pruefung darunter.
+if [ -z "${VERTI_WACH:-}" ]; then
+  export VERTI_WACH=1
+  exec caffeinate -d "$0" "$@"
+fi
+
+if ioreg -n Root -d1 -r 2>/dev/null | grep -q '"CGSSessionScreenIsLocked"=Yes'; then
+  echo "Der Bildschirm ist gesperrt. notarytool kaeme nicht an den Schluesselbund."
+  echo "Bitte den Mac entsperren und noch einmal starten."
+  exit 1
+fi
+
+
 SRC=/Volumes/VertiBuild/chromium/src
 IDENT="Developer ID Application: Freddy Henrich-Held (CHS9G483R4)"
 NOTAR_PROFIL=verti-notary
 OUT="$SRC/out/Release/signed"
+
+# Erst die Bauplatte sicherstellen. Ohne das meldet die Zeile darunter
+# "Verti.app fehlt - erst bauen", obwohl in Wirklichkeit nur das Sparsebundle
+# abgemeldet war (am 08.09.2026 passiert, kostete einen ganzen Anlauf).
+"$(cd "$(dirname "$0")/.." && pwd)/scripts/bauplatte-anhaengen.sh"
 
 [ -d "$SRC/out/Release/Verti.app" ] || { echo "Verti.app fehlt - erst bauen (./chromium/bau.sh)"; exit 1; }
 security find-identity -v -p codesigning 2>/dev/null | grep -q "$IDENT" \
