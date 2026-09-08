@@ -604,6 +604,106 @@ installiert 155.0.8038.1  ->  noupdate
 **Lehre:** den Update-Server erst NACH dem Veroeffentlichen pruefen, mit einer
 echten Anfrage. Vorher sieht alles richtig aus.
 
+## Kopfzeile schluckte die Klicks (08.09.2026) - GELOEST
+
+Zahnrad und Verbesserung reagierten auf keinen echten Mausklick, das Plus
+unten in der Leiste schon. Ueber das DevTools-Protokoll ging beides - 13 von
+13 Wegen liefen richtig. Genau das war die Falle: die JS-Sonde klickt am
+Fenster vorbei direkt in die Seite und umgeht `NonClientHitTest` komplett.
+
+### Was NICHT die Ursache war
+
+Vermutet worden war, die Seite melde ihre Ziehflaechen in einer Reihenfolge,
+bei der die volle Kopfzeile NACH den Knoepfen kommt und sie wieder zudeckt
+(Chromes Ein-Durchlauf-Weg in `AppBrowserController::DraggableRegionsChanged`
+haengt daran). Gemessen und widerlegt:
+
+```
+Verti: 13 gemeldete Flaechen, in Listenreihenfolge:
+Verti:   ZIEHEN    x 0..1200 y 0..44      <- zuerst, nicht zuletzt
+Verti:   aussparen x 1144..1174 y 9..39   <- Zahnrad
+Verti:   aussparen x 1013..1138 y 9..39   <- Verbesserung
+Verti:   aussparen x 84..182 y 7..37      <- Navigation
+Verti:   Knopf-Mitte 1159,24 -> neu frei, alter Weg frei
+```
+
+Blink sammelt die Flaechen in Dokumentreihenfolge ein
+(`LocalFrameView::CollectDraggableRegions`, `push_back` beim Vorwaertslauf
+durch den Layout-Baum), und in `sidebar.html` steht `.drag-region` als erstes
+im `body`. Die Reihenfolge war also von Anfang an richtig, und die Mitte jedes
+Knopfes lag schon vorher AUSSERHALB der Ziehflaeche.
+
+Zweiter Verdacht, ebenfalls widerlegt: der Versatz zwischen Fensterrahmen und
+`BrowserView` ist auf dem Mac 0. Umgerechnet wird trotzdem ausdruecklich, damit
+das nicht mehr angenommen werden muss.
+
+### Was es wirklich war
+
+Sagte `VertiZiehbereichTrifft()` "nein", reichte
+`BrowserFrameViewMac::NonClientHitTest` den Punkt weiter an
+`BrowserView::NonClientHitTest`. Das gibt fuer JEDEN Punkt oberhalb der
+Werkzeugleiste `HTNOWHERE` zurueck:
+
+```cpp
+gfx::Rect tabstrip_background_bounds = bounds();
+tabstrip_background_bounds.set_height(toolbar_origin.y());
+if (tabstrip_background_bounds.Contains(point)) return HTNOWHERE;
+```
+
+und die letzte Zeile in `BrowserFrameViewMac::NonClientHitTest` macht daraus
+`HTCAPTION`. Vertis Kopfzeile liegt genau dort, wo bei Chromium die Tableiste
+sitzt - sie war damit KOMPLETT Fenstergriff, unabhaengig von allem, was die
+Seite gemeldet hatte. Das Plus lag unterhalb der Werkzeugleiste und ging
+deshalb.
+
+Behoben: sobald die Seite ihre Flaechen gemeldet hat, antwortet die Pruefung
+endgueltig und reicht nichts mehr weiter - drin `HTCAPTION`, sonst `HTCLIENT`.
+Vertis Leiste deckt das ganze Fenster ab, etwas Drittes gibt es nicht.
+
+Nachgemessen mit `--v=2` und echten Mausklicks:
+
+| Punkt | Ergebnis |
+|---|---|
+| Zahnrad 1159,24 | HTCLIENT (Seite) |
+| Verbesserung 1075,24 | HTCLIENT (Seite) |
+| Navigation 99,22 | HTCLIENT (Seite) |
+| leere Kopfzeile 600,20 / 583,36 | HTCAPTION (Fenster ziehen) |
+
+Fenster laesst sich weiterhin an der Kopfzeile ziehen (waagerecht Punkt fuer
+Punkt; senkrecht klemmt es, weil das Fenster hoeher ist als der Bildschirm -
+das ist macOS und kein Fehler).
+
+**Lehre:** Chromiums Fernsteuerung beweist die Logik, nicht den Mausweg. Fuer
+alles, was am Fensterrand oder in der Kopfzeile sitzt, braucht es einen echten
+Klick - `scripts/maus-sonde.swift`.
+
+## Rechtsklick-Menue deckte Verti zu (08.09.2026) - GELOEST
+
+Das Menue kam, aber die ganze App verschwand hinter einer dunklen Flaeche.
+
+Die Leisten-Seite deckt das ganze Fenster ab, gezeichnet wird davon aber nur
+das "L" aus Kopfzeile und Leiste; den Rest fuellt der App-Inhalt, der davor
+liegt. Solange die Seite undurchsichtig war, fiel das nicht auf - sobald sie
+aber fuer eine Ueberlagerung nach vorn geholt wird
+(`VertiUeberlagerungZeigen`), lag ihr `body`-Hintergrund ueber allem. Bei
+Bibliothek und Einstellungen war das egal, die fuellen ohnehin das ganze
+Fenster. Beim kleinen Menue war es falsch.
+
+Die Seite ist jetzt durchsichtig. Drei Teile, alle drei noetig:
+
+1. `BrowserView`: `verti_sidebar_->SetBackground(nullptr)` und
+   `SetPageBaseBackgroundColor(SK_ColorTRANSPARENT)` (dasselbe Rezept wie in
+   `drive_picker_host_view.cc`)
+2. `sidebar.html`: `.drag-region` und `.sidebar` bekommen `background:
+   var(--bg)` - vorher kam die Farbe vom `body`
+3. `verti-shim.js`: nimmt dem `body` den Hintergrund - nur in der
+   Chromium-Fassung, Electron bleibt unveraendert
+
+Nachgesehen (Bildschirmfotos): normaler Zustand unveraendert, Menue steht ueber
+der sichtbaren App, Bibliothek und Einstellungen decken wie vorher alles ab,
+und das Verbesserungs-Formular liegt jetzt als richtiger Dialog ueber der
+abgedunkelten App - das ist besser als vorher, nicht schlechter.
+
 ## Offen ausser DRM
 
 Signierung, Notarisierung, das Austauschen beim Update (siehe oben), Onboarding,

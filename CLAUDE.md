@@ -83,6 +83,10 @@ Danach den Ausschnitt per PIL zuschneiden, **das Bild wirklich ansehen**, dann S
 
 **Die Falle, die zweimal zugeschlagen hat:** Alles, was in `sidebar.html` eingeblendet wird (Einstellungen, Verbesserung-Formular, Browser-Seitenkarte), liegt **hinter** den App-Ansichten, weil WebContentsViews darüber liegen. Entweder die Views ausblenden (`window.verti.openLibrary()`) oder ihnen Platz machen (Breite in `layoutViews`/`layoutBrowserTabs` abziehen). Sonst ist die Änderung unsichtbar, obwohl der Code stimmt.
 
+**In der Chromium-Fassung reicht ein Klick über die Fernsteuerung NICHT.** `scripts/chromium-sonde.js` klickt über das DevTools-Protokoll direkt in die Seite und geht damit an `NonClientHitTest` vorbei — alles, was in der Kopfzeile oder am Fensterrand sitzt, kann dabei bestehen und für eine echte Maus trotzdem tot sein (am 08.09.2026 genau so passiert: Zahnrad und Verbesserung bestanden 13 von 13 Sonden-Tests und reagierten auf keinen Mausklick). Für solche Stellen `scripts/maus-sonde.swift` benutzen; „claude" hat die Bedienungshilfen-Berechtigung.
+
+**Nach jeder Änderung an `sidebar.html`: `node scripts/chromium-port.js`.** Die Chromium-Erweiterung hat eine erzeugte Kopie (`chromium/extension/sidebar.html`) mit ausgelagertem `<script>`-Block. Ohne diesen Schritt ändert sich in der Chromium-Fassung nichts.
+
 **Jede neue Datei im Projektwurzel-Verzeichnis muss in `package.json` unter `build.files` nachgetragen werden**, sonst fehlt sie in der gebauten App und diese stürzt beim Start ab.
 
 ## Release (Ablauf)
