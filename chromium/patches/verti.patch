@@ -3462,10 +3462,10 @@ index 840b7a2de5..9f30fc4add 100644
  #include <string_view>
  
 diff --git a/chrome/browser/ui/views/frame/browser_frame_view_mac.mm b/chrome/browser/ui/views/frame/browser_frame_view_mac.mm
-index 39c36aab3c..959694d195 100644
+index 39c36aab3c..fa940a4c12 100644
 --- a/chrome/browser/ui/views/frame/browser_frame_view_mac.mm
 +++ b/chrome/browser/ui/views/frame/browser_frame_view_mac.mm
-@@ -393,6 +393,27 @@ FullscreenToolbarStyle GetUserPreferredToolbarStyle(bool always_show) {
+@@ -393,6 +393,36 @@ FullscreenToolbarStyle GetUserPreferredToolbarStyle(bool always_show) {
      return super_component;
    }
  
@@ -3476,14 +3476,23 @@ index 39c36aab3c..959694d195 100644
 +  // Titelleiste zum Anfassen. Bei Freddy liess sich das Fenster gar nicht
 +  // bewegen (07.09.2026).
 +  //
-+  // Freigegeben wird nur der freie MITTELTEIL der Kopfzeile. Links sitzen die
-+  // Ampel-Knoepfe und die Navigation (ab 84 px, siehe .nav in sidebar.html),
-+  // rechts der Verbesserungs-Knopf und das Zahnrad (zusammen rund 230 px, siehe
-+  // .feedback-btn und .gear-btn). Diese Bereiche muessen anklickbar bleiben.
-+  {
++  // WO gezogen werden darf, sagt die Seite selbst: sidebar.html deckt die
++  // oberen 44 px mit .drag-region ab und nimmt jeden Knopf darin per
++  // -webkit-app-region: no-drag wieder heraus. BrowserView sammelt diese
++  // Flaechen ein (VertiLeisteView in browser_view.cc).
++  if (GetBrowserView()->VertiZiehbereichTrifft(point)) {
++    return HTCAPTION;
++  }
++
++  // Notnagel, solange die Seite noch nichts gemeldet hat (die ersten
++  // Sekundenbruchteile nach dem Start, oder wenn die Leiste nicht laedt):
++  // eine grobe Schaetzung des freien Mittelteils. Sie ist bewusst KLEIN
++  // gehalten - lieber laesst sich das Fenster kurz nicht ueberall anfassen,
++  // als dass ein Knopf tot ist.
++  if (!GetBrowserView()->VertiZiehbereichBekannt()) {
 +    constexpr int kKopfzeileHoehe = 44;
-+    constexpr int kFreiLinks = 200;    // Ampel-Knoepfe und Navigation
-+    constexpr int kFreiRechts = 240;   // Verbesserung und Zahnrad
++    constexpr int kFreiLinks = 340;
++    constexpr int kFreiRechts = 360;
 +    if (point.y() >= 0 && point.y() < kKopfzeileHoehe &&
 +        point.x() >= kFreiLinks && point.x() < width() - kFreiRechts) {
 +      return HTCAPTION;
@@ -3527,18 +3536,19 @@ index fb1e87f834..15eac7f5ed 100644
      *override_titlebar_height = false;
      *titlebar_height = 0;
 diff --git a/chrome/browser/ui/views/frame/browser_view.cc b/chrome/browser/ui/views/frame/browser_view.cc
-index 24eca1ab9a..dbe8bf0770 100644
+index 24eca1ab9a..81e8f3d6d5 100644
 --- a/chrome/browser/ui/views/frame/browser_view.cc
 +++ b/chrome/browser/ui/views/frame/browser_view.cc
-@@ -298,6 +298,7 @@
+@@ -298,6 +298,8 @@
  #include "content/public/browser/render_widget_host.h"
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/browser/web_contents.h"
 +#include "content/public/browser/web_contents_observer.h"
++#include "third_party/blink/public/mojom/page/draggable_region.mojom.h"
  #include "content/public/common/content_features.h"
  #include "content/public/common/content_switches.h"
  #include "content/public/common/drop_data.h"
-@@ -418,6 +419,13 @@ using web_modal::WebContentsModalDialogHost;
+@@ -418,6 +420,13 @@ using web_modal::WebContentsModalDialogHost;
  
  namespace {
  
@@ -3552,10 +3562,73 @@ index 24eca1ab9a..dbe8bf0770 100644
  // The visible height of the shadow above the tabs. Clicks in this area are
  // treated as clicks to the frame, rather than clicks to the tab.
  const int kTabShadowSize = 2;
-@@ -882,6 +890,85 @@ class BrowserView::PipExclusionObserverImpl
+@@ -882,6 +891,156 @@ class BrowserView::PipExclusionObserverImpl
  ///////////////////////////////////////////////////////////////////////////////
  // BrowserView, public:
  
++// Verti: Vertis Leiste als Ansicht.
++//
++// Wie eine gewoehnliche WebView, merkt sich aber zusaetzlich, wo die Seite das
++// Fenster anfassen laesst. sidebar.html sagt das seit der Electron-Zeit selbst:
++// .drag-region deckt die oberen 44 px ab, und jeder Knopf darin traegt
++// -webkit-app-region: no-drag.
++//
++// Vorher stand im Fenster eine Schaetzung ("links 200 px frei, rechts 240 px").
++// Die war zwangslaeufig falsch, sobald ein Knopf dazukam: die Update-Pille
++// sitzt bei right:200 und war dadurch zu zwei Dritteln tot (07.09.2026
++// nachgerechnet). Mit den gemeldeten Flaechen erledigt sich das von selbst,
++// auch fuer jeden kuenftigen Knopf.
++class BrowserView::VertiLeisteView : public views::WebView {
++ public:
++  VertiLeisteView(Profile* profile, BrowserView* browser_view)
++      : views::WebView(profile), browser_view_(browser_view) {}
++
++  // content::WebContentsDelegate:
++  //
++  // views::WebView ist bereits der Delegate der eigenen WebContents, deshalb
++  // reicht diese eine Ergaenzung - es aendert sich sonst nichts am Verhalten.
++  void DraggableRegionsChanged(
++      const std::vector<blink::mojom::DraggableRegionPtr>& regions,
++      content::WebContents* contents) override {
++    // Reihenfolge zaehlt: erst die Ziehflaechen dazu, dann die Ausnahmen
++    // heraus - genau wie Chrome es fuer Web-Apps macht
++    // (AppBrowserController::DraggableRegionsChanged).
++    SkRegion bereich;
++    for (const blink::mojom::DraggableRegionPtr& r : regions) {
++      bereich.op(SkIRect::MakeLTRB(r->bounds.x(), r->bounds.y(),
++                                   r->bounds.x() + r->bounds.width(),
++                                   r->bounds.y() + r->bounds.height()),
++                 r->draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
++    }
++    VLOG(1) << "Verti: " << regions.size() << " Ziehflaeche(n) gemeldet, "
++            << "Rahmen " << bereich.getBounds().width() << "x"
++            << bereich.getBounds().height();
++    browser_view_->VertiZiehbereichSetzen(bereich);
++  }
++
++ private:
++  const raw_ptr<BrowserView> browser_view_;
++};
++
++void BrowserView::VertiZiehbereichSetzen(const SkRegion& bereich) {
++  verti_ziehbereich_ = bereich;
++}
++
++bool BrowserView::VertiZiehbereichBekannt() const {
++  return !verti_ziehbereich_.isEmpty();
++}
++
++bool BrowserView::VertiZiehbereichTrifft(const gfx::Point& punkt) const {
++  if (verti_ziehbereich_.isEmpty() || !verti_sidebar_) {
++    return false;  // noch nichts gemeldet - der Aufrufer schaetzt weiter
++  }
++  // Der Punkt kommt in Koordinaten dieser Ansicht, die Flaechen stehen in
++  // Koordinaten der Seite.
++  gfx::Point in_leiste = punkt;
++  views::View::ConvertPointToTarget(this, verti_sidebar_, &in_leiste);
++  return verti_ziehbereich_.contains(in_leiste.x(), in_leiste.y());
++}
++
 +// Verti: horcht auf den Seitentitel der App-Leiste.
 +//
 +// Alles, was Verti einblendet - App-Bibliothek, Einstellungen, das
@@ -3576,6 +3649,14 @@ index 24eca1ab9a..dbe8bf0770 100644
 +  VertiUeberlagerungsWaechter(content::WebContents* contents,
 +                              BrowserView* browser_view)
 +      : content::WebContentsObserver(contents), browser_view_(browser_view) {}
++
++  void PrimaryMainFrameRenderProcessGone(
++      base::TerminationStatus status) override {
++    // Stirbt die Leiste, waehrend eine Ueberlagerung offen ist, bliebe sie
++    // vorn stehen und deckte das ganze Fenster mit einer toten Seite zu -
++    // ohne Weg zurueck, weil auch die Bedienung dieser Seite tot ist.
++    browser_view_->VertiUeberlagerungZeigen(false);
++  }
 +
 +  void TitleWasSet(content::NavigationEntry* entry) override {
 +    // Nicht ueber den Eintrag gehen: der kann null sein. Der Titel der Seite
@@ -3638,7 +3719,7 @@ index 24eca1ab9a..dbe8bf0770 100644
  BrowserView::BrowserView(BrowserWindowInterface* browser)
      : views::ClientView(nullptr, nullptr),
        exclusive_access_context_(
-@@ -937,6 +1024,19 @@ BrowserView::BrowserView(BrowserWindowInterface* browser)
+@@ -937,6 +1096,21 @@ BrowserView::BrowserView(BrowserWindowInterface* browser)
    top_container_separator_->SetProperty(views::kElementIdentifierKey,
                                          kContentsSeparatorTopEdgeElementId);
  
@@ -3646,11 +3727,13 @@ index 24eca1ab9a..dbe8bf0770 100644
 +  // sie dahinter liegt - der Inhalt wird spaeter eingerueckt und laesst links
 +  // und oben genau so viel frei, wie die Leiste braucht.
 +  {
-+    auto sidebar = std::make_unique<views::WebView>(GetProfile());
++    auto sidebar = std::make_unique<VertiLeisteView>(GetProfile(), this);
 +    sidebar->SetVisible(false);   // erst zeigen, wenn die Seite geladen ist
 +    verti_sidebar_ = AddChildView(std::move(sidebar));
 +    verti_sidebar_->LoadInitialURL(GURL(kVertiSidebarUrl));
 +    verti_sidebar_->SetVisible(true);
++    // Ohne das meldet Blink die -webkit-app-region-Flaechen gar nicht erst.
++    verti_sidebar_->GetWebContents()->SetSupportsDraggableRegions(true);
 +    verti_ueberlagerung_ = std::make_unique<VertiUeberlagerungsWaechter>(
 +        verti_sidebar_->GetWebContents(), this);
 +  }
@@ -3658,7 +3741,7 @@ index 24eca1ab9a..dbe8bf0770 100644
    auto multi_contents_view = std::make_unique<MultiContentsView>(
        this, std::make_unique<MultiContentsViewDelegateImpl>(*browser_));
    multi_contents_view_ = AddChildView(std::move(multi_contents_view));
-@@ -1130,6 +1230,12 @@ BrowserView::~BrowserView() {
+@@ -1130,6 +1304,12 @@ BrowserView::~BrowserView() {
    find_bar_host_view_ = nullptr;
    infobar_container_ = nullptr;
    multi_contents_view_ = nullptr;
@@ -3671,7 +3754,7 @@ index 24eca1ab9a..dbe8bf0770 100644
    main_shadow_overlay_ = nullptr;
    window_scrim_view_ = nullptr;
    side_panel_content_transition_scrim_view_ = nullptr;
-@@ -1404,35 +1510,17 @@ bool BrowserView::ShouldDrawTabStrokes() const {
+@@ -1404,35 +1584,17 @@ bool BrowserView::ShouldDrawTabStrokes() const {
  }
  
  bool BrowserView::ShouldDrawTabStrip() const {
@@ -3718,7 +3801,7 @@ index 24eca1ab9a..dbe8bf0770 100644
  }
  
  bool BrowserView::ShouldDrawVerticalTabStrip() const {
-@@ -3044,26 +3132,12 @@ void BrowserView::DisableTabStripEditingForTesting() {
+@@ -3044,26 +3206,12 @@ void BrowserView::DisableTabStripEditingForTesting() {
  }
  
  bool BrowserView::IsToolbarVisible() const {
@@ -3751,7 +3834,7 @@ index 24eca1ab9a..dbe8bf0770 100644
  }
  
  bool BrowserView::IsToolbarShowing() const {
-@@ -5066,6 +5140,7 @@ void BrowserView::AddedToWidget() {
+@@ -5066,6 +5214,7 @@ void BrowserView::AddedToWidget() {
    layout_views.toolbar = toolbar_;
    layout_views.infobar_container = infobar_container_;
    layout_views.multi_contents_view = multi_contents_view_;
@@ -3760,10 +3843,38 @@ index 24eca1ab9a..dbe8bf0770 100644
    layout_views.top_container_separator = top_container_separator_;
    // LINT.ThenChange(//chrome/browser/ui/views/frame/layout/browser_view_layout.h:BrowserViewLayoutViews)
 diff --git a/chrome/browser/ui/views/frame/browser_view.h b/chrome/browser/ui/views/frame/browser_view.h
-index 38dae976bf..307c7c1770 100644
+index 38dae976bf..17f6f132dd 100644
 --- a/chrome/browser/ui/views/frame/browser_view.h
 +++ b/chrome/browser/ui/views/frame/browser_view.h
-@@ -1206,6 +1206,25 @@ class BrowserView : public BrowserWindow,
+@@ -29,6 +29,7 @@
+ #include "chrome/browser/ui/translate/partial_translate_bubble_model.h"
+ #include "chrome/browser/ui/user_education/browser_user_education_interface.h"
+ #include "chrome/browser/ui/views/frame/browser_widget.h"
++#include "third_party/skia/include/core/SkRegion.h"
+ #include "chrome/browser/ui/views/frame/contents_container_view.h"
+ #include "chrome/browser/ui/views/frame/contents_web_view.h"
+ #include "chrome/browser/ui/views/frame/layout/browser_view_layout_params.h"
+@@ -337,6 +338,19 @@ class BrowserView : public BrowserWindow,
+   // On macOS, it is possible that the top UI is drawn but hidden.
+   bool ShouldDrawTabStrip() const;
+ 
++  // Verti: Liegt der Punkt (in Koordinaten dieser Ansicht) auf einer Flaeche,
++  // an der die Leiste sich ziehen laesst? Die Flaechen meldet die Seite selbst
++  // ueber -webkit-app-region (siehe .drag-region in sidebar.html) - das Fenster
++  // muss also nicht raten, wo Knoepfe sitzen.
++  //
++  // Gibt false zurueck, solange die Seite noch nichts gemeldet hat. Der
++  // Aufrufer faellt dann auf die alte Schaetzung zurueck.
++  bool VertiZiehbereichTrifft(const gfx::Point& punkt) const;
++
++  // Verti: Hat die Leiste ihre Ziehflaechen schon gemeldet? Solange nicht,
++  // faellt das Fenster auf eine grobe Schaetzung zurueck.
++  bool VertiZiehbereichBekannt() const;
++
+   // Returns whether a vertical tabstrip should be shown.
+   bool ShouldDrawVerticalTabStrip() const;
+ 
+@@ -1206,6 +1220,32 @@ class BrowserView : public BrowserWindow,
    // The view that contains all visible WebContents.
    raw_ptr<MultiContentsView> multi_contents_view_ = nullptr;
  
@@ -3782,6 +3893,13 @@ index 38dae976bf..307c7c1770 100644
 +  // chromium/extension/verti-shim.js.
 +  class VertiUeberlagerungsWaechter;
 +  std::unique_ptr<VertiUeberlagerungsWaechter> verti_ueberlagerung_;
++
++  // Verti: die Ziehflaechen, die sidebar.html gemeldet hat. Leer, solange
++  // nichts gemeldet wurde. Gesetzt von VertiLeisteView (browser_view.cc) -
++  // deshalb ist sie eine innere Klasse, sie fasst hier Privates an.
++  class VertiLeisteView;
++  void VertiZiehbereichSetzen(const SkRegion& bereich);
++  SkRegion verti_ziehbereich_;
 +
 +  // Blendet den App-Inhalt aus (an == true) oder wieder ein.
 +  void VertiUeberlagerungZeigen(bool an);

@@ -78,10 +78,16 @@
       menuEl.style.left = Math.max(6, x) + 'px';
       menuEl.style.top = Math.max(6, y) + 'px';
       document.body.appendChild(menuEl);
+      menueOffen = true;
+      ueberlagerungMelden();
       setTimeout(() => document.addEventListener('mousedown', zu, { once: true }), 0);
     });
   }
-  function zu() { if (menuEl) { menuEl.remove(); menuEl = null; } }
+  function zu() {
+    if (menuEl) { menuEl.remove(); menuEl = null; }
+    menueOffen = false;
+    ueberlagerungMelden();
+  }
   const letzterKlick = { x: 20, y: 20 };
   document.addEventListener('contextmenu', (e) => { letzterKlick.x = e.clientX; letzterKlick.y = e.clientY; }, true);
 
@@ -192,25 +198,34 @@
   // schon selbst wieder eingeblendet hatte), und Escape, ein Klick auf den
   // Hintergrund und der Zurueck-Pfeil gehen jeweils eigene Wege. Ueber die
   // Klasse 'open' stimmt es bei allen.
+  // Das Rechtsklick-Menue der Apps gehoert AUCH dazu. Es entsteht hier in der
+  // Bruecke (in Electron war es ein natives Menue), ist rund 210 px breit und
+  // oeffnet an einem Symbol der 68 px schmalen Leiste - der Rest ragte also
+  // ueber den Seiteninhalt und war unsichtbar. Am 07.09.2026 nachgemessen:
+  // Menue von x=31 bis x=248, sichtbar blieben 37 px.
+  let menueOffen = false;
+  let ueberlagerungTeile = [];
+  let ueberlagerungZuletzt = null;
+
+  function ueberlagerungMelden() {
+    const an = menueOffen
+      || ueberlagerungTeile.some((el) => el.classList.contains('open'));
+    if (an === ueberlagerungZuletzt) return;
+    ueberlagerungZuletzt = an;
+    document.title = an ? 'verti:overlay:an' : 'verti:overlay:aus';
+  }
+
   function ueberlagerungenBeobachten() {
-    const teile = ['library', 'settings', 'feedback']
+    ueberlagerungTeile = ['library', 'settings', 'feedback', 'bpanel']
       .map((id) => document.getElementById(id))
       .filter(Boolean);
-    if (!teile.length) return;
+    if (!ueberlagerungTeile.length) return;
 
-    let zuletzt = null;
-    const melden = () => {
-      const an = teile.some((el) => el.classList.contains('open'));
-      if (an === zuletzt) return;
-      zuletzt = an;
-      document.title = an ? 'verti:overlay:an' : 'verti:overlay:aus';
-    };
-
-    const waechter = new MutationObserver(melden);
-    for (const el of teile) {
+    const waechter = new MutationObserver(ueberlagerungMelden);
+    for (const el of ueberlagerungTeile) {
       waechter.observe(el, { attributes: true, attributeFilter: ['class'] });
     }
-    melden();
+    ueberlagerungMelden();
   }
 
   if (document.readyState === 'loading') {

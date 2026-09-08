@@ -98,15 +98,17 @@ rm -rf "$ZIEL"
 mkdir -p "$ZIEL"
 cp -R "$REPO/chromium/extension/." "$ZIEL/"
 
-# Die echte Versionsnummer der gebauten App ins Manifest stempeln.
+# Vertis Versionsnummer ins Manifest stempeln.
 #
-# In chromium/extension/manifest.json steht nur ein Platzhalter. Ohne diesen
-# Schritt zeigt Verti unter Einstellungen -> Version die alte Nummer der
-# Electron-Fassung an (1.1.18), waehrend "Nach Updates suchen" gegen die
-# echte prueft. Chromiums Kennung hilft nicht weiter: die ist gekuerzt
-# ("Chrome/155.0.0.0", am 07.09.2026 gemessen).
-VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
-  "$SRC/out/Release/Verti.app/Contents/Info.plist")
+# In chromium/extension/manifest.json steht nur ein Platzhalter; ohne diesen
+# Schritt zeigt Verti unter Einstellungen -> Version eine veraltete Zahl.
+#
+# WICHTIG: es ist VERTIS Nummer aus package.json (1.2.1), NICHT Chromiums
+# (155.0.8038.1). sw.js vergleicht diese Nummer mit dem GitHub-Tag des neuesten
+# Releases - stuende dort Chromiums Nummer, waere "hier" immer groesser als
+# "neu" und die Update-Suche faende nie wieder etwas. Am 08.09.2026 beinahe so
+# ausgeliefert.
+VERSION=$(python3 -c "import json;print(json.load(open('$REPO/package.json'))['version'])")
 python3 - "$ZIEL/manifest.json" "$VERSION" <<'PYTHON'
 import json, sys
 pfad, version = sys.argv[1], sys.argv[2]
