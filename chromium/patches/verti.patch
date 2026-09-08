@@ -85,7 +85,7 @@ index 6f97b7046d..4ff859ea4f 100644
      } else {
        args += [ "--keystone=0" ]
 diff --git a/chrome/VERSION b/chrome/VERSION
-index 2486d397aa..144caa88c9 100644
+index 2486d397aa..88e14fed56 100644
 --- a/chrome/VERSION
 +++ b/chrome/VERSION
 @@ -1,4 +1,4 @@
@@ -93,7 +93,7 @@ index 2486d397aa..144caa88c9 100644
  MINOR=0
  BUILD=8038
 -PATCH=0
-+PATCH=3
++PATCH=4
 diff --git a/chrome/app/app-Info.plist b/chrome/app/app-Info.plist
 index 6fada0a2b1..0da0a81257 100644
 --- a/chrome/app/app-Info.plist
@@ -3340,6 +3340,21 @@ index b269f1610a..38ec2fbb4b 100644
  }
  
  void ChromeBrowserMainPartsMac::DidEndMainMessageLoop() {
+diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
+index 09ac2c7536..4c7e30352d 100644
+--- a/chrome/browser/chrome_content_browser_client.cc
++++ b/chrome/browser/chrome_content_browser_client.cc
+@@ -8727,7 +8727,9 @@ bool ChromeContentBrowserClient::
+ std::string ChromeContentBrowserClient::GetChildProcessSuffix(int child_flags) {
+   if (child_flags ==
+       std::to_underlying(ChildProcessHostFlags::kChildProcessHelperAlerts)) {
+-    if (base::FeatureList::IsEnabled(features::kAperitifHelpers)) {
++    // Verti: siehe child_process_host_impl.cc - die Aperitif-Helfer sind aus.
++    if (/* DISABLES CODE */ (false) &&
++        base::FeatureList::IsEnabled(features::kAperitifHelpers)) {
+       return " (Aperitif Alerts)";
+     }
+     return chrome::kMacHelperSuffixAlerts;
 diff --git a/chrome/browser/extensions/component_loader.cc b/chrome/browser/extensions/component_loader.cc
 index e926dac169..5d3658a432 100644
 --- a/chrome/browser/extensions/component_loader.cc
@@ -4269,6 +4284,21 @@ index fbbc47de4f..3523c09e41 100644
  }
  
  void SessionRestoreInfoBarManager::CloseAllInfoBars() {
+diff --git a/chrome/installer/mac/BUILD.gn b/chrome/installer/mac/BUILD.gn
+index 608e017bb0..a3aa8569ec 100644
+--- a/chrome/installer/mac/BUILD.gn
++++ b/chrome/installer/mac/BUILD.gn
+@@ -139,6 +139,10 @@ copy("copies") {
+     "$root_out_dir/dmg_tool",
+     "$root_out_dir/hfs_tool",
+     "//chrome/app/helper-gpu-entitlements.plist",
++
++    # Verti: ohne diese Zeile landet die Datei nicht im Packordner, und
++    # sign_chrome.py bricht ab, weil die Rechtedatei fehlt.
++    "//chrome/app/helper-plugin-entitlements.plist",
+     "//chrome/app/helper-renderer-entitlements.plist",
+     "pkg-dmg",
+     "pkg_postinstall.in",
 diff --git a/chrome/installer/mac/keystone_install.sh b/chrome/installer/mac/keystone_install.sh
 index f7bc063859..e5147378e9 100755
 --- a/chrome/installer/mac/keystone_install.sh
@@ -4336,6 +4366,41 @@ index 933690858a..3da5bc8b03 100644
 +        # scripts/signatur-pruefen.sh fragt Gatekeeper NACH Notarisierung und
 +        # Anheften - dort ist die Antwort auch erst aussagekraeftig.
 +        return False
+diff --git a/chrome/installer/mac/signing/parts.py b/chrome/installer/mac/signing/parts.py
+index ab2aa51fbf..3824d353c4 100644
+--- a/chrome/installer/mac/signing/parts.py
++++ b/chrome/installer/mac/signing/parts.py
+@@ -60,7 +60,16 @@ def get_parts(config):
+         'helper-app': CodeSignedProduct(
+             '{0.framework_dir}/Helpers/{0.product} Helper.app'.format(config),
+             '{}.helper'.format(uncustomized_bundle_id),
+-            options=CodeSignOptions.FULL_HARDENED_RUNTIME_OPTIONS,
++            # Verti: NICHT |FULL_HARDENED_RUNTIME_OPTIONS| - darin steckt
++            # LIBRARY_VALIDATION, und die vertraegt sich nicht mit dem
++            # Nachladen des Widevine-Entschluesslers. In diesem Helfer laufen
++            # alle Prozesse ausser Renderer, GPU und Alerts
++            # (ChromeContentBrowserClient::GetChildProcessSuffix), also auch
++            # der CDM. Ohne die Ausnahme spielt Spotify nicht.
++            options=CodeSignOptions.RESTRICT
++            | CodeSignOptions.KILL
++            | CodeSignOptions.HARDENED_RUNTIME,
++            entitlements='helper-plugin-entitlements.plist',
+             verify_options=verify_options,
+         ),
+         'helper-renderer-app': CodeSignedProduct(
+@@ -96,6 +105,12 @@ def get_parts(config):
+                 config
+             ),
+             '{}.helper'.format(uncustomized_bundle_id),
++            # Verti: dieser Helfer bekommt den Entschluessler-Schalter
++            # ABSICHTLICH NICHT. Er laedt libaperitif.dylib ueber
++            # @executable_path; ohne Bibliothekspruefung verweigert dyld die
++            # Pfad-Aufloesung und die App startet nicht mehr (am 08.09.2026 so
++            # gemessen). Gebraucht wird er ohnehin nicht - die Aperitif-Helfer
++            # sind in Verti fest abgeschaltet.
+             options=CodeSignOptions.FULL_HARDENED_RUNTIME_OPTIONS,
+             verify_options=verify_options,
+         ),
 diff --git a/chrome/installer/mac/signing/pipeline.py b/chrome/installer/mac/signing/pipeline.py
 index 3282a9deb9..18261a20c1 100644
 --- a/chrome/installer/mac/signing/pipeline.py
@@ -4508,3 +4573,32 @@ index f240dc22ee..ca987c614a 100644
  #endif
  
  // These values are persisted to logs. Entries should not be renumbered and
+diff --git a/content/browser/child_process_host_impl.cc b/content/browser/child_process_host_impl.cc
+index 6374969dc0..2f069bd215 100644
+--- a/content/browser/child_process_host_impl.cc
++++ b/content/browser/child_process_host_impl.cc
+@@ -79,7 +79,23 @@ base::FilePath ChildProcessHost::GetChildPath(int flags) {
+ 
+   if (base::apple::AmIBundled()) {
+     std::string child_suffix;
+-    if (base::FeatureList::IsEnabled(features::kAperitifHelpers)) {
++    // Verti: die Aperitif-Helfer bleiben AUS, auch wenn ein Feldversuch sie
++    // einschaltet.
++    //
++    // Sie sind ein Google-Versuch und per Vorgabe aus, wurden bei Freddy am
++    // 08.09.2026 aber von einem Feldversuch aktiviert (20 laufende
++    // Aperitif-Prozesse). Fuer Verti ist das ein Problem: der
++    // Widevine-Entschluessler laeuft im allgemeinen Helfer, und nur der kann
++    // "disable-library-validation" bekommen. "Verti Helper (Aperitif)" kann es
++    // NICHT - er laedt libaperitif.dylib ueber @executable_path, und ohne
++    // Bibliothekspruefung verweigert dyld genau diese Pfad-Aufloesung
++    // ("security policy does not allow @ path expansion"). Der Versuch, ihm den
++    // Schalter trotzdem zu geben, hat die App beim Start zerlegt (gemessen).
++    //
++    // Damit haenge Spotify sonst an einem Schalter, den Google jederzeit
++    // umlegen kann. Also fest aus.
++    if (/* DISABLES CODE */ (false) &&
++        base::FeatureList::IsEnabled(features::kAperitifHelpers)) {
+       if (flags == CHILD_NORMAL) {
+         child_suffix = " (Aperitif)";
+       } else if (flags == CHILD_RENDERER) {

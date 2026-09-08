@@ -768,6 +768,95 @@ oeffnen.** Sie traegt sich beim Start selbst wieder ein (im Log:
 `RegisterApp`). Das dauert ein paar Sekunden - direkt nach dem Start gelesen,
 steht im Ticket noch der alte Pfad.
 
+## Spotify: der Entschluessler wurde nie geladen (08.09.2026) - GELOEST
+
+Spotify meldete "Wiedergabe von geschuetzten Inhalten ist nicht aktiviert",
+obwohl DRM am 02.09. als geloest galt. Beides stimmte: die Bau-Schalter waren
+richtig, der Entschluessler lag vollstaendig im Profil (WidevineCdm
+4.10.3050.0, `libwidevinecdm.dylib`, 19 MB). Er wurde nur nie GELADEN.
+
+### Ursache
+
+Kein Helfer-Prozess trug `com.apple.security.cs.disable-library-validation`.
+Unter gehaerteter Laufzeit verbietet macOS damit das Nachladen einer fremd
+signierten Bibliothek - und der Entschluessler ist von Google signiert, nicht
+von uns. Das offene Chromium bringt die passende Rechtedatei gar nicht mit
+(nur `helper-gpu-` und `helper-renderer-entitlements.plist`); die
+Plugin-Fassung hat Chrome nur in Googles internem Zweig.
+
+Nachgemessen: `ChromeContentBrowserClient::GetChildProcessSuffix` vergibt einen
+eigenen Helfer NUR fuer "Alerts". Alles andere, auch der CDM, laeuft im
+allgemeinen `Verti Helper.app` - und der wurde mit
+`FULL_HARDENED_RUNTIME_OPTIONS` signiert, worin `LIBRARY_VALIDATION` steckt.
+
+**Dieselbe Ursache wie in der Electron-Zeit.** Dort steht der Schalter seit
+1.0.21 in `build/entitlements.mac.plist` (siehe CLAUDE.md). Der Umbau hat ihn
+verloren, weil Chromium seine Rechte ganz anders vergibt.
+
+### Die Falle dahinter: Chromiums "Aperitif"-Helfer
+
+Der erste Anlauf gab den Schalter auch `Verti Helper (Aperitif).app`. Damit
+startete die App gar nicht mehr:
+
+```
+dyld: Library not loaded: @executable_path/../../../../Libraries/libaperitif.dylib
+  Reason: (security policy does not allow @ path expansion)
+```
+
+Dieser Helfer laedt eine eigene Bibliothek ueber `@executable_path`, und ohne
+Bibliothekspruefung verweigert dyld genau diese Pfad-Aufloesung. Er kann den
+Schalter also NIE bekommen.
+
+Damit waere Spotify erledigt gewesen, denn `kAperitifHelpers` ist zwar per
+Vorgabe aus, war bei Freddy aber von einem **Feldversuch eingeschaltet** - 20
+laufende Aperitif-Prozesse in seiner installierten App. Der Entschluessler waere
+also ausgerechnet in dem Helfer gelandet, der ihn nicht laden darf, und Spotify
+haette an einem Schalter gehangen, den Google jederzeit umlegen kann.
+
+Deshalb sind die Aperitif-Helfer in Verti **fest abgeschaltet** (beide
+Entscheidungsstellen, in `content/browser/child_process_host_impl.cc` und
+`chrome/browser/chrome_content_browser_client.cc`). Chromium uebersetzt
+`if (false && ...)` nicht - es braucht Chromiums Schreibweise
+`if (/* DISABLES CODE */ (false) && ...)`, sonst bricht der Bau mit
+`-Werror,-Wunreachable-code` ab.
+
+### Beweis
+
+Gleicher Entschluessler, gleiches Testprofil, dieselbe Abfrage, die Spotify
+macht (`requestMediaKeySystemAccess` + `createMediaKeys`):
+
+| Fassung | `com.widevine.alpha` |
+|---|---|
+| 1.2.3 (installiert, alte Rechte) | **nein: NotSupportedError** |
+| 1.2.4 (neu) | **JA**, `createMediaKeys()` laeuft durch |
+
+`createMediaKeys()` ist der eigentliche Beleg: erst dort wird der CDM wirklich
+instanziiert. EME gibt es nur im sicheren Kontext, die Sonde misst deshalb ueber
+einen winzigen Server auf `127.0.0.1`.
+
+## Meldungen und der Browser-Knopf (08.09.2026) - GELOEST
+
+**Meldungen.** Die Ungelesen-Zahl kam, es klingelte aber nie - der Ton kam erst
+beim Hineinklicken. Im Profil nachgesehen: unter den Melde-Berechtigungen
+standen zwei Eintraege, WhatsApp war nicht dabei. In Electron meldete die
+Laufzeit die Berechtigung von sich aus als erteilt; Chromium fragt, und die
+Frage sieht in einem angehefteten Hintergrund-Tab niemand. Was man beim
+Hineinklicken hoerte, war WhatsApps eigener Ton, den die Seite im Vordergrund
+nachholt.
+
+Verti erlaubt Meldungen jetzt selbst (`chrome.contentSettings`, Berechtigung
+`contentSettings` im Manifest) - beim Start fuer alle eingerichteten Apps und
+beim Anlegen jedes App-Tabs. Nur fuer die Apps in der Leiste, fuer keine
+anderen. In der gebauten App gegengefragt: WhatsApp, Google Kalender und
+ChatGPT stehen auf `allow`.
+
+**Browser-Knopf.** Er lief auf "DNS_PROBE_FINISHED_NXDOMAIN", weil im Katalog
+die Platzhalter-Adresse `https://verti.browser/` steht - in Electron hat
+`main.js` sie abgefangen und `browser.html` gezeigt, hier faengt sie niemand ab.
+Chromium bringt Tabs, Adressleiste, Verlauf und Lesezeichen selbst mit, die
+ganze `browser.html` ist hier ueberfluessig. Der Knopf oeffnet jetzt einen
+gewoehnlichen, NICHT angehefteten Tab. Nachgeprueft: `chrome://newtab/`.
+
 ## Offen ausser DRM
 
 Signierung, Notarisierung, das Austauschen beim Update (siehe oben), Onboarding,

@@ -105,6 +105,28 @@ async function audioMelden() {
 }
 
 // ---------- App-Tabs ----------
+// Meldungen fuer eine App erlauben, ohne zu fragen.
+//
+// In Electron meldete die Laufzeit die Berechtigung von sich aus als erteilt -
+// deshalb kamen WhatsApp-Meldungen einfach an. Chromium fragt stattdessen, und
+// die Frage sieht in einem angehefteten Hintergrund-Tab NIEMAND. Ergebnis bei
+// Freddy am 08.09.2026: die Ungelesen-Zahl kam (die steht im Seitentitel), aber
+// es klingelte nie; im Profil standen nur zwei Melde-Berechtigungen, WhatsApp
+// war nicht dabei.
+//
+// Erlaubt wird ausschliesslich fuer die Apps, die der Nutzer selbst in seine
+// Leiste gelegt hat - nicht fuer beliebige Seiten.
+async function meldungenErlauben(url) {
+  try {
+    const o = new URL(url);
+    if (o.protocol !== 'https:' && o.protocol !== 'http:') return;
+    await chrome.contentSettings.notifications.set({
+      primaryPattern: o.origin + '/*',
+      setting: 'allow',
+    });
+  } catch (e) { /* ungueltige Adresse oder API nicht da: dann eben nicht */ }
+}
+
 async function appOeffnen(id, aktivieren = true) {
   const s = await zustand();
   const tabs = { ...s.tabs };
@@ -119,6 +141,28 @@ async function appOeffnen(id, aktivieren = true) {
   }
   const app = s.apps.find((a) => a.id === id) || (await ladeKatalog()).apps.find((a) => a.id === id);
   if (!app) return null;
+
+  // Der Verti Browser ist keine Web-App, sondern Chromiums eigenes Surfen.
+  //
+  // Im Katalog steht die Platzhalter-Adresse https://verti.browser/ - in
+  // Electron hat main.js sie abgefangen und browser.html gezeigt. Hier faengt
+  // sie niemand ab, also hat Chromium wirklich das DNS gefragt und eine
+  // Fehlerseite gezeigt ("DNS_PROBE_FINISHED_NXDOMAIN", von Freddy am
+  // 08.09.2026 fotografiert).
+  //
+  // Chromium bringt Tabs, Adressleiste, Verlauf und Lesezeichen selbst mit -
+  // die ganze browser.html aus der Electron-Zeit ist hier ueberfluessig. Der
+  // Knopf oeffnet deshalb einen gewoehnlichen Tab, nicht angeheftet, damit er
+  // sich wie ein Browser-Tab benutzen laesst.
+  if (id === 'browser') {
+    const tab = await chrome.tabs.create({ active: aktivieren });
+    tabs[id] = tab.id;
+    await speichern({ tabs, activeApp: id });
+    melde('active-app', id);
+    return tab.id;
+  }
+
+  await meldungenErlauben(app.url);
   const tab = await chrome.tabs.create({ url: app.url, active: aktivieren, pinned: true });
   tabs[id] = tab.id;
   const stumm = (s.mutedApps || []).includes(id);
@@ -192,6 +236,14 @@ async function vertiStartAufbauen() {
     //    dastehen, nicht mit einer fast leeren Seite. Bibliothek und
     //    Einstellungen holt man ueber Vertis Knopf in der Werkzeugleiste.
     const apps = s.apps.filter((a) => a.id !== 'browser');
+
+    // Meldungen fuer ALLE eingerichteten Apps freigeben, nicht nur fuer die,
+    // deren Tab gerade neu entsteht. Sonst bleibt eine App, die schon laenger
+    // in der Leiste liegt, fuer immer stumm.
+    for (const app of apps) {
+      await meldungenErlauben(app.url);
+    }
+
     for (const app of apps) {
       await appOeffnen(app.id, false);
     }

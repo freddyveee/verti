@@ -12,7 +12,8 @@
     "management",
     "downloads",
     "history",
-    "browsingData"
+    "browsingData",
+    "contentSettings"
   ],
   "host_permissions": [
     "<all_urls>"

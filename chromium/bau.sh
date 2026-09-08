@@ -103,7 +103,7 @@ cp -R "$REPO/chromium/extension/." "$ZIEL/"
 # In chromium/extension/manifest.json steht nur ein Platzhalter; ohne diesen
 # Schritt zeigt Verti unter Einstellungen -> Version eine veraltete Zahl.
 #
-# WICHTIG: es ist VERTIS Nummer aus package.json (1.2.3), NICHT Chromiums
+# WICHTIG: es ist VERTIS Nummer aus package.json (1.2.4), NICHT Chromiums
 # (155.0.8038.1). sw.js vergleicht diese Nummer mit dem GitHub-Tag des neuesten
 # Releases - stuende dort Chromiums Nummer, waere "hier" immer groesser als
 # "neu" und die Update-Suche faende nie wieder etwas. Am 08.09.2026 beinahe so
