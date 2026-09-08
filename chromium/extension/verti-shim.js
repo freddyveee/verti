@@ -215,7 +215,25 @@
     document.title = an ? 'verti:overlay:an' : 'verti:overlay:aus';
   }
 
+  // Den Hintergrund der SEITE wegnehmen - nur in der Chromium-Fassung.
+  //
+  // sidebar.html deckt das ganze Fenster ab, zeichnet davon aber nur das "L"
+  // aus Kopfzeile und Leiste; den Rest fuellt der App-Inhalt davor. Bleibt der
+  // body eingefaerbt, verschwindet die App hinter einer grossen Flaeche,
+  // sobald die Leiste nach vorn geholt wird - beim Rechtsklick-Menue an einem
+  // App-Symbol legte sich so ein dunkles Fenster ueber ganz Verti (Freddy,
+  // 08.09.2026). Kopfzeile und Leiste bringen ihren Hintergrund seitdem selbst
+  // mit (.drag-region, .sidebar), hier faellt nur noch der des body weg.
+  //
+  // Das Gegenstueck sitzt im Fenster: BrowserView setzt die Seite auf
+  // SK_ColorTRANSPARENT. Ohne beides zusammen bleibt sie undurchsichtig.
+  function hintergrundFreigeben() {
+    document.documentElement.style.background = 'transparent';
+    document.body.style.background = 'transparent';
+  }
+
   function ueberlagerungenBeobachten() {
+    hintergrundFreigeben();
     ueberlagerungTeile = ['library', 'settings', 'feedback', 'bpanel']
       .map((id) => document.getElementById(id))
       .filter(Boolean);
