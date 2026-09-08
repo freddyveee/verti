@@ -23,18 +23,41 @@ der Ziehflächen — die ist gemessen und widerlegt. Was es wirklich war, steht
 in `CHROMIUM-STATUS.md` unter „Kopfzeile schluckte die Klicks" und
 ausführlich in der Commit-Nachricht von `4974742`.
 
-## Das Wichtigste zuerst: es muss neu gebaut werden
+## 1.2.2 ist gebaut, signiert und notarisiert — es fehlt nur das Veröffentlichen
 
-Die Korrekturen stecken im Chromium-Patch. Das veröffentlichte Vorab-Release
-**1.2.1 hat sie noch nicht** — auch die App in Freddys `/Applications` nicht.
+Die drei Dateien liegen unter
+`/Volumes/VertiBuild/chromium/src/out/Release/`:
 
-Damit Freddy sie sieht:
+```
+signed/Verti-155.0.8038.2.dmg
+Verti-Mac.crx3
+Verti-Mac.crx3.sha256
+Verti-Mac.crx3.version
+```
 
-1. `./chromium/bau.sh`
-2. `./scripts/mac-signieren.sh` (Mac muss entsperrt sein)
-3. Vorab-Release veröffentlichen — **`--prerelease`**, sonst bekommen die
+Geprüft: Gatekeeper „accepted / Notarized Developer ID"; im fertigen Bau
+reagiert das Zahnrad auf einen echten Mausklick, und das Rechtsklick-Menü
+deckt Verti nicht mehr zu.
+
+### Ablauf für ein Chromium-Release
+
+1. **Version in `package.json` erhöhen** (steuert das Erweiterungs-Manifest
+   und den Vergleich in `sw.js` gegen den GitHub-Tag)
+2. **`chrome/VERSION` im Chromium-Quelltext erhöhen** (`PATCH=`), danach
+   `./chromium/bau.sh --patch-neu`. **Das ist keine Kosmetik:** der Updater
+   vergleicht CHROMIUMS Nummer, nicht Vertis. Bleibt sie gleich, antwortet der
+   Server „kein Update", und niemand bekommt die neue Fassung — genau das wäre
+   am 08.09.2026 fast passiert (1.2.1 und 1.2.2 wären beide 155.0.8038.1
+   gewesen).
+3. `./chromium/bau.sh`
+4. `./scripts/mac-signieren.sh` (Mac muss entsperrt sein, dauert 5–15 Min)
+5. `./scripts/signatur-pruefen.sh <App in der DMG>` — der Signierlauf legt nur
+   die DMG ab, die App steckt darin (`hdiutil attach`)
+6. `./scripts/crx3-paket.sh`
+7. Vorab-Release veröffentlichen — **`--prerelease`**, sonst bekommen die
    Kollegen auf der Electron-Fassung es angeboten. `releases/latest` muss auf
-   v1.1.18 zeigen bleiben.
+   v1.1.18 zeigen bleiben. Alle VIER Dateien gehören hinein, sonst findet der
+   Update-Server nichts.
 
 ## Was jetzt offen ist
 
