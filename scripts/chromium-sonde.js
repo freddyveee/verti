@@ -10,7 +10,14 @@
 //
 // Verti muss dafuer mit --remote-debugging-port=9222 laufen:
 //   "/Volumes/VertiBuild/chromium/src/out/Release/Verti.app/Contents/MacOS/Verti" \
-//     --user-data-dir=/tmp/verti-sonde --remote-debugging-port=9222 &
+//     --user-data-dir=/tmp/verti-sonde --remote-debugging-port=9222 \
+//     --use-mock-keychain &
+//
+// --use-mock-keychain ist PFLICHT und nicht bloss Kosmetik: ohne ihn fragt
+// macOS bei JEDEM Start nach dem Passwort fuer "Verti Safe Storage". Jeder
+// neue Bau traegt eine andere Signatur und gilt dem System als fremdes
+// Programm. Am 08.09.2026 hat Freddy den Dialog mehrfach hintereinander
+// bekommen, ausgeloest von genau diesen Testlaeufen.
 //
 // Wird nicht mitgepackt.
 const PORT = process.env.VERTI_SONDE_PORT || 9222;

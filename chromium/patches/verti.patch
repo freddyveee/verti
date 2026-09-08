@@ -3536,7 +3536,7 @@ index fb1e87f834..15eac7f5ed 100644
      *override_titlebar_height = false;
      *titlebar_height = 0;
 diff --git a/chrome/browser/ui/views/frame/browser_view.cc b/chrome/browser/ui/views/frame/browser_view.cc
-index 24eca1ab9a..81e8f3d6d5 100644
+index 24eca1ab9a..5dbe40daa6 100644
 --- a/chrome/browser/ui/views/frame/browser_view.cc
 +++ b/chrome/browser/ui/views/frame/browser_view.cc
 @@ -298,6 +298,8 @@
@@ -3562,7 +3562,7 @@ index 24eca1ab9a..81e8f3d6d5 100644
  // The visible height of the shadow above the tabs. Clicks in this area are
  // treated as clicks to the frame, rather than clicks to the tab.
  const int kTabShadowSize = 2;
-@@ -882,6 +891,156 @@ class BrowserView::PipExclusionObserverImpl
+@@ -882,6 +891,172 @@ class BrowserView::PipExclusionObserverImpl
  ///////////////////////////////////////////////////////////////////////////////
  // BrowserView, public:
  
@@ -3579,6 +3579,8 @@ index 24eca1ab9a..81e8f3d6d5 100644
 +// nachgerechnet). Mit den gemeldeten Flaechen erledigt sich das von selbst,
 +// auch fuer jeden kuenftigen Knopf.
 +class BrowserView::VertiLeisteView : public views::WebView {
++  METADATA_HEADER(VertiLeisteView, views::WebView)
++
 + public:
 +  VertiLeisteView(Profile* profile, BrowserView* browser_view)
 +      : views::WebView(profile), browser_view_(browser_view) {}
@@ -3600,15 +3602,29 @@ index 24eca1ab9a..81e8f3d6d5 100644
 +                                   r->bounds.y() + r->bounds.height()),
 +                 r->draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
 +    }
-+    VLOG(1) << "Verti: " << regions.size() << " Ziehflaeche(n) gemeldet, "
-+            << "Rahmen " << bereich.getBounds().width() << "x"
-+            << bereich.getBounds().height();
++    // Nachmessbar machen: von aussen laesst sich sonst nicht pruefen, ob die
++    // Knoepfe wirklich ausgespart sind. Feuert nur bei Aenderungen (Start,
++    // Groesse), nicht bei jeder Mausbewegung.
++    if (VLOG_IS_ON(1)) {
++      std::string aussparungen;
++      for (const blink::mojom::DraggableRegionPtr& r : regions) {
++        if (!r->draggable) {
++          aussparungen += " [" + base::NumberToString(r->bounds.x()) + ".." +
++                          base::NumberToString(r->bounds.right()) + "]";
++        }
++      }
++      VLOG(1) << "Verti: Ziehflaeche " << bereich.getBounds().width() << "x"
++              << bereich.getBounds().height() << ", ausgespart:" << aussparungen;
++    }
 +    browser_view_->VertiZiehbereichSetzen(bereich);
 +  }
 +
 + private:
 +  const raw_ptr<BrowserView> browser_view_;
 +};
++
++BEGIN_METADATA(BrowserView, VertiLeisteView)
++END_METADATA
 +
 +void BrowserView::VertiZiehbereichSetzen(const SkRegion& bereich) {
 +  verti_ziehbereich_ = bereich;
@@ -3719,7 +3735,7 @@ index 24eca1ab9a..81e8f3d6d5 100644
  BrowserView::BrowserView(BrowserWindowInterface* browser)
      : views::ClientView(nullptr, nullptr),
        exclusive_access_context_(
-@@ -937,6 +1096,21 @@ BrowserView::BrowserView(BrowserWindowInterface* browser)
+@@ -937,6 +1112,21 @@ BrowserView::BrowserView(BrowserWindowInterface* browser)
    top_container_separator_->SetProperty(views::kElementIdentifierKey,
                                          kContentsSeparatorTopEdgeElementId);
  
@@ -3741,7 +3757,7 @@ index 24eca1ab9a..81e8f3d6d5 100644
    auto multi_contents_view = std::make_unique<MultiContentsView>(
        this, std::make_unique<MultiContentsViewDelegateImpl>(*browser_));
    multi_contents_view_ = AddChildView(std::move(multi_contents_view));
-@@ -1130,6 +1304,12 @@ BrowserView::~BrowserView() {
+@@ -1130,6 +1320,12 @@ BrowserView::~BrowserView() {
    find_bar_host_view_ = nullptr;
    infobar_container_ = nullptr;
    multi_contents_view_ = nullptr;
@@ -3754,7 +3770,7 @@ index 24eca1ab9a..81e8f3d6d5 100644
    main_shadow_overlay_ = nullptr;
    window_scrim_view_ = nullptr;
    side_panel_content_transition_scrim_view_ = nullptr;
-@@ -1404,35 +1584,17 @@ bool BrowserView::ShouldDrawTabStrokes() const {
+@@ -1404,35 +1600,17 @@ bool BrowserView::ShouldDrawTabStrokes() const {
  }
  
  bool BrowserView::ShouldDrawTabStrip() const {
@@ -3801,7 +3817,7 @@ index 24eca1ab9a..81e8f3d6d5 100644
  }
  
  bool BrowserView::ShouldDrawVerticalTabStrip() const {
-@@ -3044,26 +3206,12 @@ void BrowserView::DisableTabStripEditingForTesting() {
+@@ -3044,26 +3222,12 @@ void BrowserView::DisableTabStripEditingForTesting() {
  }
  
  bool BrowserView::IsToolbarVisible() const {
@@ -3834,7 +3850,7 @@ index 24eca1ab9a..81e8f3d6d5 100644
  }
  
  bool BrowserView::IsToolbarShowing() const {
-@@ -5066,6 +5214,7 @@ void BrowserView::AddedToWidget() {
+@@ -5066,6 +5230,7 @@ void BrowserView::AddedToWidget() {
    layout_views.toolbar = toolbar_;
    layout_views.infobar_container = infobar_container_;
    layout_views.multi_contents_view = multi_contents_view_;
