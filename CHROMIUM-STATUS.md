@@ -579,6 +579,31 @@ die Nummer der Electron-Fassung aus dem Erweiterungs-Manifest. `bau.sh`
 stempelt jetzt beim Einlegen die echte Nummer der gebauten App hinein.
 Chromiums Kennung taugt dafuer nicht, die ist gekuerzt ("Chrome/155.0.0.0").
 
+## Der Update-Server sah Vorab-Fassungen nicht (08.09.2026)
+
+Nach dem Veroeffentlichen von v1.2.1 antwortete der Server jedem Verti "kein
+Update", obwohl das Release fertig oben lag. Ursache: er fragte
+`/releases/latest`, und GitHub laesst dort Vorab-Fassungen weg.
+
+Die Chromium-Fassung ist aber genau eine Vorab-Fassung - absichtlich, damit die
+Kollegen auf der Electron-Fassung sie nicht angeboten bekommen. Der Server sah
+deshalb v1.1.18 (Electron, ohne CRX3-Paket) und gab auf.
+
+Jetzt holt er die Liste (`/releases?per_page=15`, neueste zuerst) und nimmt das
+erste Release, das ein CRX3-Paket UND einen Pruefwert mitbringt. Electron-
+Releases werden dadurch uebersprungen, ohne dass irgendwo eine Fassung fest
+eingetragen werden muss.
+
+Gemessen nach dem Ausrollen:
+
+```
+installiert 155.0.8038.0  ->  nextversion 155.0.8038.1, richtige URL und sha256
+installiert 155.0.8038.1  ->  noupdate
+```
+
+**Lehre:** den Update-Server erst NACH dem Veroeffentlichen pruefen, mit einer
+echten Anfrage. Vorher sieht alles richtig aus.
+
 ## Offen ausser DRM
 
 Signierung, Notarisierung, das Austauschen beim Update (siehe oben), Onboarding,

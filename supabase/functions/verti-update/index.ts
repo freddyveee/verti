@@ -17,7 +17,12 @@
 // keinen Supabase-Schluessel mit. Die Funktion gibt nur oeffentliche
 // Release-Daten heraus, deshalb ist das in Ordnung.
 
-const RELEASES = 'https://api.github.com/repos/freddyveee/verti/releases/latest';
+// NICHT /releases/latest: das ueberspringt Vorab-Fassungen, und genau die ist
+// die Chromium-Fassung im Moment. Der Server sah dadurch das Electron-Release
+// v1.1.18 ohne CRX3-Paket und antwortete jedem "kein Update" (am 08.09.2026
+// gemessen). Stattdessen die Liste holen - GitHub liefert sie neueste zuerst -
+// und das erste Release nehmen, das ein CRX3-Paket mitbringt.
+const RELEASES = 'https://api.github.com/repos/freddyveee/verti/releases?per_page=15';
 
 // Vertis Kennung beim Updater. Auf dem Mac ist das die BUNDLE-Kennung, nicht
 // browser_appid aus branding.gni - der Browser meldet sich unter
@@ -46,17 +51,26 @@ async function neuestesRelease(): Promise<Release | null> {
   if (cache.daten && Date.now() - cache.zeit < CACHE_MS) return cache.daten;
   const r = await fetch(RELEASES, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'verti-update' } });
   if (!r.ok) return cache.daten;
-  const rel = await r.json();
+  const liste = await r.json();
 
   // Der Updater erwartet ein CRX3-Paket, keine ZIP-Datei. Das Release braucht
   // deshalb drei Dateien, die scripts/crx3-paket.sh alle anlegt:
   //   Verti-Mac.crx3          das Paket
   //   Verti-Mac.crx3.sha256   der Pruefwert
   //   Verti-Mac.crx3.version  die Version der App darin
-  const paket = (rel.assets || []).find((a: any) => /Verti-Mac\.crx3$/i.test(a.name));
-  const pruef = (rel.assets || []).find((a: any) => /Verti-Mac\.crx3\.sha256$/i.test(a.name));
-  const versDatei = (rel.assets || []).find((a: any) => /Verti-Mac\.crx3\.version$/i.test(a.name));
-  if (!paket || !pruef) { cache = { zeit: Date.now(), daten: null }; return null; }
+  //
+  // Das erste Release der Liste, das Paket UND Pruefwert hat, gewinnt. Releases
+  // ohne CRX3 (die Electron-Fassungen) werden uebersprungen, Entwuerfe liefert
+  // GitHub ohne Anmeldung ohnehin nicht mit.
+  const hat = (rel: any, muster: RegExp) =>
+    (rel.assets || []).find((a: any) => muster.test(a.name));
+  const rel = (Array.isArray(liste) ? liste : []).find(
+    (x: any) => hat(x, /Verti-Mac\.crx3$/i) && hat(x, /Verti-Mac\.crx3\.sha256$/i));
+  if (!rel) { cache = { zeit: Date.now(), daten: null }; return null; }
+
+  const paket = hat(rel, /Verti-Mac\.crx3$/i);
+  const pruef = hat(rel, /Verti-Mac\.crx3\.sha256$/i);
+  const versDatei = hat(rel, /Verti-Mac\.crx3\.version$/i);
 
   const sha = (await fetch(pruef.browser_download_url).then((x) => x.text())).trim().split(/\s+/)[0];
 
