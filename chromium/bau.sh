@@ -68,6 +68,17 @@ fi
 
 if [ "${1:-}" = "--nur-patch" ]; then exit 0; fi
 
+# Die internen Pruefungen (DCHECK) muessen AUS sein. Chromium schaltet sie
+# ohne is_official_build von selbst ein, und jede fehlgeschlagene Pruefung
+# beendet die App mit abort() - alle vier Abstuerze bei Freddy vom 09. bis
+# 11.09.2026 waren genau das. Google Chrome wird ohne sie gebaut.
+if ! grep -qE '^dcheck_always_on = false' out/Release/args.gn; then
+  echo "ACHTUNG: 'dcheck_always_on = false' fehlt in out/Release/args.gn."
+  echo "Ohne diese Zeile baut Chromium die internen Pruefungen mit, und die"
+  echo "App stuerzt bei jeder fehlgeschlagenen Pruefung ab."
+  exit 1
+fi
+
 # Die Bau-Schalter muessen stehen, sonst fehlen Widevine und H.264/AAC
 for schalter in "proprietary_codecs = true" 'ffmpeg_branding = "Chrome"' "enable_widevine = true" "enable_updater = true"; do
   if ! grep -qF "$schalter" out/Release/args.gn; then
@@ -103,7 +114,7 @@ cp -R "$REPO/chromium/extension/." "$ZIEL/"
 # In chromium/extension/manifest.json steht nur ein Platzhalter; ohne diesen
 # Schritt zeigt Verti unter Einstellungen -> Version eine veraltete Zahl.
 #
-# WICHTIG: es ist VERTIS Nummer aus package.json (1.2.4), NICHT Chromiums
+# WICHTIG: es ist VERTIS Nummer aus package.json (1.2.5), NICHT Chromiums
 # (155.0.8038.1). sw.js vergleicht diese Nummer mit dem GitHub-Tag des neuesten
 # Releases - stuende dort Chromiums Nummer, waere "hier" immer groesser als
 # "neu" und die Update-Suche faende nie wieder etwas. Am 08.09.2026 beinahe so

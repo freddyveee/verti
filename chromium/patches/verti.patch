@@ -1,3 +1,25 @@
+diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
+index b901cc0ee2..2fa843572d 100644
+--- a/base/threading/thread_restrictions.h
++++ b/base/threading/thread_restrictions.h
+@@ -289,6 +289,7 @@ namespace enterprise_connectors {
+ class LinuxKeyRotationCommand;
+ }  // namespace enterprise_connectors
+ namespace extensions {
++class ComponentLoader;
+ class InstalledLoader;
+ class UnpackedInstaller;
+ }  // namespace extensions
+@@ -635,6 +636,9 @@ class BASE_EXPORT ScopedAllowBlocking {
+   friend class cronet::CronetPrefsManager;
+   friend class crypto::ScopedAllowBlockingForNSS;  // http://crbug.com/59847
+   friend class drive::FakeDriveService;
++  // Verti: liest beim Start das Manifest der eigenen Leiste aus dem
++  // App-Paket, siehe ComponentLoader::AddVertiSidebar().
++  friend class extensions::ComponentLoader;
+   friend class extensions::InstalledLoader;
+   friend class extensions::UnpackedInstaller;
+   friend class font_service::internal::MappedFontFile;
 diff --git a/build/apple/tweak_info_plist.py b/build/apple/tweak_info_plist.py
 index 23d3c4d244..3db8335b6a 100755
 --- a/build/apple/tweak_info_plist.py
@@ -85,7 +107,7 @@ index 6f97b7046d..4ff859ea4f 100644
      } else {
        args += [ "--keystone=0" ]
 diff --git a/chrome/VERSION b/chrome/VERSION
-index 2486d397aa..88e14fed56 100644
+index 2486d397aa..165e099f4e 100644
 --- a/chrome/VERSION
 +++ b/chrome/VERSION
 @@ -1,4 +1,4 @@
@@ -93,7 +115,7 @@ index 2486d397aa..88e14fed56 100644
  MINOR=0
  BUILD=8038
 -PATCH=0
-+PATCH=4
++PATCH=5
 diff --git a/chrome/app/app-Info.plist b/chrome/app/app-Info.plist
 index 6fada0a2b1..0da0a81257 100644
 --- a/chrome/app/app-Info.plist
@@ -3356,10 +3378,19 @@ index 09ac2c7536..4c7e30352d 100644
      }
      return chrome::kMacHelperSuffixAlerts;
 diff --git a/chrome/browser/extensions/component_loader.cc b/chrome/browser/extensions/component_loader.cc
-index e926dac169..5d3658a432 100644
+index e926dac169..07db4585f9 100644
 --- a/chrome/browser/extensions/component_loader.cc
 +++ b/chrome/browser/extensions/component_loader.cc
-@@ -519,8 +519,31 @@ void ComponentLoader::DisableHelpAppForTesting() {
+@@ -4,6 +4,8 @@
+ 
+ #include "chrome/browser/extensions/component_loader.h"
+ 
++#include "base/threading/thread_restrictions.h"
++
+ #include <optional>
+ #include <string>
+ #include <string_view>
+@@ -519,8 +521,48 @@ void ComponentLoader::DisableHelpAppForTesting() {
  }
  #endif
  
@@ -3378,6 +3409,23 @@ index e926dac169..5d3658a432 100644
 +  }
 +  const base::FilePath sidebar =
 +      resources.Append(FILE_PATH_LITERAL("verti-sidebar"));
++
++  // Das hier laeuft im Hauptthread, und dort ist Plattenzugriff verboten -
++  // PathExists() und AddOrReplace() (MakeAbsoluteFilePath, LoadManifest)
++  // greifen beide auf die Platte. In Bauten mit eingeschalteten internen
++  // Pruefungen reisst das die ganze App mit: base::AssertBlockingAllowed()
++  // -> abort(), bei Freddy am 09.09. und 10.09.2026 je einmal (Abstuerze
++  // 231928 und 122210).
++  //
++  // Warum trotzdem synchron und nicht ueber den Datei-Thread wie Chromium OS
++  // (AddComponentFromDirWithManifestFilename): das Fenster laedt die Leiste
++  // gleich beim Erzeugen unter ihrer chrome-extension://-Adresse. Waere die
++  // Erweiterung dann noch nicht angemeldet, saehe der Nutzer eine Fehlerseite
++  // statt Verti. Es geht um EINE Datei von 1,4 KB aus dem eigenen App-Paket,
++  // einmal beim Start - dafuer ist ScopedAllowBlocking gedacht. Der
++  // ComponentLoader steht dafuer in der Freundesliste
++  // (base/threading/thread_restrictions.h).
++  base::ScopedAllowBlocking platte_erlaubt;
 +  if (!base::PathExists(sidebar.Append(FILE_PATH_LITERAL("manifest.json")))) {
 +    LOG(ERROR) << "Verti: Sidebar nicht gefunden unter " << sidebar;
 +    return;
