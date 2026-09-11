@@ -834,6 +834,56 @@ macht (`requestMediaKeySystemAccess` + `createMediaKeys`):
 instanziiert. EME gibt es nur im sicheren Kontext, die Sonde misst deshalb ueber
 einen winzigen Server auf `127.0.0.1`.
 
+## Spotify: die Plattform-Signatur ist selbst nicht herstellbar (11.09.2026) - BEWIESEN
+
+Nach 1.2.4 laedt der Entschluessler, und ein echter Widevine-Stream laeuft
+durch (8 s gemessen). Spotify spielt trotzdem nur ein paar Sekunden an und
+haengt sich auf - das Verhalten unsignierter Clients, das CLAUDE.md seit der
+Electron-Zeit beschreibt.
+
+Chrome bringt `Google Chrome Framework.sig` mit, Verti keine einzige
+`.sig`-Datei. Warum, steht im Quelltext:
+
+```
+# media/media_options.gni
+enable_cdm_host_verification =
+    enable_library_cdms && (is_mac || is_win) && is_chrome_branded &&
+    !is_chrome_for_testing_branded
+```
+
+In unserem Bau (`gn args out/Release --list=enable_cdm_host_verification`):
+**`false`**, weil `is_chrome_branded` nur fuer Googles eigenes Chrome gilt.
+
+Einschalten hilft nicht. Der Schalter zieht `widevine_sign_file`
+(`third_party/widevine/cdm/widevine.gni`), und das ruft
+`//third_party/widevine/scripts/signature_generator.py` auf. **Dieser Ordner
+ist in unserem Quelltext leer.** `third_party/widevine/README.chromium` nennt
+die Quelle: `https://chrome-internal.googlesource.com/chrome/deps/widevine/scripts.git`
+- Googles privater Speicher. Dazu braucht das Skript ein Signier-Zertifikat;
+dass es einen eigenen Schalter `ignore_missing_widevine_signing_cert` gibt,
+zeigt, dass es ausserhalb von Google schlicht fehlt.
+
+Werkzeug und Schluessel liegen beide nur bei Google. Ein selbstgebautes
+Chromium kann damit bauartbedingt keinen verifizierten Medienpfad vorweisen.
+
+**Und castLabs EVS hilft hier nicht:** es kennt nur Electron-Pakete und lehnt
+Verti wie auch Google Chrome selbst ab ("No matching executable found").
+
+Wege, alle ausserhalb unseres Baus:
+
+1. Widevine-Lizenz bei Google (offizieller Weg zur eigenen Signatur)
+2. castLabs fragen, ob sie Chromium-Bauten mitsignieren (Anfrage liegt als
+   Entwurf vor)
+3. Spotifys native Mac-App aufrufen statt des Web-Players - der einzige Weg,
+   der von niemandem abhaengt
+4. Spotify in der Chromium-Fassung als "geht nicht" kennzeichnen
+
+**Lehre, selbstkritisch:** dass Spotify eine Plattform-Signatur braucht, stand
+seit der Electron-Zeit in CLAUDE.md. Beim Umbau wurde nur geprueft, ob der
+Entschluessler laedt, nicht ob der Bau signiert ist. Ausserdem war eine
+vorgeschlagene Gegenprobe mit einem normalen Chromium wertlos - offizielle
+Chromium-Bauten bringen gar kein Widevine mit (siehe DRM-Messung vom 02.09.).
+
 ## Meldungen und der Browser-Knopf (08.09.2026) - GELOEST
 
 **Meldungen.** Die Ungelesen-Zahl kam, es klingelte aber nie - der Ton kam erst
