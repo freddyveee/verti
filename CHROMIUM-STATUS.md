@@ -937,3 +937,15 @@ node scripts/chromium-sonde.js "document.getElementById('plus').click()"
 Danach `Page.captureScreenshot` auf dem Ziel `sidebar.html`. Das zeigt die
 Leiste selbst, aber nicht, was davor oder dahinter liegt - dafuer braucht es
 ein echtes Bildschirmfoto.
+
+## 01.10.2026: Chromium-Kugel im Dock = alter Bild-Speicher, kein Baufehler
+
+Freddy sah im Dock die blaue Chromium-Kugel statt Vertis V. Gemessen:
+`/Applications/Verti.app` (1.2.4) und der 1.2.5-Bau haben Vertis Symbol
+(app.icns identisch mit build/icon.icns, Assets.car nur unsere Bilder,
+NSWorkspace liefert das V). Die 1.2.5 frisch aus der DMG gestartet zeigt im
+Dock das V. Nur der ANGEHEFTETE Dock-Eintrag zeigte die Kugel - auch nach
+`killall Dock`. Ursache: Bild-Speicher des Nutzers. Behoben mit
+`rm -rf $(getconf DARWIN_USER_CACHE_DIR){com.apple.iconservices*,com.apple.dock.iconcache}`,
+`killall iconservicesagent Dock`. `touch` auf die App geht nicht (macOS'
+App-Verwaltung: Operation not permitted). Neue Nutzer betrifft das nicht.
