@@ -15,16 +15,15 @@ Grundlage tragfähig"**: Stabilität und Geschwindigkeit.
 
 ## NACHTRAG 01.10.2026 abends (zuerst lesen)
 
-- **1.2.5 ist GEBAUT** (`out/Release/Verti.app`, 155.0.8038.5, Erweiterung
-  1.2.5, Bau fehlerfrei). Neu bauen ist NICHT noetig.
-- `./scripts/mac-signieren.sh` lief bis zur Notarisierung und bekam von Apple
-  **403 „A required agreement is missing or has expired“**. Freddy hat der
-  neuen Apple-Vereinbarung zugestimmt; Apple meldete danach noch einige
-  Minuten weiter 403 (Uebernahme dauert). Pruefen mit
-  `xcrun notarytool history --keychain-profile verti-notary` - erst wenn das
-  ohne 403 antwortet, `./scripts/mac-signieren.sh` neu starten.
-- Danach weiter ab Schritt 2 unten (signatur-pruefen, crx3-paket, Release,
-  messen).
+- **1.2.5 ist gebaut, signiert, notarisiert und als Vorab-Release
+  veroeffentlicht** (4 Dateien, Pruefwert online = lokal). `releases/latest`
+  bleibt v1.1.18.
+- Apple verlangte zwischendurch eine neue Entwickler-Vereinbarung (403 bei
+  notarytool); Freddy hat zugestimmt. Tritt das wieder auf: er muss auf
+  developer.apple.com zustimmen.
+- Dock-Kugel statt V: war nur der Bild-Speicher, siehe CHROMIUM-STATUS.md.
+- **Offen: Schritt 4, MESSEN** (Stackfield tippen/klicken/markieren, CPU/RAM
+  per `ps`), nachdem 1.2.5 bei Freddy installiert ist.
 
 ## Freddys Regeln aus den letzten Sitzungen
 
