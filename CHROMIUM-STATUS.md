@@ -949,3 +949,12 @@ Dock das V. Nur der ANGEHEFTETE Dock-Eintrag zeigte die Kugel - auch nach
 `rm -rf $(getconf DARWIN_USER_CACHE_DIR){com.apple.iconservices*,com.apple.dock.iconcache}`,
 `killall iconservicesagent Dock`. `touch` auf die App geht nicht (macOS'
 App-Verwaltung: Operation not permitted). Neue Nutzer betrifft das nicht.
+
+## 01.10.2026: 1.2.5 gemessen (DCHECKs aus)
+
+Installiert ueber Vertis Updater (nach Supabase-Pause, siehe BACKLOG). Freddy
+nach dem Neustart: „Stackfield laeuft fluessiger". Gemessen im Betrieb:
+27 Prozesse, RSS-Summe 8,1 GB (ueberzaehlt geteilten Speicher, gleiche
+Methode wie 11.09.: 7,1 GB), CPU gesamt 10 %, einziger Prozess ueber 5 % ist
+der Browserprozess mit 8 % - am 11.09. lag ein Renderer im Leerlauf bei 31 %.
+Keine Absturzberichte. Arbeitsspeicher ist damit NICHT besser geworden.
