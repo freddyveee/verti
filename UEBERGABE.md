@@ -15,15 +15,17 @@ Grundlage tragfähig"**: Stabilität und Geschwindigkeit.
 
 ## NACHTRAG 01.10.2026 abends (zuerst lesen)
 
-- **1.2.5 ist gebaut, signiert, notarisiert und als Vorab-Release
-  veroeffentlicht** (4 Dateien, Pruefwert online = lokal). `releases/latest`
-  bleibt v1.1.18.
-- Apple verlangte zwischendurch eine neue Entwickler-Vereinbarung (403 bei
-  notarytool); Freddy hat zugestimmt. Tritt das wieder auf: er muss auf
-  developer.apple.com zustimmen.
-- Dock-Kugel statt V: war nur der Bild-Speicher, siehe CHROMIUM-STATUS.md.
-- **Offen: Schritt 4, MESSEN** (Stackfield tippen/klicken/markieren, CPU/RAM
-  per `ps`), nachdem 1.2.5 bei Freddy installiert ist.
+- **1.2.5 ist veroeffentlicht, bei Freddy installiert und gemessen**: Stackfield
+  fluessiger, CPU gesamt 10 %, keine Abstuerze, RAM unveraendert ~8 GB
+  (CHROMIUM-STATUS.md). Schritt 1 unten ist damit ERLEDIGT.
+- Freddy will KEIN schnelles 1.2.6: „nach und nach weiterarbeiten". Der
+  saubere Update-Ablauf (Bruecke zu VersionUpdater/AttemptRelaunch, Dialog
+  in Verti statt Popup-Fenster) steht nur im BACKLOG, nicht anfangen ohne
+  sein Wort.
+- Grundlagen-Entscheidung (Produktionsbau/Release-Zweig) bleibt offen; erst
+  ein paar Tage Alltag mit 1.2.5 abwarten.
+- Apple wollte zwischendurch eine neue Vereinbarung (notarytool 403), Freddy
+  hat zugestimmt. Supabase-Projekt war pausiert, Freddy hat auf Pro umgestellt.
 
 ## Freddys Regeln aus den letzten Sitzungen
 
