@@ -3453,6 +3453,31 @@ index ff07122e6a..0513dc7dd2 100644
    void AddDefaultComponentExtensions(bool skip_session_components);
  
    // Similar to above but adds the default component extensions for kiosk mode.
+diff --git a/chrome/browser/external_protocol/external_protocol_handler.cc b/chrome/browser/external_protocol/external_protocol_handler.cc
+index 656c9b68b7..47ec0cfff0 100644
+--- a/chrome/browser/external_protocol/external_protocol_handler.cc
++++ b/chrome/browser/external_protocol/external_protocol_handler.cc
+@@ -403,6 +403,20 @@ ExternalProtocolHandler::BlockState ExternalProtocolHandler::GetBlockState(
+     return DONT_BLOCK;
+   }
+ 
++  // Verti: Spotify laeuft als Mac-Programm, nicht im Tab - im Tab fehlt die
++  // Plattform-Signatur fuer Widevine, und Spotify verstummt nach Sekunden
++  // (siehe CHROMIUM-STATUS.md). Vertis Leiste startet die App ueber
++  // "spotify:". Ohne diese Freigabe fragt Chromium bei jedem Klick "Spotify.app
++  // oeffnen?". Freigegeben nur fuer Vertis eigene Erweiterung und fuer Aufrufe
++  // ohne Ursprung (chrome.tabs.create aus dem Service Worker) - Webseiten
++  // werden weiter gefragt.
++  if (scheme == "spotify" &&
++      (!initiating_origin ||
++       (initiating_origin->scheme() == "chrome-extension" &&
++        initiating_origin->host() == "llkndemojkecdcnpbmkegbopmaafiach"))) {
++    return DONT_BLOCK;
++  }
++
+   PrefService* profile_prefs = profile->GetPrefs();
+   if (profile_prefs) {  // May be NULL during testing.
+     if (IsSchemeOriginPairAllowedByPolicy(scheme, initiating_origin,
 diff --git a/chrome/browser/ui/startup/first_run_service.cc b/chrome/browser/ui/startup/first_run_service.cc
 index 7e1709c674..33c1af6d77 100644
 --- a/chrome/browser/ui/startup/first_run_service.cc

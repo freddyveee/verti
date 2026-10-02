@@ -958,3 +958,20 @@ nach dem Neustart: „Stackfield laeuft fluessiger". Gemessen im Betrieb:
 Methode wie 11.09.: 7,1 GB), CPU gesamt 10 %, einziger Prozess ueber 5 % ist
 der Browserprozess mit 8 % - am 11.09. lag ein Renderer im Leerlauf bei 31 %.
 Keine Absturzberichte. Arbeitsspeicher ist damit NICHT besser geworden.
+
+## 02.10.2026: Spotify oeffnet die Mac-App (Freddys Weg 1)
+
+`sw.js`: `MAC_APPS = { spotify: 'spotify:' }` - Klick startet Spotifys Mac-App
+ueber `chrome.tabs.create({url:'spotify:'})`, beim Start wird kein Spotify-Tab
+mehr angelegt und ein alter weggeraeumt. Patch: `external_protocol_handler.cc`
+gibt `spotify:` ohne Rueckfrage frei, aber nur fuer Vertis Erweiterung und
+Aufrufe ohne Ursprung. Im gebauten Binary getestet (Testprofil): Finder vorn,
+`switchApp('spotify')` -> Spotify vorn, 4 Tabs, kein Spotify-Tab, keine
+Rueckfrage (sonst waere Spotify nicht gestartet).
+
+Bau-Nebenbefund: siso meldete seit dem 11.09. bei jedem Bau „fs state is
+corrupted" und baute dadurch IMMER komplett (~70.000 Schritte, 3-4 h). Nach
+einem abgebrochenen Lauf ist `.siso_fs_state` wieder gueltiges zstd; der
+naechste Lauf meldete den Fehler nicht mehr, brauchte aber trotzdem ~3 h,
+weil er den Rest des abgebrochenen Vollbaus nachholte. Ob kleine Aenderungen
+jetzt wieder in Minuten bauen, zeigt erst der naechste Bau.

@@ -127,7 +127,50 @@ async function meldungenErlauben(url) {
   } catch (e) { /* ungueltige Adresse oder API nicht da: dann eben nicht */ }
 }
 
+// Apps, die als Mac-Programm laufen statt als Tab in Verti.
+//
+// Spotify verlangt fuer Widevine die Plattform-Signatur (VMP), und die kann
+// nur Google ausstellen - im Tab spielt ein Lied ein paar Sekunden und
+// verstummt, waehrend der Timer weiterlaeuft (Freddy, 02.10.2026; Beweis in
+// CHROMIUM-STATUS.md). Freddys Entscheidung am 02.10.2026: der Spotify-Knopf
+// oeffnet Spotifys eigene Mac-App. Sagt castLabs zur Signatur zu
+// (CASTLABS-ANFRAGE.md), kommt Spotify zurueck in die Leiste - dann einfach
+// den Eintrag hier entfernen.
+//
+// Gestartet wird ueber das Adress-Schema der App. Chromium fragt dabei sonst
+// jedes Mal "Spotify.app oeffnen?"; die Freigabe dafuer steht im Patch
+// (external_protocol_handler.cc).
+const MAC_APPS = { spotify: 'spotify:' };
+
+async function macAppStarten(id) {
+  // Ein neuer Tab mit dieser Adresse uebergibt sie an macOS; Chromium schliesst
+  // den Tab danach selbst wieder.
+  try { await chrome.tabs.create({ url: MAC_APPS[id], active: false }); } catch (e) {}
+}
+
+// Vor dem Umbau lag Spotify als angehefteter Tab in der Leiste. Der laeuft sonst
+// stumm weiter und schluckt Speicher.
+async function macAppTabsWegraeumen() {
+  const s = await zustand();
+  const tabs = { ...s.tabs };
+  let geaendert = false;
+  for (const id of Object.keys(MAC_APPS)) {
+    if (tabs[id] === undefined) continue;
+    try { await chrome.tabs.remove(tabs[id]); } catch (e) {}
+    delete tabs[id];
+    geaendert = true;
+  }
+  const aktiv = MAC_APPS[s.activeApp] ? null : s.activeApp;
+  if (geaendert || aktiv !== s.activeApp) await speichern({ tabs, activeApp: aktiv });
+}
+
 async function appOeffnen(id, aktivieren = true) {
+  if (MAC_APPS[id]) {
+    // Beim Start (aktivieren = false) nichts aufmachen - Spotify soll nicht bei
+    // jedem Verti-Start mit hochkommen, nur auf Klick.
+    if (aktivieren) await macAppStarten(id);
+    return null;
+  }
   const s = await zustand();
   const tabs = { ...s.tabs };
   if (tabs[id] !== undefined) {
@@ -227,6 +270,7 @@ chrome.runtime.onStartup.addListener(async () => {
 // 03.09.2026 passiert und sah aus wie ein fremder Browser.
 async function vertiStartAufbauen() {
   try {
+    await macAppTabsWegraeumen();
     const s = await zustand();
 
     // 1. Alle eingerichteten Apps als angeheftete Tabs.
@@ -235,7 +279,7 @@ async function vertiStartAufbauen() {
     //    Entscheidung am 03.09.2026): Verti soll direkt mit einer App
     //    dastehen, nicht mit einer fast leeren Seite. Bibliothek und
     //    Einstellungen holt man ueber Vertis Knopf in der Werkzeugleiste.
-    const apps = s.apps.filter((a) => a.id !== 'browser');
+    const apps = s.apps.filter((a) => a.id !== 'browser' && !MAC_APPS[a.id]);
 
     // Meldungen fuer ALLE eingerichteten Apps freigeben, nicht nur fuer die,
     // deren Tab gerade neu entsteht. Sonst bleibt eine App, die schon laenger
