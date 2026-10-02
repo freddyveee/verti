@@ -6,6 +6,12 @@ LastPass-Eintrag „castLabs EVS"; alternativ ein Issue unter
 github.com/castlabs/electron-releases (öffentlich). Bei kommerziellen
 Konditionen eher E-Mail. Freddy schickt sie selbst.
 
+**ABGESCHICKT am 02.10.2026** über das Kontaktformular auf castlabs.com/contact
+(HubSpot, Bestätigung „Thanks for your message", submissionGuid
+6ae4d1fd-0c30-43d6-92c5-55ce4b44ca5b). Absender freddy@imperio.rocks, Land leer,
+„How did you find us" = Other, Newsletter NICHT angehakt. Antwort kommt an
+freddy@imperio.rocks. Es gibt bei castLabs keine öffentliche Mailadresse.
+
 ---
 
 **Subject:** VMP signing for a self-built Chromium (not Electron) — existing EVS account "imperio"
