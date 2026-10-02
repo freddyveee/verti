@@ -107,7 +107,7 @@ index 6f97b7046d..4ff859ea4f 100644
      } else {
        args += [ "--keystone=0" ]
 diff --git a/chrome/VERSION b/chrome/VERSION
-index 2486d397aa..165e099f4e 100644
+index 2486d397aa..f698d5eef8 100644
 --- a/chrome/VERSION
 +++ b/chrome/VERSION
 @@ -1,4 +1,4 @@
@@ -115,7 +115,7 @@ index 2486d397aa..165e099f4e 100644
  MINOR=0
  BUILD=8038
 -PATCH=0
-+PATCH=5
++PATCH=6
 diff --git a/chrome/app/app-Info.plist b/chrome/app/app-Info.plist
 index 6fada0a2b1..0da0a81257 100644
 --- a/chrome/app/app-Info.plist
