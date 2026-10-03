@@ -91,3 +91,12 @@ Infos: https://github.com/castlabs/electron-releases/wiki/EVS#3pl
 Preise und Vertragsbedingungen erst nach NDA. Angehängt: MNDA
 (`20251111_MNDA_Castlabs_GmbH.pdf`), nach Freigabe per DocuSign.
 Nächster Schritt liegt bei Freddy (NDA prüfen/unterschreiben).
+
+### MNDA durchgesehen (03.10.2026, keine Rechtsberatung)
+
+2 Seiten, gegenseitig, deutsches Recht, Gerichtsstand Berlin, Laufzeit 2 Jahre
++ 2 Jahre Nachwirkung. Keine Vertragsstrafe, keine Exklusivität, kein
+Abwerbeverbot, keine Pflicht zur Zusammenarbeit, keine Rechteübertragung
+(Ziff. 12). Eigenentwicklung bleibt frei (Ziff. 4e). Einziger Punkt: welche
+Firma unterschreibt. Abtretung nur mit Zustimmung (Ziff. 10) - wandert Verti
+später in eine eigene Firma, braucht es castLabs' Zustimmung oder ein neues NDA.
