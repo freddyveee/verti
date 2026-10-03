@@ -100,3 +100,11 @@ Abwerbeverbot, keine Pflicht zur Zusammenarbeit, keine Rechteübertragung
 (Ziff. 12). Eigenentwicklung bleibt frei (Ziff. 4e). Einziger Punkt: welche
 Firma unterschreibt. Abtretung nur mit Zustimmung (Ziff. 10) - wandert Verti
 später in eine eigene Firma, braucht es castLabs' Zustimmung oder ein neues NDA.
+
+### Stand 03.10.2026
+
+Freddy: für den Eigengebrauch zu teuer, relevant erst beim Verkauf von Verti.
+Er antwortet Flávio selbst aus dem IMPERIO-Postfach: „kommen darauf zurück,
+sobald Verti kommerziell wird", mit Bitte um grobe Preisspanne. NDA NICHT
+unterschrieben. Bis dahin bleibt Spotify in der Chromium-Fassung die Mac-App
+(1.2.6).
