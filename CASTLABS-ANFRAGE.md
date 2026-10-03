@@ -75,3 +75,19 @@ Happy to provide build details, entitlements or a test build.
 Thanks a lot,
 Freddy Henrich-Held
 IMPERIO
+
+---
+
+## Antwort castLabs, 03.10.2026 (Flávio Viana Schroeder, Account Manager, flavio.viana@castlabs.com)
+
+**Ja, sie können VMP-Signierung für ein selbstgebautes Chromium.** Weg: ihr
+„Widevine certification service" statt EVS-Paketprüfung:
+
+1. Code Audit: wir binden den Widevine-CDM nach ihrer Anleitung ein, ihre
+   Ingenieure prüfen die Einbindung auf Widevine-Konformität.
+2. Danach schalten sie den VMP-Signier-Ablauf für unseren App-Aufbau frei.
+
+Infos: https://github.com/castlabs/electron-releases/wiki/EVS#3pl
+Preise und Vertragsbedingungen erst nach NDA. Angehängt: MNDA
+(`20251111_MNDA_Castlabs_GmbH.pdf`), nach Freigabe per DocuSign.
+Nächster Schritt liegt bei Freddy (NDA prüfen/unterschreiben).
