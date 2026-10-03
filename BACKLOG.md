@@ -20,8 +20,6 @@ Nächstes Release: 1.1.19
 
 - **Chromium-Fassung: rote Ungelesen-Zahl in der Leiste fehlt (Freddy, 02.10.2026).** Bei Stackfield und WhatsApp soll wieder die rote Zahl am App-Symbol erscheinen, sobald eine Mitteilung kommt – „hat vorher wunderbar funktioniert" (Electron). Bekannt: der Stackfield-Favico-Haken war Electron-Code (`view-preload.js`) und fehlt in der Chromium-Fassung; ob WhatsApps Titel-Zahl ankommt, ist ungeprüft. Erst in der laufenden 1.2.5 messen, welche Apps keine Zahl zeigen. (02.10.2026)
 
-- **Spotify in 1.2.6: Spotify-Knopf öffnet die Spotify-App auf dem Mac** (Freddy, 02.10.2026, Weg 1). In der Leiste spielt Spotify nur kurz an und verstummt, der Timer läuft weiter (fehlende VMP-Signatur, nicht selbst herstellbar). Parallel castLabs angefragt (02.10.2026, Kontaktformular, Antwort an freddy@imperio.rocks); sagen sie zu, kommt Spotify zurück in die Leiste. (02.10.2026)
-
 - **Chromium-Fassung: Update muss sich wie EIN Werkzeug anfühlen (Freddy, 01.10.2026, vor allem anderen).** Beim Update auf 1.2.5 erlebt: Update erst nach „Nach Updates suchen" in den Einstellungen angeboten, dann öffnet sich ein Browserfenster, „wird installiert", nach Neustart passiert nichts, dazu taucht eine DMG im Download-Fenster auf. „Fühlt sich zerhackt an." Ziel: Knopf drücken, Vertis Updater installiert selbst, dann „Neu starten" - kein Fenster mit Adresse, kein DMG-Download. Braucht eine Brücke aus dem Browserprozess (Updater anstoßen, installierte Fassung lesen, neu starten). (01.10.2026)
 
 - **Update-Server war tot: Supabase-Projekt „verti-feedback" pausiert.** Am 01.10.2026 gemessen: `dganalwiakzgrskkvrvs.supabase.co` NXDOMAIN, Updater meldete `kUpdateCheckFailed`. Freddy hat auf Pro umgestellt, damit es nicht wieder einschläft (kostenlos nur 2 aktive Projekte, Pause nach Inaktivität). Betraf auch das Verbesserungen-Formular. (01.10.2026)
@@ -66,6 +64,10 @@ Nächstes Release: 1.1.19
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.2.6 (03.10.2026, Chromium-Testfassung, Vorab-Release)
+
+- Spotify öffnet die Spotify-App auf dem Mac statt im Verti-Tab (dort verstummte es nach Sekunden, fehlende VMP-Signatur). Ohne Rückfrage, nur auf Klick, alter Spotify-Tab wird weggeräumt. castLabs-Zertifizierung wäre möglich (Antwort 03.10.), geparkt bis zum Verkauf von Verti, siehe CASTLABS-ANFRAGE.md. (02.10.2026)
 
 ### 1.1.18 (31.08.2026)
 

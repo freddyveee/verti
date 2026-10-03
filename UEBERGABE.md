@@ -13,7 +13,14 @@ gebaut** - der Bau wurde am 11.09. abgebrochen und seither nicht neu gestartet.
 Die große offene Frage ist nicht mehr „geht Funktion X", sondern **„ist die
 Grundlage tragfähig"**: Stabilität und Geschwindigkeit.
 
-## NACHTRAG 01.10.2026 abends (zuerst lesen)
+## NACHTRAG 03.10.2026 (zuerst lesen)
+
+- **1.2.6 veröffentlicht und bei Freddy installiert**: Spotify-Knopf öffnet die Mac-App (Patch external_protocol_handler.cc + MAC_APPS in sw.js).
+- castLabs kann VMP für eigenes Chromium (3PL-Zertifizierung, kostenpflichtig, NDA nötig) - geparkt bis Verti verkauft wird (CASTLABS-ANFRAGE.md).
+- siso-Zwischenspeicher repariert: Änderungsbau 1.2.6 dauerte Minuten statt Stunden.
+- Offen im Backlog: rote Ungelesen-Zahl in der Leiste, sauberer Update-Ablauf. Nicht ungefragt anfangen.
+
+## NACHTRAG 01.10.2026 abends
 
 - **1.2.5 ist veroeffentlicht, bei Freddy installiert und gemessen**: Stackfield
   fluessiger, CPU gesamt 10 %, keine Abstuerze, RAM unveraendert ~8 GB
