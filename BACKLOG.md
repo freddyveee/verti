@@ -38,19 +38,6 @@ Nächstes Release: 1.1.19
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- **Verti-Browser ist weg (fest aus, nicht löschbar für Nutzer).** Kein Browser-Symbol mehr in Leiste und Bibliothek, Links aus Apps öffnen immer in Chrome bzw. Safari, die Ersteinrichtung hat nur noch zwei Schritte (Willkommen, Apps). Wer Verti als Standardbrowser eingestellt hatte, wird automatisch abgemeldet. Der Code bleibt drin und lässt sich von uns mit einer Zeile wieder einschalten. Geprüft im Testprofil mit vorher aktivem Browser. (06.10.2026)
-
-- **Spotify: der Entschlüssler lädt wieder.** Es meldete „Wiedergabe von geschützten Inhalten ist nicht aktiviert", obwohl der Entschlüssler vollständig im Profil lag. Ursache: kein Helfer-Prozess trug `disable-library-validation`, also verbot macOS bei gehärteter Laufzeit das Laden. Der allgemeine Helfer hat den Schalter jetzt. Dazu nötig: **Chromiums „Aperitif"-Helfer sind fest abgeschaltet** — ein Google-Feldversuch hatte sie aktiviert (20 laufende Prozesse), und ausgerechnet die können den Schalter NICHT bekommen, weil sie `libaperitif.dylib` über `@executable_path` laden (der Versuch hat die App beim Start zerlegt). Beweis: 1.2.3 antwortet auf `com.widevine.alpha` mit `NotSupportedError`, 1.2.4 mit `JA`, und ein echter geschützter Stream läuft 8 Sekunden durch. **ABER Spotify spielt trotzdem nicht** — dafür fehlt die Plattform-Signatur, siehe den offenen Punkt dazu. (08.09.2026)
-
-- **Meldungen kommen an.** In Electron meldete die Laufzeit die Melde-Berechtigung von sich aus als erteilt; Chromium fragt, und die Frage sieht in einem angehefteten Hintergrund-Tab niemand — im Profil stand WhatsApp deshalb gar nicht drin. Verti erlaubt Meldungen jetzt selbst, für genau die Apps in der Leiste und für keine anderen (`chrome.contentSettings`, beim Start und beim Hinzufügen). In der gebauten App gegengefragt: WhatsApp, Google Kalender und ChatGPT stehen auf `allow`. (08.09.2026)
-
-- **Der Verti Browser öffnet wieder etwas.** Er lief auf eine Fehlerseite („DNS_PROBE_FINISHED_NXDOMAIN"), weil im Katalog die Platzhalter-Adresse `https://verti.browser/` steht, die in Electron `main.js` abgefangen hat. Chromium bringt Tabs, Adressleiste, Verlauf und Lesezeichen selbst mit — der Knopf öffnet deshalb einen gewöhnlichen, nicht angehefteten Tab. Nachgeprüft: `chrome://newtab/`, nicht angeheftet. (08.09.2026)
-
-- **Der lila Update-Hinweis erscheint wieder.** Er blieb bei Vorab-Fassungen still: `sw.js` fragte `/releases/latest`, und da lässt GitHub Vorab-Fassungen weg — dieselbe Falle, die der Update-Server schon hatte. Gemessen nach der Veröffentlichung von 1.2.2: `/releases/latest` lieferte v1.1.18 (Electron), älter als die installierte 1.2.1, also kam kein Hinweis. Der Updater tauschte trotzdem aus, aber still — und „nichts still im Hintergrund" ist Freddys Regel. Jetzt wie beim Server: die Liste holen (`/releases?per_page=15`) und das erste Release nehmen, das ein CRX3-Paket mitbringt. Damit beschreibt die Meldung immer genau die Fassung, die der Updater auch installiert. Gegen das echte GitHub geprüft: gewählt wird v1.2.2 statt v1.1.18. (08.09.2026)
-
-- Verti ist als Standard etwas heller (Dunkelmodus von #22242c auf #2a2c36 angehoben). (31.08.2026)
-- Sechs Farbwelten zur Auswahl (Graphit, Marine, Wald, Kupfer, Pflaume, Rubin), wie bei Shift. Zu finden unter Einstellungen → Darstellung → Farbe und in der Browser-Seitenkarte. Jede Farbe hat einen dunklen und einen hellen Satz, passt also zu beiden Modi, und färbt Sidebar, Browser-Leiste und Fensterhintergrund gemeinsam. (31.08.2026)
-
 ## Blockiert
 
 - (nichts)
@@ -73,12 +60,26 @@ Nächstes Release: 1.1.19
 
 ## Veröffentlicht
 
+### 1.1.19 (06.10.2026)
+
+- **Verti-Browser ist weg (fest aus, nicht löschbar für Nutzer).** Kein Browser-Symbol mehr in Leiste und Bibliothek, Links aus Apps öffnen immer in Chrome bzw. Safari, die Ersteinrichtung hat nur noch zwei Schritte (Willkommen, Apps). Wer Verti als Standardbrowser eingestellt hatte, wird automatisch abgemeldet. Der Code bleibt drin und lässt sich von uns mit einer Zeile wieder einschalten. Geprüft im Testprofil mit vorher aktivem Browser. (06.10.2026)
+- Anmelde-Cookies werden verschlüsselt gespeichert (Electron-Fuse EnableCookieEncryption, vorher 556 von 557 im Klartext). Upgrade mit einer Kopie von Freddys altem Profil geprüft: Google Kalender bleibt angemeldet, 557 von 560 Cookies erhalten. (02.09.2026, geprüft 06.10.2026)
+
+### 1.2.1 bis 1.2.4 (Chromium-Testfassung, ruht seit 06.10.2026)
+
+- **Spotify: der Entschlüssler lädt wieder.** Es meldete „Wiedergabe von geschützten Inhalten ist nicht aktiviert", obwohl der Entschlüssler vollständig im Profil lag. Ursache: kein Helfer-Prozess trug `disable-library-validation`, also verbot macOS bei gehärteter Laufzeit das Laden. Der allgemeine Helfer hat den Schalter jetzt. Dazu nötig: **Chromiums „Aperitif"-Helfer sind fest abgeschaltet** — ein Google-Feldversuch hatte sie aktiviert (20 laufende Prozesse), und ausgerechnet die können den Schalter NICHT bekommen, weil sie `libaperitif.dylib` über `@executable_path` laden (der Versuch hat die App beim Start zerlegt). Beweis: 1.2.3 antwortet auf `com.widevine.alpha` mit `NotSupportedError`, 1.2.4 mit `JA`, und ein echter geschützter Stream läuft 8 Sekunden durch. **ABER Spotify spielt trotzdem nicht** — dafür fehlt die Plattform-Signatur, siehe den offenen Punkt dazu. (08.09.2026)
+- **Meldungen kommen an.** In Electron meldete die Laufzeit die Melde-Berechtigung von sich aus als erteilt; Chromium fragt, und die Frage sieht in einem angehefteten Hintergrund-Tab niemand — im Profil stand WhatsApp deshalb gar nicht drin. Verti erlaubt Meldungen jetzt selbst, für genau die Apps in der Leiste und für keine anderen (`chrome.contentSettings`, beim Start und beim Hinzufügen). In der gebauten App gegengefragt: WhatsApp, Google Kalender und ChatGPT stehen auf `allow`. (08.09.2026)
+- **Der Verti Browser öffnet wieder etwas.** Er lief auf eine Fehlerseite („DNS_PROBE_FINISHED_NXDOMAIN"), weil im Katalog die Platzhalter-Adresse `https://verti.browser/` steht, die in Electron `main.js` abgefangen hat. Chromium bringt Tabs, Adressleiste, Verlauf und Lesezeichen selbst mit — der Knopf öffnet deshalb einen gewöhnlichen, nicht angehefteten Tab. Nachgeprüft: `chrome://newtab/`, nicht angeheftet. (08.09.2026)
+- **Der lila Update-Hinweis erscheint wieder.** Er blieb bei Vorab-Fassungen still: `sw.js` fragte `/releases/latest`, und da lässt GitHub Vorab-Fassungen weg — dieselbe Falle, die der Update-Server schon hatte. Gemessen nach der Veröffentlichung von 1.2.2: `/releases/latest` lieferte v1.1.18 (Electron), älter als die installierte 1.2.1, also kam kein Hinweis. Der Updater tauschte trotzdem aus, aber still — und „nichts still im Hintergrund" ist Freddys Regel. Jetzt wie beim Server: die Liste holen (`/releases?per_page=15`) und das erste Release nehmen, das ein CRX3-Paket mitbringt. Damit beschreibt die Meldung immer genau die Fassung, die der Updater auch installiert. Gegen das echte GitHub geprüft: gewählt wird v1.2.2 statt v1.1.18. (08.09.2026)
+
 ### 1.2.6 (03.10.2026, Chromium-Testfassung, Vorab-Release)
 
 - Spotify öffnet die Spotify-App auf dem Mac statt im Verti-Tab (dort verstummte es nach Sekunden, fehlende VMP-Signatur). Ohne Rückfrage, nur auf Klick, alter Spotify-Tab wird weggeräumt. castLabs-Zertifizierung wäre möglich (Antwort 03.10.), geparkt bis zum Verkauf von Verti, siehe CASTLABS-ANFRAGE.md. (02.10.2026)
 
 ### 1.1.18 (31.08.2026)
 
+- Verti ist als Standard etwas heller (Dunkelmodus von #22242c auf #2a2c36 angehoben). (31.08.2026)
+- Sechs Farbwelten zur Auswahl (Graphit, Marine, Wald, Kupfer, Pflaume, Rubin), wie bei Shift. Zu finden unter Einstellungen → Darstellung → Farbe und in der Browser-Seitenkarte. Jede Farbe hat einen dunklen und einen hellen Satz, passt also zu beiden Modi, und färbt Sidebar, Browser-Leiste und Fensterhintergrund gemeinsam. (31.08.2026)
 - Bild-Großansichten funktionieren wieder: In ChatGPT (und überall sonst) ließ sich ein erzeugtes Bild nicht groß ansehen. Ursache waren zwei Fälle in der Fenster-Regel – eine `blob:`-Adresse trägt den Ursprung der Seite und hätte die App-Ansicht weggeblättert, eine `data:`-Adresse hat gar keinen Ursprung und wurde still verworfen. Beide öffnen jetzt ein eigenes Vorschau-Fenster, die App bleibt stehen. Mit zwei neuen Testfällen abgesichert und in der echten App gegengeprüft. (31.08.2026)
 - Kompatibilitäts-Check um den Bereich „Bilder & Vorschau" erweitert (Overlay, `<dialog>`, Object-URL, neues Fenster per blob: und data:, Vollbild) – damit fällt genau diese Fehlerklasse künftig beim Vorab-Test auf. (31.08.2026)
 
