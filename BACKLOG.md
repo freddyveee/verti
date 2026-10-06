@@ -40,7 +40,7 @@ Nächstes Release: 1.1.19
 
 - LastPass ist in der App-Bibliothek (Kategorie Produktivität, öffnet den Tresor unter lastpass.com/vault). Eigenes Logo eingebaut, weil der automatische Logo-Dienst für LastPass nichts liefert. In der Dev-Version geprüft: Anmeldeseite lädt. (06.10.2026)
 
-- IMPERIO-Tools-Symbol soll anders aussehen (Freddy, 06.10.2026). Offen: welche Richtung. (06.10.2026)
+- Neues IMPERIO-Tools-Symbol: schräger Gabelschlüssel in Schwarz (#2e2d2d) auf Sand (#ede5d6) mit zwei Griffstreifen in IMPERIO-Luxe-Orange (#fe805a), flach und schlicht. Von Freddy nach drei Runden freigegeben, in der Leiste geprüft. (06.10.2026)
 
 ## Blockiert
 
