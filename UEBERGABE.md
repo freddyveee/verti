@@ -31,6 +31,13 @@ Plan:
 3. Backlog nach Verkaufswert ordnen: Leiste, Badges, Updates, Onboarding zuerst.
 4. Danach Preis und Verkauf.
 
+**Aufgeräumt am 06.10.2026 (Freddys Wunsch, in den Papierkorb):** Chromium-App
+in /Applications, Chromium-Profil, Vertis Chromium-Updater samt LaunchAgents
+und die Bauplatte VertiBuild (58 GB, Chromium-Quelltext). Wer die
+Chromium-Fassung je wieder bauen will, muss den Quelltext neu holen (~4 h) und
+`chromium/patches/verti.patch` anwenden. Die Electron-Fassung 1.1.19 ist ab
+jetzt auch auf Freddys MacBook installiert.
+
 Alles unterhalb dieses Abschnitts beschreibt die Chromium-Zeit und ist
 Nachschlagewerk.
 
