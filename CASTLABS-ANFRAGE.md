@@ -108,3 +108,9 @@ Er antwortet Flávio selbst aus dem IMPERIO-Postfach: „kommen darauf zurück,
 sobald Verti kommerziell wird", mit Bitte um grobe Preisspanne. NDA NICHT
 unterschrieben. Bis dahin bleibt Spotify in der Chromium-Fassung die Mac-App
 (1.2.6).
+
+### Kosten (laut Freddy, 06.10.2026)
+
+Chromium-Zertifizierung bei castLabs: einmalig ca. 6.600 € plus ca. 3.300 € pro
+Jahr. Die EVS-Signierung der ECS-Electron-Fassung bleibt kostenlos. Mit der
+Rückkehr zu Electron (06.10.2026) ist das Thema erledigt.
