@@ -89,6 +89,8 @@ ausgeliefert wird.
 - [ ] **Fensterverhalten:** Mac – Fenster schließen versteckt nur (Views laufen weiter, Badges/Meldungen kommen), echtes Beenden übers Menü. Windows – Schließen beendet die App
 
 ### Plattform / Release
+
+- [ ] **Läuft Verti aus /Applications?** `ps -axo command | grep MacOS/Verti` muss `/Applications/Verti.app/…` zeigen, NICHT `dist/mac-universal/…` (dann aktualisiert der Updater die Bau-Kopie, 06.10.2026 passiert) und NICHT `AppTranslocation` (App wurde nicht vom Nutzer im Finder nach „Programme" gezogen; `xattr` darauf ist von macOS gesperrt, nur Neu-Hineinziehen hilft)
 - [ ] Mac: signiert & notarisiert, öffnet ohne Gatekeeper-Warnung
 - [ ] Windows: SmartScreen-Hinweis ist erwartet (unsigniert) – Anleitung auf der Landingpage stimmt
 - [ ] **Auto-Update:** beim Öffnen erscheint das lila Update-Popup mit den Release-Notes; bestätigen → installiert sauber (nur mit einem echten, neueren Release testbar)
