@@ -38,6 +38,10 @@ Nächstes Release: 1.1.19
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- LastPass ist in der App-Bibliothek (Kategorie Produktivität, öffnet den Tresor unter lastpass.com/vault). Eigenes Logo eingebaut, weil der automatische Logo-Dienst für LastPass nichts liefert. In der Dev-Version geprüft: Anmeldeseite lädt. (06.10.2026)
+
+- IMPERIO-Tools-Symbol soll anders aussehen (Freddy, 06.10.2026). Offen: welche Richtung. (06.10.2026)
+
 ## Blockiert
 
 - (nichts)
