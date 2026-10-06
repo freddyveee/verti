@@ -154,6 +154,8 @@
   #pinned, #apps { display: flex; flex-direction: column; align-items: center; gap: 10px; }
   #apps { margin-top: auto; }
   .pin-divider { width: 34px; height: 1px; background: var(--divider); border-radius: 1px; flex: 0 0 auto; }
+  /* Ohne Verti-Browser (seit 06.10.2026 fest aus) bleibt #pinned leer - dann auch kein Strich */
+  #pinned:empty + .pin-divider { display: none; }
   .app-btn {
     width: 46px;
     height: 46px;
@@ -548,7 +550,7 @@
       <div class="setlabel"><b>Farbe</b><span>Farbwelt der Oberfläche</span></div>
       <div class="farben" id="farbWahl"></div>
     </div>
-    <div class="setrow">
+    <div class="setrow" id="linksRow">
       <div class="setlabel"><b>Externe Links</b><span>Wo Links aus Apps geöffnet werden</span></div>
       <div class="seg" id="segLinks"><button data-v="verti">Verti-Browser</button><button data-v="system">System-Browser</button></div>
     </div>
@@ -1299,6 +1301,8 @@
         const cur = await window.verti.getSettings();
         markSeg('segTheme', cur.theme);
         markSeg('segLinks', cur.externalLinks);
+        // Ohne Verti-Browser gibt es nichts zu waehlen: Links gehen immer in den Systembrowser
+        document.getElementById('linksRow').style.display = cur.browserAktiv === false ? 'none' : '';
         baueFarbwahl(document.getElementById('farbWahl'), cur.themeColor, cur.farbwelten);
         renderNotifList(cur.mutedApps);
         library.classList.remove('open');

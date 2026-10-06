@@ -79,7 +79,7 @@
   const punkte = document.getElementById('punkte');
   const bZurueck = document.getElementById('zurueck');
   const bWeiter = document.getElementById('weiter');
-  const ANZAHL = 4;
+  let ANZAHL = 4;
   let schritt = 0;
   let standard = null;      // 'verti' | 'behalten'
   let gewaehlteApps = new Set();
@@ -256,7 +256,9 @@
     return img;
   }
 
-  const schritte = [s0, s1, s2, s3];
+  // Ohne Verti-Browser (seit 06.10.2026 fest aus) entfallen Standardbrowser
+  // und Lesezeichen - beides ergibt nur mit Browser Sinn.
+  let schritte = [s0, s1, s2, s3];
   async function zeige() {
     malePunkte();
     bZurueck.style.display = schritt === 0 ? 'none' : '';
@@ -270,6 +272,11 @@
     await A.fertig([...gewaehlteApps]);
   });
   bZurueck.addEventListener('click', async () => { if (schritt > 0) { schritt--; await zeige(); } });
-  zeige();
+  (async () => {
+    let mitBrowser = true;
+    try { mitBrowser = await A.browserAktiv(); } catch (e) {}
+    if (!mitBrowser) { schritte = [s0, s3]; ANZAHL = schritte.length; }
+    zeige();
+  })();
 })();
 </script>

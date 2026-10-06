@@ -18,6 +18,14 @@ const FRAME = 8;
 // (Freddys Wunsch 24.08.2026). Muss vor app-ready gesetzt werden.
 app.commandLine.appendSwitch('autoplay-policy', 'user-gesture-required');
 const BROWSER_ID = 'browser';
+// Verti-Browser: AUS, fest im Code (Freddys Entscheidung 06.10.2026). Er wird
+// nicht geloescht, nur eingefroren - Nutzer koennen ihn NICHT einschalten, nur
+// wir hier. Grund: Verti verkauft die App-Leiste, nicht einen Browser; die
+// Leute wollen bei Chrome oder Safari bleiben. Bei false gilt: kein Browser in
+// Leiste und Bibliothek, Links gehen immer in den Systembrowser, die
+// Ersteinrichtung fragt nicht nach Standardbrowser und Lesezeichen, und Verti
+// meldet sich als Standardbrowser ab (sonst landen System-Links im Leeren).
+const BROWSER_AKTIV = false;
 const BROWSER_BAR = 93;    // Tabs + Adresszeile (10% größer)
 const BOOKMARK_BAR = 37;   // Lesezeichenleiste (nur wenn Lesezeichen da sind)
 const SUGGEST_H = 300;     // Höhe des Vorschlags-Dropdowns (Shell wächst dann)
@@ -323,8 +331,12 @@ function loadState() {
       const cat = CATALOG.find((c) => c.id === a.id);
       return cat ? { ...a, name: cat.name, url: cat.url, icon: cat.icon || a.icon } : a;
     });
-  // Der Verti-Browser ist immer vorinstalliert und sitzt fix ganz oben
-  if (!apps.some((a) => a.id === BROWSER_ID)) {
+  // Der Verti-Browser ist immer vorinstalliert und sitzt fix ganz oben -
+  // solange er eingeschaltet ist. Sonst fliegt er aus der Leiste (die Daten
+  // wie Lesezeichen und Verlauf bleiben im Zustand liegen).
+  if (!BROWSER_AKTIV) {
+    for (let i = apps.length - 1; i >= 0; i--) if (apps[i].id === BROWSER_ID) apps.splice(i, 1);
+  } else if (!apps.some((a) => a.id === BROWSER_ID)) {
     const b = CATALOG.find((c) => c.id === BROWSER_ID);
     if (b) apps.unshift({ id: b.id, name: b.name, url: b.url, icon: b.icon });
   } else {
@@ -333,14 +345,14 @@ function loadState() {
   }
   return {
     bounds: s.bounds || { width: 1400, height: 900 },
-    activeApp: s.activeApp || 'calendar',
+    activeApp: (s.activeApp && (BROWSER_AKTIV || s.activeApp !== BROWSER_ID)) ? s.activeApp : ((apps[0] && apps[0].id) || 'calendar'),
     apps,
     lastUrls: s.lastUrls && typeof s.lastUrls === 'object' ? s.lastUrls : {}, // zuletzt besuchte Seite je App
     zoom: s.zoom && typeof s.zoom === 'object' ? s.zoom : {}, // Zoomstufe je App
     browser: s.browser && typeof s.browser === 'object' ? s.browser : null, // offene Browser-Tabs
     bookmarks: Array.isArray(s.bookmarks) ? s.bookmarks : [], // Lesezeichen
     history: Array.isArray(s.history) ? s.history : [], // Browser-Verlauf
-    externalLinks: s.externalLinks === 'system' ? 'system' : 'verti', // externe Links: im Verti-Browser (Standard) oder System-Browser
+    externalLinks: (!BROWSER_AKTIV || s.externalLinks === 'system') ? 'system' : 'verti', // externe Links: im Verti-Browser (Standard) oder System-Browser
     theme: s.theme === 'light' ? 'light' : 'dark', // Darstellung: dunkel (Standard) oder hell
     themeColor: FARBWELTEN.includes(s.themeColor) ? s.themeColor : 'graphit', // Farbwelt der Oberflaeche
     mutedApps: Array.isArray(s.mutedApps) ? s.mutedApps.filter((x) => typeof x === 'string') : [], // pro App stummgeschaltet (kein Badge, keine Meldung)
@@ -1156,6 +1168,7 @@ async function browserSuggest(text) {
 // später in die Einstellungsseite.
 function browserOpenExternal(url) {
   if (!url) return;
+  if (!BROWSER_AKTIV) { openExternally(url); return; }
   if (!state || state.externalLinks === 'system' || !views[BROWSER_ID]) { openExternally(url); return; }
   if (win && !win.isDestroyed() && !win.isVisible()) win.show();
   switchApp(BROWSER_ID);
@@ -1199,6 +1212,7 @@ function browserRemoveBookmark(url) {
 // wenn der Browser aktiv ist – sonst auf dem Mac Fenster verstecken, unter
 // Windows nichts (kein versehentliches Beenden, s. CLAUDE.md).
 function browserCmdNewTab() {
+  if (!BROWSER_AKTIV) return;
   if (activeId === BROWSER_ID) browserNewTab();
   else switchApp(BROWSER_ID);
 }
@@ -1296,7 +1310,7 @@ function attachContextMenu(wc) {
     if (p.linkURL) {
       const inTab = [...browserTabs.values()].some((v) => v.webContents === wc);
       items.push(
-        { label: inTab ? 'Link in neuem Tab öffnen' : 'Im Verti-Browser öffnen', click: () => browserOpenExternal(p.linkURL) },
+        { label: inTab ? 'Link in neuem Tab öffnen' : (BROWSER_AKTIV ? 'Im Verti-Browser öffnen' : 'Im Browser öffnen'), click: () => browserOpenExternal(p.linkURL) },
         { label: 'Link kopieren', click: () => clipboard.writeText(p.linkURL) },
       );
       sep();
@@ -1648,7 +1662,7 @@ function broadcastTheme() {
   if (win && !win.isDestroyed()) { try { win.setBackgroundColor(themeBg()); } catch {} win.webContents.send('theme', state.theme, state.themeColor); }
   if (views[BROWSER_ID] && !views[BROWSER_ID].webContents.isDestroyed()) views[BROWSER_ID].webContents.send('theme', state.theme, state.themeColor);
 }
-ipcMain.handle('get-settings', () => ({ theme: (state && state.theme) || 'dark', themeColor: (state && state.themeColor) || 'graphit', farbwelten: FARBWELTEN, externalLinks: (state && state.externalLinks) || 'verti', mutedApps: (state && state.mutedApps) || [] }));
+ipcMain.handle('get-settings', () => ({ theme: (state && state.theme) || 'dark', themeColor: (state && state.themeColor) || 'graphit', farbwelten: FARBWELTEN, externalLinks: (state && state.externalLinks) || 'verti', browserAktiv: BROWSER_AKTIV, mutedApps: (state && state.mutedApps) || [] }));
 ipcMain.on('set-theme', (e, t) => { if (!state) return; state.theme = t === 'light' ? 'light' : 'dark'; saveState(); broadcastTheme(); });
 ipcMain.on('set-theme-color', (e, f) => {
   if (!state || !FARBWELTEN.includes(f)) return;
@@ -1698,6 +1712,7 @@ function istAdminRechner() {
 ipcMain.handle('get-app-info', () => ({ version: app.getVersion(), packaged: app.isPackaged, admin: istAdminRechner() }));
 ipcMain.on('open-admin', () => {
   if (!istAdminRechner()) return;
+  if (!BROWSER_AKTIV) { openExternally(ADMIN_PANEL_URL); return; }
   switchApp(BROWSER_ID);
   browserNewTab(ADMIN_PANEL_URL);
 });
@@ -1769,7 +1784,9 @@ ipcMain.handle('onboard:import', (e, quelle) => {
 // Deshalb fragt die Seite anschliessend per onboard:iststandard nach.
 // (In der Dev-Version nennt macOS die App "Electron", weil das Bundle
 // Electron.app heisst; in der gebauten App steht dort Verti.)
+ipcMain.handle('onboard:browseraktiv', () => BROWSER_AKTIV);
 ipcMain.handle('onboard:standardbrowser', () => {
+  if (!BROWSER_AKTIV) return { angefragt: false };
   try {
     app.setAsDefaultProtocolClient('http');
     app.setAsDefaultProtocolClient('https');
@@ -1934,8 +1951,16 @@ ipcMain.handle('history:clear', () => {
 
 ipcMain.on('open-compat-check', () => {
   if (!istAdminRechner()) return;
+  const checkUrl = pathToFileURL(path.join(__dirname, 'kompatibilitaets-check.html')).href;
+  if (!BROWSER_AKTIV) {
+    // Der Check muss IN Verti laufen (gleiche Sitzung, gleiches Preload wie die
+    // Apps), sonst prueft er Chrome statt Verti. Ohne Browser: eigenes Fenster.
+    const w = new BrowserWindow({ width: 1100, height: 800, title: 'Kompatibilitäts-Check', webPreferences: viewWebPreferences(false) });
+    w.loadURL(checkUrl);
+    return;
+  }
   switchApp(BROWSER_ID);
-  browserNewTab(pathToFileURL(path.join(__dirname, 'kompatibilitaets-check.html')).href);
+  browserNewTab(checkUrl);
 });
 
 // ---------- „Verbesserungen": Feedback landet in Supabase ----------
@@ -2007,7 +2032,7 @@ function appStatus(id) {
   if (APP_STATUS.geprueft[id]) return { stufe: 'geprueft', datum: APP_STATUS.geprueft[id] };
   return { stufe: 'unterstuetzt' };
 }
-ipcMain.handle('get-catalog', () => CATALOG.map((c) => ({ ...c, imperio: IMPERIO_IDS.includes(c.id), category: CATEGORIES[c.id] || 'Weitere', ...appStatus(c.id) })));
+ipcMain.handle('get-catalog', () => CATALOG.filter((c) => BROWSER_AKTIV || c.id !== BROWSER_ID).map((c) => ({ ...c, imperio: IMPERIO_IDS.includes(c.id), category: CATEGORIES[c.id] || 'Weitere', ...appStatus(c.id) })));
 ipcMain.handle('get-category-order', () => CATEGORY_ORDER);
 ipcMain.on('open-library', () => setLibrary(true));
 ipcMain.on('close-library', closeLibrary);
@@ -2473,6 +2498,16 @@ app.whenReady().then(async () => {
   const { components } = require('electron');
   if (components) {
     try { await components.whenReady(); } catch (e) { console.error('Widevine-CDM:', e); }
+  }
+  // Ohne Verti-Browser darf Verti nicht Standardbrowser sein: wer das in der
+  // Ersteinrichtung bestaetigt hat, schickt jeden Link aus Mail & Co. an Verti,
+  // und Verti reicht ihn an den Systembrowser weiter - also wieder an sich
+  // selbst. Deshalb einmal abmelden; macOS faellt dann auf Safari bzw. den
+  // vorherigen Browser zurueck.
+  if (!BROWSER_AKTIV && app.isPackaged) {
+    for (const p of ['http', 'https']) {
+      try { if (app.isDefaultProtocolClient(p)) app.removeAsDefaultProtocolClient(p); } catch (e) {}
+    }
   }
   // Fallback-UA für alle WebContents ohne eigenen Override (v.a. Login-Popups):
   // sonst meldet navigator.userAgent dort Electron und Google blockt den Login

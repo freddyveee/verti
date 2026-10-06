@@ -75,6 +75,8 @@ ausgeliefert wird.
 - Nach Änderungen an der Google-Anmeldung: mit `npx electron scripts/google-login-probe.js` gegenprüfen (sparsam, jeder Lauf ist ein echter Anmeldeversuch).
 
 ### Kernfunktionen
+
+- [ ] **Kein Verti-Browser (seit 06.10.2026 fest aus, `BROWSER_AKTIV` in main.js).** Kein Browser-Symbol in Leiste und Bibliothek, kein Schalter „Externe Links" in den Einstellungen. Link aus WhatsApp/Mail-App öffnet im Systembrowser (Chrome/Safari). Cmd+T tut nichts. Ersteinrichtung hat nur 2 Schritte (Willkommen, Apps)
 - [ ] App startet, Sidebar ist da, letzte Fenstergröße/Position wiederhergestellt
 - [ ] App-Bibliothek: App aus „IMPERIO Apps" / „Weitere Apps" hinzufügen, öffnen, per Drag-and-drop sortieren, wieder entfernen
 - [ ] Views laden: WhatsApp, Google Kalender, Todoist, ChatGPT, Stackfield öffnen sich und laden

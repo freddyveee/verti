@@ -5,6 +5,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('vertionboard', {
   quellen: () => ipcRenderer.invoke('onboard:quellen'),
   importieren: (quelle) => ipcRenderer.invoke('onboard:import', quelle),
+  browserAktiv: () => ipcRenderer.invoke('onboard:browseraktiv'),
   standardbrowser: () => ipcRenderer.invoke('onboard:standardbrowser'),
   istStandard: () => ipcRenderer.invoke('onboard:iststandard'),
   vorschlaege: () => ipcRenderer.invoke('onboard:vorschlaege'),
