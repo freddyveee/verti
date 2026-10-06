@@ -13,7 +13,28 @@ gebaut** - der Bau wurde am 11.09. abgebrochen und seither nicht neu gestartet.
 Die große offene Frage ist nicht mehr „geht Funktion X", sondern **„ist die
 Grundlage tragfähig"**: Stabilität und Geschwindigkeit.
 
-## NACHTRAG 03.10.2026 (zuerst lesen)
+## ENTSCHEIDUNG 06.10.2026 (gilt vor allem darunter)
+
+**Verti geht zurück auf Electron. Die Chromium-Fassung ruht.** Freddy und
+Claude sind sich einig („sehe ich 100 % wie du"). Gründe: Chromium heißt
+Browser-Hersteller sein (Sicherheitsupdates etwa alle 4 Wochen, 33 Dateien
+Patch nachziehen, 4-h-Bau, Signieren), die Grundlage ist ein Entwicklungsstand
+ohne Produktionsbau, ~8 GB RAM, Windows fehlt, Spotify bräuchte die bezahlte
+castLabs-Zertifizierung. Electron liefert Sicherheitsupdates mit, Spotify läuft
+(EVS kostenlos), das Team arbeitet stabil damit.
+
+Plan:
+1. Electron 1.1.x ist die Hauptlinie. Chromium-Fassung ruht (Patch, Updater,
+   Signierung bleiben im Repo, nichts löschen). Keine neuen 1.2.x-Releases.
+2. Verti-Browser hinter einen Schalter, standardmäßig AUS (einfrieren, nicht
+   löschen). Kern des Produkts ist die Leiste.
+3. Backlog nach Verkaufswert ordnen: Leiste, Badges, Updates, Onboarding zuerst.
+4. Danach Preis und Verkauf.
+
+Alles unterhalb dieses Abschnitts beschreibt die Chromium-Zeit und ist
+Nachschlagewerk.
+
+## NACHTRAG 03.10.2026
 
 - **1.2.6 veröffentlicht und bei Freddy installiert**: Spotify-Knopf öffnet die Mac-App (Patch external_protocol_handler.cc + MAC_APPS in sw.js).
 - castLabs kann VMP für eigenes Chromium (3PL-Zertifizierung, kostenpflichtig, NDA nötig) - geparkt bis Verti verkauft wird (CASTLABS-ANFRAGE.md).
