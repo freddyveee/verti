@@ -48,8 +48,6 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- **Apps laden nicht mehr bei jedem Klick neu (Freddy, 15.10.2026).** Nach jedem Aufwachen des Macs lud jede App beim nächsten Anklicken komplett neu (kurz Inhalt, dann schwarz, dann Neuladen), WhatsApp und Todoist mussten sich jedes Mal neu aufbauen. Ursache: Seit 1.1.10 markiert Verti nach dem Aufwachen ALLE Apps zum Neuladen, und macOS weckt den Mac oft im Hintergrund („DarkWake", am 15.10. 58-mal neben 4 echten Aufwachen). Jetzt zeichnet Verti die App nur neu und lädt sie ausschließlich dann neu, wenn sie wirklich schwarz ist (Bild der Ansicht geprüft). Getestet mit nachgestelltem Aufwachen: helle und dunkle App (#121212 wie Spotify) bleiben stehen, nur eine schwarze Seite lädt neu. (15.10.2026)
-
 ## Blockiert
 
 - (nichts)
@@ -65,6 +63,10 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.21 (15.10.2026)
+
+- **Apps laden nicht mehr bei jedem Klick neu (Freddy, 15.10.2026).** Nach jedem Aufwachen des Macs lud jede App beim nächsten Anklicken komplett neu (kurz Inhalt, dann schwarz, dann Neuladen), WhatsApp und Todoist mussten sich jedes Mal neu aufbauen. Ursache: Seit 1.1.10 markiert Verti nach dem Aufwachen ALLE Apps zum Neuladen, und macOS weckt den Mac oft im Hintergrund („DarkWake", am 15.10. 58-mal neben 4 echten Aufwachen). Jetzt zeichnet Verti die App nur neu und lädt sie ausschließlich dann neu, wenn sie wirklich schwarz ist (Bild der Ansicht geprüft). Getestet mit nachgestelltem Aufwachen: helle und dunkle App (#121212 wie Spotify) bleiben stehen, nur eine schwarze Seite lädt neu. (15.10.2026)
 
 ### 1.1.20 (06.10.2026)
 
