@@ -770,6 +770,34 @@ function layoutViews() {
 const staleViews = new Set();
 const staleBrowserTabs = new Set();
 function reloadWc(wc) { try { if (wc && !wc.isDestroyed()) wc.reload(); } catch (e) {} }
+
+// Nur neu laden, wenn die Ansicht WIRKLICH schwarz ist (Freddy, 15.10.2026).
+// Vorher lud jede App nach jedem Aufwachen beim naechsten Klick komplett neu:
+// kurz der alte Inhalt, dann schwarz, dann WhatsApp/Todoist von vorn. macOS
+// weckt den Mac aber dutzendfach im Hintergrund ("DarkWake", am 15.10. 58-mal
+// gegenueber 4 echten Aufwachen), und die meisten Ansichten sind danach heil.
+// Deshalb: erst neu zeichnen lassen, dann ein Bild der Ansicht pruefen. Nur
+// wenn praktisch jeder Bildpunkt reines Schwarz ist, wird neu geladen. Dunkle
+// Apps (Spotify #121212, Dunkelmodus) liegen deutlich darueber.
+async function istSchwarz(wc) {
+  try {
+    const img = await wc.capturePage();
+    if (img.isEmpty()) return true;
+    const klein = img.resize({ width: 48 });
+    const bmp = klein.toBitmap();               // BGRA
+    let schwarz = 0;
+    const n = bmp.length / 4;
+    for (let i = 0; i < bmp.length; i += 4) if (bmp[i] < 6 && bmp[i + 1] < 6 && bmp[i + 2] < 6) schwarz++;
+    return n > 0 && schwarz / n > 0.97;
+  } catch (e) { return false; }
+}
+function heileWennSchwarz(wc) {
+  if (!wc || wc.isDestroyed()) return;
+  try { wc.invalidate(); } catch (e) {}
+  setTimeout(async () => {
+    if (!wc.isDestroyed() && await istSchwarz(wc)) reloadWc(wc);
+  }, 400);
+}
 // electron-updater sammelt heruntergeladene Installer unter <cache>/verti-updater
 // und räumt sie nicht selbst weg. Beim Start (dann läuft kein Download) entfernen.
 function cleanupUpdateCache() {
@@ -791,7 +819,7 @@ function switchApp(id) {
   if (id === BROWSER_ID) {
     if (browserActive && staleBrowserTabs.delete(browserActive)) reloadWc(browserTabs.get(browserActive) && browserTabs.get(browserActive).webContents);
   } else if (staleViews.delete(id)) {
-    reloadWc(views[id].webContents); // nach Aufwachen einmal neu laden
+    heileWennSchwarz(views[id].webContents); // nach Aufwachen: nur neu laden, wenn wirklich schwarz
   }
   for (const [vid, view] of Object.entries(views)) {
     view.setVisible(vid === id);
@@ -2524,14 +2552,15 @@ app.whenReady().then(async () => {
   setupAutoUpdate();
   cleanupUpdateCache();
   powerMonitor.on('resume', () => {
-    // Aufwachen aus dem Schlaf: alle Ansichten als „muss neu laden" markieren,
-    // die gerade sichtbare sofort neu laden, die übrigen beim nächsten Öffnen.
+    // Aufwachen aus dem Schlaf: alle Ansichten als „pruefen" markieren, die
+    // gerade sichtbare sofort pruefen, die uebrigen beim naechsten Oeffnen
+    // (neu geladen wird nur, was wirklich schwarz ist, siehe heileWennSchwarz).
     for (const vid of Object.keys(views)) if (vid !== BROWSER_ID) staleViews.add(vid);
     for (const k of browserTabs.keys()) staleBrowserTabs.add(k);
     if (activeId === BROWSER_ID) {
       if (browserActive && staleBrowserTabs.delete(browserActive)) reloadWc(browserTabs.get(browserActive) && browserTabs.get(browserActive).webContents);
     } else if (activeId && staleViews.delete(activeId)) {
-      reloadWc(views[activeId] && views[activeId].webContents);
+      heileWennSchwarz(views[activeId] && views[activeId].webContents);
     }
   });
   if (justUpdated) {
