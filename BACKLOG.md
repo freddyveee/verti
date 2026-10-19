@@ -28,6 +28,8 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 - Windows: Schließen minimiert in die Taskleiste statt zu beenden.
 - Störungsmeldungen: eigene Datenbank-Spalten für „geht im Browser" und App-Kennung statt sie in Thema/Beschreibung zu schreiben. Dann liesse sich im Admin-Panel danach filtern und die Upstream-Quote messen. (31.08.2026)
 
+- In den Einstellungen steht noch der Block „Chrome-Erweiterungen" (gehört zum Verti-Browser, der seit 1.1.19 aus ist). Prüfen, ob er für die Apps überhaupt etwas tut, sonst ausblenden. (19.10.2026)
+
 ### Ruht: Chromium-Fassung (seit 06.10.2026, nur Nachschlagewerk)
 
 - Verti Browser – Erweiterungen Stufe 2 (Stufe 1 ist umgesetzt): mitgelieferte, kuratierte Auswahl statt Chrome Web Store, plus eigene Symbolleiste und Popups. **Chrome Web Store ist bewusst raus** – Googles Bedingungen (Ziffer 4.4.2) untersagen den Bezug außerhalb ihrer Oberfläche, und die vorhandenen Hilfspakete sind ungepflegt, prüfen keine Signatur oder stehen unter GPL. **Harte Grenzen, die in die Erwartung müssen:** Passwortmanager (1Password, Bitwarden) laufen NIE, weil Electron die native Brücke sperrt. Klassisches uBlock Origin läuft nicht (chrome.webRequest ist in unserer Electron-Version kaputt), uBlock Origin Lite wahrscheinlich schon. Erweiterungs-Symbole und Badges muss Verti selbst zeichnen, chrome.action ist in Electron eine Attrappe. Bester Erstkandidat zum Testen: Dark Reader. **Ruht: der Verti-Browser ist seit 1.1.19 fest aus.** (31.08.2026)
@@ -48,10 +50,6 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- **Downloads: Meldung und Ton pro App einstellbar, und sie kommen bei allen an (Freddy, 19.10.2026).** Vorher hing der Download-Ton an der macOS-Mitteilung: Wer Vertis Mitteilungen aus hat (bei Cindy), bekam weder Meldung noch Ton. Jetzt spielt Verti den Ton selbst und zeigt oben in der Kopfzeile kurz „Datei · Im Finder zeigen", beides auch ohne Mitteilungs-Erlaubnis. In den Einstellungen unter „Downloads pro App" je App zwei Schalter (Meldung, Ton), Standard beides an. In der Dev-Version mit echten Downloads geprüft. (19.10.2026)
-
-- In den Einstellungen steht noch der Block „Chrome-Erweiterungen" (gehört zum Verti-Browser, der seit 1.1.19 aus ist). Prüfen, ob er für die Apps überhaupt etwas tut, sonst ausblenden. (19.10.2026)
-
 ## Blockiert
 
 - (nichts)
@@ -67,6 +65,10 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.22 (19.10.2026)
+
+- **Downloads: Meldung und Ton pro App einstellbar, und sie kommen bei allen an (Freddy, 19.10.2026).** Vorher hing der Download-Ton an der macOS-Mitteilung: Wer Vertis Mitteilungen aus hat (bei Cindy), bekam weder Meldung noch Ton. Jetzt spielt Verti den Ton selbst und zeigt oben in der Kopfzeile kurz „Datei · Im Finder zeigen", beides auch ohne Mitteilungs-Erlaubnis. In den Einstellungen unter „Downloads pro App" je App zwei Schalter (Meldung, Ton), Standard beides an. In der Dev-Version mit echten Downloads geprüft. (19.10.2026)
 
 ### 1.1.21 (15.10.2026)
 
