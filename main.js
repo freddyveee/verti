@@ -356,6 +356,7 @@ function loadState() {
     externalLinks: (!BROWSER_AKTIV || s.externalLinks === 'system') ? 'system' : 'verti', // externe Links: im Verti-Browser (Standard) oder System-Browser
     theme: s.theme === 'light' ? 'light' : 'dark', // Darstellung: dunkel (Standard) oder hell
     themeColor: FARBWELTEN.includes(s.themeColor) ? s.themeColor : 'graphit', // Farbwelt der Oberflaeche
+    downloads: s.downloads && typeof s.downloads === 'object' ? s.downloads : {}, // je App { meldung, ton }, nur Abweichungen vom Standard (beides an)
     mutedApps: Array.isArray(s.mutedApps) ? s.mutedApps.filter((x) => typeof x === 'string') : [], // pro App stummgeschaltet (kein Badge, keine Meldung)
     onboarded: s.onboarded === true, // Ersteinrichtung schon durchlaufen?
   };
@@ -606,7 +607,7 @@ const windowOpenPolicy = makeWindowOpenPolicy({
 // Absturz — die Ursache des 1.0.15–1.0.17-Startabsturzes).
 function adoptChildWindow(child) {
   child.webContents.setWindowOpenHandler(windowOpenPolicy(child.webContents));
-  child.webContents.on('did-create-window', (grandchild) => adoptChildWindow(grandchild));
+  child.webContents.on('did-create-window', (grandchild) => { grandchild.__vertiAppId = child.__vertiAppId; adoptChildWindow(grandchild); });
   attachMouseNav(child.webContents);
   attachContextMenu(child.webContents);
 }
@@ -1296,14 +1297,62 @@ function uniqueFileName(dir, name) {
 }
 // sound (nur macOS): Name eines System-Warntons (System-Einstellungen › Ton ›
 // Warnton), z. B. 'Pop', 'Glass', 'Blow', 'Bottle', 'Submarine', 'Tink'.
-function notify(title, body, onClick, sound) {
+function notify(title, body, onClick, sound, silent) {
   if (!Notification.isSupported()) return;
-  const n = new Notification({ title, body, ...(isMac && sound ? { sound } : {}) });
+  const n = new Notification({ title, body, ...(isMac && sound ? { sound } : {}), ...(silent ? { silent: true } : {}) });
   if (onClick) n.on('click', onClick);
   n.show();
 }
+
+// Download-Meldung und -Ton, je App einstellbar (Freddy, 19.10.2026).
+// Vorher hing der Ton an der macOS-Mitteilung: wer Vertis Mitteilungen in den
+// Systemeinstellungen aus hat (bei Cindy beobachtet), bekam weder Meldung noch
+// Ton, der Download landete stumm im Ordner. Jetzt spielt Verti den Ton selbst
+// und zeigt zusaetzlich einen Hinweis in der eigenen Kopfzeile - beides kommt
+// auch ohne Mitteilungs-Erlaubnis an. Standard: beides an.
+function downloadEinstellung(appId) {
+  const d = (state && state.downloads && appId && state.downloads[appId]) || {};
+  return { meldung: d.meldung !== false, ton: d.ton !== false };
+}
+function spieleDownloadTon() {
+  if (isMac) {
+    try { require('child_process').execFile('/usr/bin/afplay', [`/System/Library/Sounds/${DOWNLOAD_SOUND}.aiff`], () => {}); } catch (e) {}
+  }
+  // Windows: der Ton kommt mit der Mitteilung (dort nicht stumm geschaltet)
+}
+// Welche App hat den Download ausgeloest? App-Ansicht direkt, Popups ueber ihr Fenster.
+function appIdFuerWc(wc) {
+  if (!wc) return null;
+  for (const [id, v] of Object.entries(views)) if (v.webContents === wc) return id;
+  try {
+    const bw = BrowserWindow.fromWebContents(wc);
+    const opener = bw && bw.__vertiAppId;
+    if (opener) return opener;
+  } catch (e) {}
+  return null;
+}
+const angezeigteDownloads = new Set(); // nur diese Pfade darf die Kopfzeile im Finder zeigen
+function downloadFertig(appId, target, name) {
+  const e = downloadEinstellung(appId);
+  if (e.ton) spieleDownloadTon();
+  if (!e.meldung) return;
+  notify('Download fertig', name, () => shell.showItemInFolder(target), null, isMac || !e.ton);
+  angezeigteDownloads.add(target);
+  if (win && !win.isDestroyed()) win.webContents.send('download-fertig', { name, pfad: target });
+}
+ipcMain.on('download-zeigen', (e, pfad) => { if (angezeigteDownloads.has(pfad)) shell.showItemInFolder(pfad); });
+ipcMain.on('set-download-option', (e, appId, key, wert) => {
+  if (!state || typeof appId !== 'string' || !['meldung', 'ton'].includes(key)) return;
+  if (!state.downloads) state.downloads = {};
+  const d = { ...(state.downloads[appId] || {}) };
+  if (wert) delete d[key]; else d[key] = false;
+  if (Object.keys(d).length) state.downloads[appId] = d; else delete state.downloads[appId];
+  saveState();
+});
+
 function setupDownloads(ses) {
-  ses.on('will-download', (e, item) => {
+  ses.on('will-download', (e, item, quelle) => {
+    const appId = appIdFuerWc(quelle);
     const dir = app.getPath('downloads');
     const name = uniqueFileName(dir, item.getFilename() || 'Download');
     const target = path.join(dir, name);
@@ -1311,7 +1360,7 @@ function setupDownloads(ses) {
     item.once('done', (ev, result) => {
       if (result === 'completed') {
         if (isMac && app.dock) app.dock.downloadFinished(target);
-        notify('Download fertig', name, () => shell.showItemInFolder(target), DOWNLOAD_SOUND);
+        downloadFertig(appId, target, name);
       } else if (result === 'interrupted') {
         notify('Download abgebrochen', name);
       }
@@ -1383,7 +1432,7 @@ function createView(appDef) {
   // blockieren (sonst hängt u. a. das Update-quitAndInstall) → immer zulassen
   view.webContents.on('will-prevent-unload', (e) => e.preventDefault());
   view.webContents.setWindowOpenHandler(windowOpenPolicy(view.webContents));
-  view.webContents.on('did-create-window', (child) => adoptChildWindow(child));
+  view.webContents.on('did-create-window', (child) => { child.__vertiAppId = appDef.id; adoptChildWindow(child); }); // App-Kennung fuer Download-Einstellungen
   attachMouseNav(view.webContents);
   attachContextMenu(view.webContents);
   view.webContents.on('audio-state-changed', (e) => {
@@ -1691,7 +1740,7 @@ function broadcastTheme() {
   if (win && !win.isDestroyed()) { try { win.setBackgroundColor(themeBg()); } catch {} win.webContents.send('theme', state.theme, state.themeColor); }
   if (views[BROWSER_ID] && !views[BROWSER_ID].webContents.isDestroyed()) views[BROWSER_ID].webContents.send('theme', state.theme, state.themeColor);
 }
-ipcMain.handle('get-settings', () => ({ theme: (state && state.theme) || 'dark', themeColor: (state && state.themeColor) || 'graphit', farbwelten: FARBWELTEN, externalLinks: (state && state.externalLinks) || 'verti', browserAktiv: BROWSER_AKTIV, mutedApps: (state && state.mutedApps) || [] }));
+ipcMain.handle('get-settings', () => ({ theme: (state && state.theme) || 'dark', themeColor: (state && state.themeColor) || 'graphit', farbwelten: FARBWELTEN, externalLinks: (state && state.externalLinks) || 'verti', browserAktiv: BROWSER_AKTIV, downloads: (state && state.downloads) || {}, mutedApps: (state && state.mutedApps) || [] }));
 ipcMain.on('set-theme', (e, t) => { if (!state) return; state.theme = t === 'light' ? 'light' : 'dark'; saveState(); broadcastTheme(); });
 ipcMain.on('set-theme-color', (e, f) => {
   if (!state || !FARBWELTEN.includes(f)) return;

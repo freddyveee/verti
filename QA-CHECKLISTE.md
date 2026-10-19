@@ -76,6 +76,8 @@ ausgeliefert wird.
 
 ### Kernfunktionen
 
+- [ ] **Download-Meldung und -Ton.** PDF aus Stackfield laden: Ton „Submarine", oben in der Kopfzeile „Datei · Im Finder zeigen" (Klick zeigt die Datei), dazu die macOS-Mitteilung. In Einstellungen → Downloads pro App für eine App Meldung/Ton aus: dann still. Auch bei ausgeschalteten macOS-Mitteilungen für Verti kommen Ton und Kopfzeilen-Hinweis
+
 - [ ] **Kein Verti-Browser (seit 06.10.2026 fest aus, `BROWSER_AKTIV` in main.js).** Kein Browser-Symbol in Leiste und Bibliothek, kein Schalter „Externe Links" in den Einstellungen. Link aus WhatsApp/Mail-App öffnet im Systembrowser (Chrome/Safari). Cmd+T tut nichts. Ersteinrichtung hat nur 2 Schritte (Willkommen, Apps)
 - [ ] App startet, Sidebar ist da, letzte Fenstergröße/Position wiederhergestellt
 - [ ] App-Bibliothek: App aus „IMPERIO Apps" / „Weitere Apps" hinzufügen, öffnen, per Drag-and-drop sortieren, wieder entfernen

@@ -48,6 +48,10 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- **Downloads: Meldung und Ton pro App einstellbar, und sie kommen bei allen an (Freddy, 19.10.2026).** Vorher hing der Download-Ton an der macOS-Mitteilung: Wer Vertis Mitteilungen aus hat (bei Cindy), bekam weder Meldung noch Ton. Jetzt spielt Verti den Ton selbst und zeigt oben in der Kopfzeile kurz „Datei · Im Finder zeigen", beides auch ohne Mitteilungs-Erlaubnis. In den Einstellungen unter „Downloads pro App" je App zwei Schalter (Meldung, Ton), Standard beides an. In der Dev-Version mit echten Downloads geprüft. (19.10.2026)
+
+- In den Einstellungen steht noch der Block „Chrome-Erweiterungen" (gehört zum Verti-Browser, der seit 1.1.19 aus ist). Prüfen, ob er für die Apps überhaupt etwas tut, sonst ausblenden. (19.10.2026)
+
 ## Blockiert
 
 - (nichts)
