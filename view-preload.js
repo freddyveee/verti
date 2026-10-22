@@ -120,6 +120,26 @@ const bridge = `(() => {
       }
     };
   }
+  // 4. Eigene Toene der Seite (Cindy, gemeldet am 22.10.2026):
+  //    WhatsApp spielt seinen Nachrichtenton SELBST in der Seite ab, nicht ueber
+  //    eine Mitteilung - der Stumm-Schalter blockte nur Mitteilung und Badge, der
+  //    Ton kam trotzdem. Stumm geschaltete Apps duerfen deshalb keinen Ton von
+  //    sich aus spielen, solange sie nicht zu sehen sind (document.hidden) und
+  //    keine frische Nutzer-Geste vorliegt. Selbst angeklickte Sprachnachrichten
+  //    und alles in der sichtbaren App laufen normal.
+  try {
+    const stillHalten = () => isMuted() && document.hidden && !(navigator.userActivation && navigator.userActivation.isActive);
+    const MP = HTMLMediaElement.prototype, mPlay = MP.play;
+    MP.play = function () {
+      if (stillHalten() && !this.muted && this.volume > 0) return Promise.resolve();
+      return mPlay.apply(this, arguments);
+    };
+    const SP = window.AudioScheduledSourceNode && AudioScheduledSourceNode.prototype;
+    if (SP && SP.start) {
+      const sStart = SP.start;
+      SP.start = function () { if (stillHalten()) return; return sStart.apply(this, arguments); };
+    }
+  } catch (e) {}
   // 3. Favico.js: Konstruktor abfangen, badge()/reset() der Instanz umhüllen
   let Favico;
   const wrapInstance = (inst) => {

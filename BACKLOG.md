@@ -50,6 +50,8 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- **Stummgeschaltete Apps sind jetzt wirklich still (Cindy, 22.10.2026).** War bei einer App (z. B. WhatsApp) „Benachrichtigungen" aus, verschwand zwar die rote Zahl, der Nachrichtenton kam aber weiter, weil WhatsApp ihn selbst in der Seite abspielt. Jetzt darf eine stummgeschaltete App im Hintergrund keinen Ton von sich aus abspielen. Ist sie geöffnet, läuft alles normal (z. B. Sprachnachrichten anhören). Mit Testseiten geprüft: stumm + Hintergrund still, normale App im Hintergrund mit Ton, stumme App geöffnet mit Ton. Am echten WhatsApp noch ungeprüft. (22.10.2026)
+
 ## Blockiert
 
 - (nichts)
