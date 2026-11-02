@@ -50,8 +50,6 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- Mitteilungen zeigen, aus welcher App sie kommen: App-Name als Unterzeile und das App-Logo klein in der Meldung, Klick öffnet die richtige App (02.11.2026)
-- Google Drive ausgeloggt: „Anmelden“ auf der Drive-Werbeseite öffnete Chrome statt die Anmeldung in Verti. Links zurück zur eigenen App bleiben jetzt in Verti (02.11.2026)
 
 ## Blockiert
 
@@ -68,6 +66,11 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.24 (02.11.2026)
+
+- Mitteilungen zeigen, aus welcher App sie kommen: App-Name als Unterzeile und das App-Logo klein in der Meldung, Klick öffnet die richtige App (02.11.2026)
+- Google Drive ausgeloggt: „Anmelden“ auf der Drive-Werbeseite öffnete Chrome statt die Anmeldung in Verti. Links zurück zur eigenen App bleiben jetzt in Verti (02.11.2026)
 
 ### 1.1.23 (22.10.2026)
 
