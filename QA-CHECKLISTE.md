@@ -89,7 +89,7 @@ ausgeliefert wird.
 - [ ] **Google-Login** (fragil!): bei einer Google-App anmelden → kommt durch (Firefox-Tarnung), auch das Login-Popup. Keine „Browser nicht sicher"-Ablehnung
 - [ ] **Spotify** (nur in der gebauten App): spielt durch, springt nicht nach ~2 s zum nächsten Song. Im Dev ist das erwartet kaputt (kein Bug)
 - [ ] **Ungelesen-Badges:** WhatsApp/Telegram (Zahl im Titel) und Stackfield (Zahl im Favicon) erzeugen ein Badge; Gesamtzahl am Dock (Mac) bzw. Taskleisten-Overlay (Windows); sinkt beim Lesen; **keine Phantom-1** bei Stackfield ohne Ungelesenes
-- [ ] **Benachrichtigungen:** native Meldung erscheint, unter dem Titel steht der App-Name (z.B. „WhatsApp") und rechts das kleine App-Logo; Klick darauf → Verti kommt nach vorn und schaltet zur richtigen App
+- [ ] **Benachrichtigungen:** native Meldung erscheint, unter dem Titel steht der App-Name (z.B. „WhatsApp"); Klick darauf → Verti kommt nach vorn und schaltet zur richtigen App
 - [ ] **Maus-Navigation zurück/vorwärts:** echte Seitentasten; am Mac Logi-Options+/Trackpad-Wisch links/rechts; unter Windows die App-Command-Tasten. Kein Doppelsprung
 - [ ] **Fensterverhalten:** Mac – Fenster schließen versteckt nur (Views laufen weiter, Badges/Meldungen kommen), echtes Beenden übers Menü. Windows – Schließen beendet die App
 

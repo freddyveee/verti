@@ -8,6 +8,7 @@ Nächstes Release: 1.1.19
 
 Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft die App-Leiste, nicht einen Browser). Punkte mit „Vorschlag Claude" sind neu und noch nicht von Freddy entschieden.
 
+- App-Logo in Mitteilungen sichtbar machen: Verti übergibt das Logo als Bildanhang, macOS 26 zeigt ihn weder im Banner noch in der Mitteilungszentrale. Ursache klären (Electron-Fehler #53131 oder macOS-Verhalten) (02.11.2026)
 - **ENTSCHEIDUNG: Verti bleibt auf Electron, die Chromium-Fassung ruht (06.10.2026).** Begründung und Plan oben in `UEBERGABE.md`. Schritte: (1) Verti-Browser aus – ERLEDIGT in 1.1.19 (fest aus, nicht löschbar); (2) Backlog nach Verkaufswert ordnen – ERLEDIGT 06.10.2026 (unten); (3) Preis und Verkauf – siehe Stufe 1. Die Punkte unten mit „Chromium-Fassung" ruhen mit. (06.10.2026)
 
 ### Stufe 1: Ohne das kein Verkauf
@@ -69,7 +70,7 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 
 ### 1.1.24 (02.11.2026)
 
-- Mitteilungen zeigen, aus welcher App sie kommen: App-Name als Unterzeile und das App-Logo klein in der Meldung, Klick öffnet die richtige App (02.11.2026)
+- Mitteilungen zeigen, aus welcher App sie kommen: App-Name als Unterzeile unter dem Absender, Klick öffnet die richtige App. Das App-Logo wird mitgeschickt, macOS zeigt es aber nicht an (in der gebauten App geprüft), siehe offener Punkt (02.11.2026)
 - Google Drive ausgeloggt: „Anmelden“ auf der Drive-Werbeseite öffnete Chrome statt die Anmeldung in Verti. Links zurück zur eigenen App bleiben jetzt in Verti (02.11.2026)
 
 ### 1.1.23 (22.10.2026)
