@@ -595,6 +595,11 @@ function popupWindowOptions(width, height) {
 const windowOpenPolicy = makeWindowOpenPolicy({
   isAuthUrl,
   isInstalledAppUrl,
+  isOwnAppUrl: (u, wc) => {
+    const id = appIdFuerWc(wc);
+    const appDef = id && state ? state.apps.find((a) => a.id === id) : null;
+    return !!appDef && sameSite(u, appDef.url);
+  },
   popupWindowOptions,
   browserOpenExternal: (u) => browserOpenExternal(u),
   log: app.isPackaged ? null : (...a) => console.log(...a),

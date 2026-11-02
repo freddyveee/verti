@@ -36,11 +36,11 @@ function istVorschau(url) {
   return /^(blob:|data:)/i.test(String(url || ''));
 }
 
-// deps: { isAuthUrl, isInstalledAppUrl, popupWindowOptions, browserOpenExternal, log }
+// deps: { isAuthUrl, isInstalledAppUrl, isOwnAppUrl, popupWindowOptions, browserOpenExternal, log }
 // Gemeinsame Regel fuer App-Views UND deren Popups: Auth bleibt in der App,
 // App-Popouts bleiben in der App, alles andere geht in den Browser.
 function makeWindowOpenPolicy(deps) {
-  const { isAuthUrl, isInstalledAppUrl, popupWindowOptions, browserOpenExternal, log } = deps;
+  const { isAuthUrl, isInstalledAppUrl, isOwnAppUrl, popupWindowOptions, browserOpenExternal, log } = deps;
   return function windowOpenPolicy(openerContents) {
     return (details) => {
       const { url, disposition } = details;
@@ -66,6 +66,12 @@ function makeWindowOpenPolicy(deps) {
       // ChatGPT "neue Unterhaltung", die per window.open mit Massen aufgeht).
       let sameApp = false;
       try { sameApp = !!url && new URL(url).origin === new URL(openerContents.getURL()).origin; } catch (e) {}
+      // Auch zurueck zur EIGENEN App zaehlt als gleiche App: Ausgeloggt zeigt
+      // Google Drive die Werbeseite workspace.google.com, deren „Anmelden"
+      // per target=_blank auf drive.google.com zeigt. Das landete bis 1.1.23
+      // im Systembrowser, angemeldet war man dann dort statt in Verti
+      // (gemeldet 02.11.2026 von einem frisch eingerichteten Mac).
+      if (!sameApp && isOwnAppUrl) sameApp = !!isOwnAppUrl(url, openerContents);
       if (sameApp) {
         if (wantsRealWindow(details)) {
           return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(1100, 800) };

@@ -13,17 +13,19 @@ const AUTH = ['accounts.google.com', 'auth.openai.com', 'appleid.apple.com'];
 const INSTALLIERT = ['web.whatsapp.com', 'chatgpt.com'];
 const host = (u) => { try { return new URL(u).host; } catch (e) { return ''; } };
 
-function baueRegel() {
+function baueRegel(openerUrl = 'https://www.canva.com/projects', eigeneApp = 'www.canva.com') {
   const geoeffnet = { extern: [], geladen: [] };
   const policy = makeWindowOpenPolicy({
     isAuthUrl: (u) => !u || u === 'about:blank' || AUTH.includes(host(u)),
     isInstalledAppUrl: (u) => INSTALLIERT.includes(host(u)),
+    isOwnAppUrl: (u, wc) => !!wc.eigeneApp && host(u) === wc.eigeneApp,
     popupWindowOptions: (w, h) => ({ width: w, height: h }),
     browserOpenExternal: (u) => geoeffnet.extern.push(u),
     log: null,
   });
   const opener = {
-    getURL: () => 'https://www.canva.com/projects',
+    getURL: () => openerUrl,
+    eigeneApp,
     loadURL: (u) => geoeffnet.geladen.push(u),
   };
   return { entscheide: policy(opener), geoeffnet };
@@ -58,6 +60,22 @@ const FAELLE = [
   ['andere App als Skript-Popup', { url: 'https://web.whatsapp.com/', disposition: 'new-window' }, 'allow', 1100, null],
   ['andere App als Link', { url: 'https://web.whatsapp.com/', disposition: 'foreground-tab' }, 'deny', null, 'extern'],
 ];
+
+// Der Drive-Fall vom 02.11.2026: Ausgeloggt zeigt die Drive-Ansicht die
+// Werbeseite workspace.google.com, „Anmelden" geht per target=_blank auf
+// drive.google.com. Das muss IN der Ansicht laden, nicht im Systembrowser.
+test('Drive-Werbeseite: Anmelden bleibt in der eigenen App', () => {
+  const { entscheide, geoeffnet } = baueRegel('https://workspace.google.com/intl/de/products/drive/', 'drive.google.com');
+  const url = 'https://drive.google.com/drive/?dmr=1';
+  assert.strictEqual(entscheide({ url, disposition: 'foreground-tab' }).action, 'deny');
+  assert.deepStrictEqual(geoeffnet.geladen, [url]);
+  assert.deepStrictEqual(geoeffnet.extern, []);
+});
+test('Drive-Werbeseite: fremde Google-Seite geht weiter in den Browser', () => {
+  const { entscheide, geoeffnet } = baueRegel('https://workspace.google.com/intl/de/products/drive/', 'drive.google.com');
+  entscheide({ url: 'https://support.google.com/drive', disposition: 'foreground-tab' });
+  assert.deepStrictEqual(geoeffnet.extern, ['https://support.google.com/drive']);
+});
 
 for (const [name, details, aktion, breite, wohin] of FAELLE) {
   test(name, () => {
