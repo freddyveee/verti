@@ -86,16 +86,50 @@ const bridge = `(() => {
     return !!window.__vertiMutedInit;
   };
   // 1. window.Notification
+  //    Seit 02.11.2026 zeigt NICHT mehr die Seite die Meldung an, sondern
+  //    main.js (Freddys Wunsch: man soll auf einen Blick sehen, aus welchem
+  //    Kanal sie kommt). Nur dort lassen sich Kanalname (Zeile unter dem
+  //    Titel) und Kanal-Logo setzen. Die Seite bekommt ein Ersatz-Objekt, das
+  //    sich wie eine Notification verhaelt: onclick/addEventListener('click')
+  //    feuern, wenn der Nutzer die Meldung anklickt (WhatsApp oeffnet dann den
+  //    Chat), close() nimmt sie wieder weg.
   const O = window.Notification;
+  const notes = {};
+  const feuer = (note, typ) => {
+    const ev = new Event(typ);
+    try { if (typeof note['on' + typ] === 'function') note['on' + typ].call(note, ev); } catch (e) {}
+    try { note.dispatchEvent(ev); } catch (e) {}
+  };
+  document.addEventListener('verti-noteclick', () => {
+    const id = document.documentElement && document.documentElement.getAttribute('data-verti-noteclick');
+    if (id && notes[id]) feuer(notes[id], 'click');
+  });
   if (O && !O.__vertiPatched) {
     function V(title, opts) {
       if (isMuted()) {
         return { close() {}, addEventListener() {}, removeEventListener() {}, onclick: null }; // stumm
       }
       signal('notify');
-      const n = new O(title, opts);
-      try { n.addEventListener('click', () => signal('notify-click')); } catch (e) {}
-      return n;
+      const o = opts || {};
+      const id = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      const et = new EventTarget();
+      const note = Object.create(O.prototype); // instanceof Notification bleibt wahr
+      const def = (k, v) => Object.defineProperty(note, k, { value: v, writable: true, configurable: true, enumerable: true });
+      def('title', String(title == null ? '' : title));
+      def('body', String(o.body || ''));
+      def('tag', String(o.tag || ''));
+      def('icon', o.icon || '');
+      def('data', o.data === undefined ? null : o.data);
+      def('silent', !!o.silent);
+      for (const k of ['onclick', 'onclose', 'onshow', 'onerror']) def(k, null);
+      def('addEventListener', (t, f, x) => et.addEventListener(t, f, x));
+      def('removeEventListener', (t, f, x) => et.removeEventListener(t, f, x));
+      def('dispatchEvent', (ev) => et.dispatchEvent(ev));
+      def('close', () => { if (notes[id]) { delete notes[id]; signal('closenote', id); feuer(note, 'close'); } });
+      notes[id] = note;
+      signal('shownote', JSON.stringify({ id: id, title: note.title, body: note.body, tag: note.tag, silent: note.silent }));
+      setTimeout(() => feuer(note, 'show'), 0);
+      return note;
     }
     V.prototype = O.prototype; // instanceof Notification bleibt wahr
     V.__vertiPatched = true;
@@ -243,6 +277,19 @@ const readValue = (name) => {
 };
 document.addEventListener('verti-notify', () => ipcRenderer.send('verti-app-notify'));
 document.addEventListener('verti-notify-click', () => ipcRenderer.send('verti-app-notify-click'));
+// Meldungen zeigt main.js an (mit Kanalname und -Logo), Klicks kommen zurueck
+document.addEventListener('verti-shownote', () => {
+  try { ipcRenderer.send('verti-app-shownote', JSON.parse(document.documentElement.getAttribute('data-verti-shownote'))); } catch (e) {}
+});
+document.addEventListener('verti-closenote', () => {
+  try { ipcRenderer.send('verti-app-closenote', document.documentElement.getAttribute('data-verti-closenote')); } catch (e) {}
+});
+ipcRenderer.on('verti-note-click', (e, id) => {
+  try {
+    document.documentElement.setAttribute('data-verti-noteclick', String(id));
+    document.dispatchEvent(new Event('verti-noteclick'));
+  } catch (err) {}
+});
 document.addEventListener('verti-badge', () => ipcRenderer.send('verti-app-badge', readValue('badge')));
 // Stumm-Status live aus main.js (Einstellungen umgeschaltet)
 ipcRenderer.on('verti-muted', (e, on) => {

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog, nativeImage, desktopCapturer, clipboard, Notification, powerMonitor } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, Menu, dialog, nativeImage, desktopCapturer, clipboard, Notification, powerMonitor, net } = require('electron');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { makeWindowOpenPolicy } = require('./window-policy');
@@ -963,6 +963,67 @@ ipcMain.on('verti-app-notify', (e) => {
 ipcMain.on('verti-app-badge', (e, count) => {
   const id = appIdOf(e.sender);
   if (id) setPageBadge(id, count);
+});
+// ---- Meldungen der Apps mit Kanalname und Kanal-Logo (Freddy, 02.11.2026) ----
+// Links zeigt macOS immer Vertis Symbol, das kann keine App aendern. Damit man
+// trotzdem sieht, woher eine Meldung kommt: der App-Name steht als Zeile unter
+// dem Titel (subtitle, nur macOS) und ihr Logo als kleines Bild in der Meldung.
+// Das Logo kommt wie in der Leiste: eigenes Bild aus icons/, sonst Googles
+// Favicon-Dienst; einmal geladen, dann gemerkt.
+const logoCache = new Map();
+async function appLogo(appDef) {
+  if (!appDef) return null;
+  if (logoCache.has(appDef.id)) return logoCache.get(appDef.id);
+  let img = null;
+  try {
+    const icon = appDef.icon || '';
+    if (icon && !/^https?:/.test(icon)) {
+      img = nativeImage.createFromPath(path.join(__dirname, icon));
+    } else {
+      const quelle = icon || ('https://www.google.com/s2/favicons?domain=' + new URL(appDef.url).hostname + '&sz=128');
+      const res = await net.fetch(quelle);
+      if (res.ok) img = nativeImage.createFromBuffer(Buffer.from(await res.arrayBuffer()));
+    }
+    if (img && img.isEmpty()) img = null;
+  } catch (e) { img = null; }
+  logoCache.set(appDef.id, img);
+  return img;
+}
+const offeneMeldungen = new Map(); // "<wcId>:<id>" und "<wcId>#<tag>" -> Notification (sonst raeumt der GC sie samt Klick weg)
+function appVorne(id) {
+  if (!win || win.isDestroyed()) return;
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+  if (id && id !== activeId && views[id]) switchApp(id);
+}
+ipcMain.on('verti-app-shownote', async (e, d) => {
+  if (!d || typeof d.id !== 'string' || !Notification.isSupported()) return;
+  const sender = e.sender;
+  const id = appIdOf(sender);
+  const appDef = id && state ? state.apps.find((a) => a.id === id) : null;
+  const icon = await appLogo(appDef);
+  const opts = { title: String(d.title || appDef?.name || 'Verti').slice(0, 200), body: String(d.body || '').slice(0, 1000), silent: !!d.silent };
+  if (appDef) opts.subtitle = appDef.name;
+  if (icon) opts.icon = icon;
+  const n = new Notification(opts);
+  const schluessel = sender.id + ':' + d.id;
+  if (d.tag) { // gleicher tag ersetzt die vorige Meldung, wie im Browser
+    const alt = offeneMeldungen.get(sender.id + '#' + d.tag);
+    if (alt) { try { alt.close(); } catch (err) {} }
+    offeneMeldungen.set(sender.id + '#' + d.tag, n);
+  }
+  offeneMeldungen.set(schluessel, n);
+  n.on('click', () => {
+    appVorne(id);
+    try { if (!sender.isDestroyed()) sender.send('verti-note-click', d.id); } catch (err) {}
+  });
+  n.on('close', () => offeneMeldungen.delete(schluessel));
+  n.show();
+});
+ipcMain.on('verti-app-closenote', (e, noteId) => {
+  const n = offeneMeldungen.get(e.sender.id + ':' + noteId);
+  if (n) { try { n.close(); } catch (err) {} offeneMeldungen.delete(e.sender.id + ':' + noteId); }
 });
 ipcMain.on('verti-app-notify-click', (e) => {
   const id = appIdOf(e.sender);
