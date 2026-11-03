@@ -51,9 +51,6 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 
 ## Umgesetzt, noch nicht veröffentlicht
 
-- Canva: Projekte öffneten sich in einem eigenen Fenster statt in Verti. Links mit „noopener“ und Fenster, die erst leer aufgehen und dann eine Seite der eigenen App laden, bleiben jetzt in der App-Ansicht. Anmelde-Popups bleiben Popups (03.11.2026)
-
-
 ## Blockiert
 
 - (nichts)
@@ -69,6 +66,10 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 - Einklappbare Sidebar: als App-Feature verworfen, lebt nur als Demo auf der Landingpage.
 
 ## Veröffentlicht
+
+### 1.1.25 (03.11.2026)
+
+- Canva: Projekte öffneten sich in einem eigenen Fenster statt in Verti. Links mit „noopener“ und Fenster, die erst leer aufgehen und dann eine Seite der eigenen App laden, bleiben jetzt in der App-Ansicht. Anmelde-Popups bleiben Popups (03.11.2026)
 
 ### 1.1.24 (02.11.2026)
 
