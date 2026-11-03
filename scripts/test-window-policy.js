@@ -37,6 +37,10 @@ const FAELLE = [
   ['Canva Editor per target=_blank', { url: 'https://www.canva.com/design/ABC/edit', disposition: 'foreground-tab' }, 'deny', null, 'geladen'],
   ['Canva Editor, disposition default', { url: 'https://www.canva.com/design/ABC/edit', disposition: 'default' }, 'deny', null, 'geladen'],
   ['Canva Hintergrund-Tab', { url: 'https://www.canva.com/design/ABC/edit', disposition: 'background-tab' }, 'deny', null, 'geladen'],
+  // --- Canva 03.11.2026: noopener ist kein Fenster-Wunsch ---
+  ['Canva Projekt mit noopener', { url: 'https://www.canva.com/design/ABC/edit', disposition: 'foreground-tab', features: 'noopener' }, 'deny', null, 'geladen'],
+  ['Canva Projekt mit noopener,noreferrer', { url: 'https://www.canva.com/design/ABC/edit', disposition: 'foreground-tab', features: 'noopener, noreferrer' }, 'deny', null, 'geladen'],
+  ['noopener mit Massen bleibt Fenster', { url: 'https://www.canva.com/x', disposition: 'foreground-tab', features: 'noopener,width=500' }, 'allow', 1100, null],
   // --- gleiche App: echtes Popup bekommt ein Fenster ---
   ['gleiche App als Skript-Popup', { url: 'https://www.canva.com/x', disposition: 'new-window' }, 'allow', 1100, null],
   ['gleiche App mit Fenstermassen', { url: 'https://www.canva.com/x', disposition: 'foreground-tab', features: 'width=500,height=600' }, 'allow', 1100, null],

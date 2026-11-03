@@ -610,6 +610,29 @@ const windowOpenPolicy = makeWindowOpenPolicy({
 // das Popup navigiert beim Adoptieren oft schon, und setUserAgent mit
 // laufender Navigation zerstört deren NavigationRequest (Chromium-CHECK,
 // Absturz — die Ursache des 1.0.15–1.0.17-Startabsturzes).
+// Ein leeres Fenster (about:blank) laesst Verti immer zu, weil Anmelde-Popups
+// so starten. Manche Apps oeffnen aber auch ihre eigenen Seiten so: erst ein
+// leeres Fenster, dann die Adresse hinein (Canva-Projekte, gemeldet
+// 03.11.2026). Fuehrt die erste echte Navigation zurueck in die eigene App und
+// ist keine Anmeldung, wird das Fenster geschlossen und die Seite in der
+// App-Ansicht geladen. Echte Anmelde-Popups gehen auf eine Login-Adresse
+// und bleiben unberuehrt.
+function leeresFensterZurueckholen(child, details, openerWc, appDef) {
+  const start = details && details.url;
+  if (start && start !== 'about:blank') return;
+  const wc = child.webContents;
+  const pruefe = (e) => {
+    const url = e && e.url;
+    if (!url || url === 'about:blank' || !e.isMainFrame) return;
+    wc.removeListener('did-start-navigation', pruefe);
+    if (isAuthUrl(url) || !sameSite(url, appDef.url) || openerWc.isDestroyed()) return;
+    if (!app.isPackaged) console.log('[fenster] leeres Fenster zurueck in die App:', url.slice(0, 90));
+    setImmediate(() => { try { if (!child.isDestroyed()) child.destroy(); } catch (err) {} });
+    openerWc.loadURL(url);
+  };
+  wc.on('did-start-navigation', pruefe);
+}
+
 function adoptChildWindow(child) {
   child.webContents.setWindowOpenHandler(windowOpenPolicy(child.webContents));
   child.webContents.on('did-create-window', (grandchild) => { grandchild.__vertiAppId = child.__vertiAppId; adoptChildWindow(grandchild); });
@@ -1498,7 +1521,11 @@ function createView(appDef) {
   // blockieren (sonst hängt u. a. das Update-quitAndInstall) → immer zulassen
   view.webContents.on('will-prevent-unload', (e) => e.preventDefault());
   view.webContents.setWindowOpenHandler(windowOpenPolicy(view.webContents));
-  view.webContents.on('did-create-window', (child) => { child.__vertiAppId = appDef.id; adoptChildWindow(child); }); // App-Kennung fuer Download-Einstellungen
+  view.webContents.on('did-create-window', (child, details) => {
+    child.__vertiAppId = appDef.id; // App-Kennung fuer Download-Einstellungen
+    adoptChildWindow(child);
+    leeresFensterZurueckholen(child, details, view.webContents, appDef);
+  });
   attachMouseNav(view.webContents);
   attachContextMenu(view.webContents);
   view.webContents.on('audio-state-changed', (e) => {

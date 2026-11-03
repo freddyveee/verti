@@ -16,10 +16,20 @@
 function wantsRealWindow({ url, disposition, features, postBody } = {}) {
   if (!url || url === 'about:blank') return true;  // OAuth startet oft leer
   if (disposition === 'new-window') return true;   // echtes Skript-Popup
-  if (features && String(features).trim()) return true; // window.open mit Massen
+  if (echteFensterMerkmale(features)) return true;  // window.open mit Massen
   if (postBody) return true;                       // <form target=_blank>
   if (istVorschau(url)) return true;               // Bild-Grossansicht, s.u.
   return false;
+}
+
+// „noopener"/„noreferrer" sagen nur, dass die neue Seite den Opener nicht
+// sehen soll, das ist kein Fenster-Wunsch. Canva oeffnet Projekte genau so
+// (window.open(url, '_blank', 'noopener')) und bekam deshalb bis 1.1.24 ein
+// eigenes Fenster statt in der Canva-Ansicht zu bleiben (gemeldet 03.11.2026).
+function echteFensterMerkmale(features) {
+  return String(features || '').split(',')
+    .map((f) => f.trim().split('=')[0].trim().toLowerCase())
+    .some((f) => f && f !== 'noopener' && f !== 'noreferrer' && f !== 'opener');
 }
 
 // Grossansichten von Bildern und Dateien laufen ueber blob: oder data:.
