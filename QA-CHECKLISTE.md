@@ -86,6 +86,7 @@ ausgeliefert wird.
 - [ ] Views laden: WhatsApp, Google Kalender, Todoist, ChatGPT, Stackfield öffnen sich und laden
 - [ ] **Logins bleiben:** App schließen und neu öffnen → man ist überall noch eingeloggt (Partition `persist:apps`)
 - [ ] **Canva-Projekt öffnen:** auf der Canva-Startseite ein bestehendes Projekt und „Design erstellen“ öffnen → bleibt in der Canva-Ansicht, kein eigenes Fenster
+- [ ] **Drive-Dokument öffnen:** in Google Drive ein Google-Doc und ein Sheet doppelklicken → öffnet in Verti (Docs-App falls installiert, sonst Drive-Ansicht), Chrome geht nicht auf
 - [ ] **Drive frisch anmelden:** mit leerem Profil Google Drive hinzufügen, auf der Werbeseite „Anmelden“ klicken → Anmeldung läuft IN Verti, Chrome geht nicht auf
 - [ ] **Google-Login** (fragil!): bei einer Google-App anmelden → kommt durch (Firefox-Tarnung), auch das Login-Popup. Keine „Browser nicht sicher"-Ablehnung
 - [ ] **Spotify** (nur in der gebauten App): spielt durch, springt nicht nach ~2 s zum nächsten Song. Im Dev ist das erwartet kaputt (kein Bug)

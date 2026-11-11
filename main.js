@@ -600,6 +600,8 @@ const windowOpenPolicy = makeWindowOpenPolicy({
     const appDef = id && state ? state.apps.find((a) => a.id === id) : null;
     return !!appDef && sameSite(u, appDef.url);
   },
+  zielApp: (u, wc) => zielApp(u, wc),
+  inAppLaden: (id, u) => inAppLaden(id, u),
   popupWindowOptions,
   browserOpenExternal: (u) => browserOpenExternal(u),
   log: app.isPackaged ? null : (...a) => console.log(...a),
@@ -617,6 +619,53 @@ const windowOpenPolicy = makeWindowOpenPolicy({
 // ist keine Anmeldung, wird das Fenster geschlossen und die Seite in der
 // App-Ansicht geladen. Echte Anmelde-Popups gehen auf eine Login-Adresse
 // und bleiben unberuehrt.
+// Anbieter-Familien: Seiten, die zusammengehoeren, obwohl sie auf
+// verschiedenen Hosts liegen. Bewusst eine feste Liste statt „gleiche
+// Domain": unter google.com, facebook.com usw. liegen auch Weiterleitungen
+// (google.com/url, l.facebook.com), die sonst fremde Seiten in die
+// App-Ansicht holen wuerden.
+const APP_FAMILIEN = [
+  ['google', (h) => /^(drive|docs|sheets|slides|forms|sites|script|calendar|mail|keep|contacts|chat|photos|jamboard|lookerstudio|datastudio)\.google\.com$/.test(h)],
+  ['microsoft', (h) => /(^|\.)(sharepoint\.com|office\.com|office365\.com|cloud\.microsoft|officeapps\.live\.com)$/.test(h)
+    || ['onedrive.live.com', 'outlook.live.com', 'teams.microsoft.com', 'teams.live.com'].includes(h)],
+  ['atlassian', (h) => /(^|\.)atlassian\.(net|com)$/.test(h)],
+  ['notion', (h) => /(^|\.)(notion\.so|notion\.com|notion\.site)$/.test(h)],
+];
+function appFamilie(url) {
+  let h;
+  try { h = new URL(url).host; } catch { return null; }
+  const f = APP_FAMILIEN.find(([, t]) => t(h));
+  return f ? f[0] : null;
+}
+// Wohin gehoert eine Adresse, die eine App oeffnen will?
+// { eigene: true } = in die App selbst, { id } = in eine andere installierte
+// App, null = nicht Vertis Sache (Systembrowser).
+function zielApp(url, openerWc) {
+  if (!url || !/^https?:/i.test(url) || isAuthUrl(url) || !state) return null;
+  const openerId = appIdFuerWc(openerWc);
+  const opener = openerId ? state.apps.find((a) => a.id === openerId) : null;
+  if (opener && sameSite(url, opener.url)) return { eigene: true };
+  // Andere installierte App: die mit dem passendsten Pfad gewinnt
+  // (Docs und Sheets liegen beide auf docs.google.com)
+  let pfad = '';
+  try { pfad = new URL(url).pathname; } catch {}
+  const kandidaten = state.apps.filter((a) => a.id !== BROWSER_ID && a.id !== openerId && views[a.id] && sameSite(url, a.url));
+  if (kandidaten.length) {
+    const punkte = (a) => { try { const p = new URL(a.url).pathname; return p.length > 1 && pfad.startsWith(p) ? p.length : 0; } catch { return 0; } };
+    kandidaten.sort((a, b) => punkte(b) - punkte(a));
+    return { id: kandidaten[0].id };
+  }
+  const fam = appFamilie(url);
+  if (opener && fam && fam === appFamilie(opener.url)) return { eigene: true };
+  return null;
+}
+function inAppLaden(id, url) {
+  const v = views[id];
+  if (!v) return;
+  if (id !== activeId) switchApp(id);
+  v.webContents.loadURL(url);
+}
+
 function leeresFensterZurueckholen(child, details, openerWc, appDef) {
   const start = details && details.url;
   if (start && start !== 'about:blank') return;
@@ -625,10 +674,12 @@ function leeresFensterZurueckholen(child, details, openerWc, appDef) {
     const url = e && e.url;
     if (!url || url === 'about:blank' || !e.isMainFrame) return;
     wc.removeListener('did-start-navigation', pruefe);
-    if (isAuthUrl(url) || !sameSite(url, appDef.url) || openerWc.isDestroyed()) return;
+    if (openerWc.isDestroyed()) return;
+    const ziel = zielApp(url, openerWc);
+    if (!ziel) return;
     if (!app.isPackaged) console.log('[fenster] leeres Fenster zurueck in die App:', url.slice(0, 90));
     setImmediate(() => { try { if (!child.isDestroyed()) child.destroy(); } catch (err) {} });
-    openerWc.loadURL(url);
+    if (ziel.id) inAppLaden(ziel.id, url); else openerWc.loadURL(url);
   };
   wc.on('did-start-navigation', pruefe);
 }

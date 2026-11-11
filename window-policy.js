@@ -46,11 +46,11 @@ function istVorschau(url) {
   return /^(blob:|data:)/i.test(String(url || ''));
 }
 
-// deps: { isAuthUrl, isInstalledAppUrl, isOwnAppUrl, popupWindowOptions, browserOpenExternal, log }
+// deps: { isAuthUrl, isInstalledAppUrl, isOwnAppUrl, zielApp, inAppLaden, popupWindowOptions, browserOpenExternal, log }
 // Gemeinsame Regel fuer App-Views UND deren Popups: Auth bleibt in der App,
 // App-Popouts bleiben in der App, alles andere geht in den Browser.
 function makeWindowOpenPolicy(deps) {
-  const { isAuthUrl, isInstalledAppUrl, isOwnAppUrl, popupWindowOptions, browserOpenExternal, log } = deps;
+  const { isAuthUrl, isInstalledAppUrl, isOwnAppUrl, zielApp, inAppLaden, popupWindowOptions, browserOpenExternal, log } = deps;
   return function windowOpenPolicy(openerContents) {
     return (details) => {
       const { url, disposition } = details;
@@ -87,6 +87,20 @@ function makeWindowOpenPolicy(deps) {
           return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(1100, 800) };
         }
         openerContents.loadURL(url);
+        return { action: 'deny' };
+      }
+      // Gehoert die Adresse zu einer anderen installierten App oder zur selben
+      // Anbieter-Familie (Drive -> Docs/Sheets, Outlook -> SharePoint), bleibt
+      // sie ebenfalls in Verti. Bis 1.1.25 oeffnete ein Dokument aus Drive
+      // heraus im Systembrowser, weil docs.google.com ein anderer Host ist
+      // (gemeldet 11.11.2026).
+      const ziel = !sameApp && zielApp ? zielApp(url, openerContents) : null;
+      if (ziel) {
+        if (wantsRealWindow(details)) {
+          return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions(1100, 800) };
+        }
+        if (ziel.id && inAppLaden) inAppLaden(ziel.id, url);
+        else openerContents.loadURL(url);
         return { action: 'deny' };
       }
       if (disposition === 'new-window' && isInstalledAppUrl(url)) {

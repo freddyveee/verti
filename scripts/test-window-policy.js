@@ -81,6 +81,49 @@ test('Drive-Werbeseite: fremde Google-Seite geht weiter in den Browser', () => {
   assert.deepStrictEqual(geoeffnet.extern, ['https://support.google.com/drive']);
 });
 
+// Der Drive-Fall vom 11.11.2026: ein Dokument aus Drive (docs.google.com)
+// oeffnete im Systembrowser. zielApp entscheidet, wohin es gehoert.
+function baueZielRegel(ziel) {
+  const geoeffnet = { extern: [], geladen: [], inApp: [] };
+  const policy = makeWindowOpenPolicy({
+    isAuthUrl: (u) => !u || u === 'about:blank' || AUTH.includes(host(u)),
+    isInstalledAppUrl: () => false,
+    isOwnAppUrl: () => false,
+    zielApp: (u) => ziel[host(u)] || null,
+    inAppLaden: (id, u) => geoeffnet.inApp.push([id, u]),
+    popupWindowOptions: (w, h) => ({ width: w, height: h }),
+    browserOpenExternal: (u) => geoeffnet.extern.push(u),
+    log: null,
+  });
+  const opener = { getURL: () => 'https://drive.google.com/drive/my-drive', loadURL: (u) => geoeffnet.geladen.push(u) };
+  return { entscheide: policy(opener), geoeffnet };
+}
+test('Drive: Dokument der eigenen Familie laedt in der Drive-Ansicht', () => {
+  const { entscheide, geoeffnet } = baueZielRegel({ 'docs.google.com': { eigene: true } });
+  const url = 'https://docs.google.com/document/d/1/edit';
+  assert.strictEqual(entscheide({ url, disposition: 'foreground-tab', features: 'noopener' }).action, 'deny');
+  assert.deepStrictEqual(geoeffnet.geladen, [url]);
+  assert.deepStrictEqual(geoeffnet.extern, []);
+});
+test('Drive: Dokument geht in die installierte Docs-App', () => {
+  const { entscheide, geoeffnet } = baueZielRegel({ 'docs.google.com': { id: 'gdocs' } });
+  const url = 'https://docs.google.com/document/d/1/edit';
+  entscheide({ url, disposition: 'foreground-tab' });
+  assert.deepStrictEqual(geoeffnet.inApp, [['gdocs', url]]);
+  assert.deepStrictEqual(geoeffnet.extern, []);
+});
+test('Drive: echtes Popup der Familie bekommt ein Verti-Fenster', () => {
+  const { entscheide, geoeffnet } = baueZielRegel({ 'docs.google.com': { eigene: true } });
+  const r = entscheide({ url: 'https://docs.google.com/x', disposition: 'new-window' });
+  assert.strictEqual(r.action, 'allow');
+  assert.deepStrictEqual(geoeffnet.extern, []);
+});
+test('Drive: fremde Seite geht weiter in den Browser', () => {
+  const { entscheide, geoeffnet } = baueZielRegel({});
+  entscheide({ url: 'https://www.google.com/url?q=https://example.com', disposition: 'foreground-tab' });
+  assert.deepStrictEqual(geoeffnet.extern, ['https://www.google.com/url?q=https://example.com']);
+});
+
 for (const [name, details, aktion, breite, wohin] of FAELLE) {
   test(name, () => {
     const { entscheide, geoeffnet } = baueRegel();
