@@ -206,6 +206,68 @@ const bridge = `(() => {
       },
     });
   } catch (e) {}
+  // 5. Badging-API (navigator.setAppBadge / clearAppBadge), 11.11.2026:
+  //    Telegram (beide Web-Fassungen, im Quellcode nachgelesen) schreibt seine
+  //    Ungelesen-Zahl NICHT in den Titel, sondern meldet sie so an den
+  //    Browser. Verti hoerte darauf nicht, deshalb nie eine Zahl an Telegram.
+  //    Gilt fuer jede App, die diesen Weg nutzt. setAppBadge() ohne Zahl ist
+  //    ein reiner Hinweis-Punkt -> als 1 gezaehlt.
+  try {
+    const N = Navigator.prototype;
+    N.setAppBadge = function (n) {
+      const c = n === undefined ? 1 : Number(n);
+      signal('badge', Number.isFinite(c) ? Math.max(0, Math.round(c)) : 0);
+      return Promise.resolve();
+    };
+    N.clearAppBadge = function () { signal('badge', 0); return Promise.resolve(); };
+  } catch (e) {}
+  // 6. Zaehler direkt aus der Seite lesen (Freddys Wunsch 11.11.2026: die
+  //    Zahl wie bei WhatsApp bei ALLEN Kommunikations-Apps). Viele Apps
+  //    schreiben nichts in den Titel, zeigen ihre Ungelesenen aber als kleine
+  //    Zaehler in der eigenen Seitenleiste. Die Stellen stammen aus den
+  //    Ferdium-Rezepten (github.com/ferdium/ferdium-recipes, MIT-Lizenz), die
+  //    seit Jahren fuer genau diesen Zweck gepflegt werden. Aendert eine App
+  //    ihre Seite, liefert ihr Rezept 0 - Titel, Badging-API und gezaehlte
+  //    Meldungen greifen dann weiter (main.js nimmt jeweils die groesste Zahl).
+  try {
+    const zahl = (t) => { const n = parseInt(String(t || '').replace(/[^0-9]/g, ''), 10); return Number.isFinite(n) ? n : 0; };
+    const summe = (sel, wert) => { let n = 0; for (const el of document.querySelectorAll(sel)) n += zahl(wert ? wert(el) : el.textContent); return n; };
+    const REZEPTE = {
+      'web.telegram.org': () => location.pathname.startsWith('/k')
+        ? summe('.rp:not(.is-muted) .dialog-subtitle-badge')
+        : summe('.chat-list .ListItem .ChatBadge.unread:not(.muted)'),
+      'app.slack.com': () => summe('.p-channel_sidebar__channel--unread:not(.p-channel_sidebar__channel--muted) .p-channel_sidebar__badge'),
+      'discord.com': () => summe('[class*="lowerBadge_"] [class*="numberBadge_"]'),
+      'teams.microsoft.com': () => summe('.fui-Badge') || summe('.activity-badge.dot-activity-badge .activity-badge'),
+      'teams.cloud.microsoft': () => summe('.fui-Badge'),
+      'teams.live.com': () => summe('.fui-Badge'),
+      'chat.google.com': () => summe('div[data-section-type="1"] div.TeR7uc') + summe('div[data-section-type="2"] div.TeR7uc'),
+      'outlook.office.com': () => {
+        const ordner = document.querySelector('div[role=tree] > div:nth-of-type(2)');
+        if (!ordner) return summe("span[title*='Inbox'] + div > span, span[title*='Posteingang'] + div > span");
+        let n = 0; for (const sr of ordner.querySelectorAll('span.screenReaderOnly')) if (sr.previousSibling) n += zahl(sr.previousSibling.textContent);
+        return n;
+      },
+      'outlook.live.com': () => REZEPTE['outlook.office.com'](),
+      'mail.proton.me': () => { let n = 0; for (const el of document.querySelectorAll('[data-testid="navigation-link:inbox"] [data-testid="navigation-link:unread-count"]')) n = Math.max(n, zahl(el.textContent)); return n; },
+      'web.webex.com': () => zahl((document.querySelector('.navigation-list-item--badgeCount, .navigation-list-item--badgeCount-minimized') || {}).textContent),
+      'www.linkedin.com': () => zahl((document.querySelector('.nav-item--messaging .nav-item__badge-count') || {}).textContent),
+      'www.instagram.com': () => zahl((document.querySelector('a[href^="/direct/inbox"] span') || {}).textContent),
+      'www.threads.net': () => zahl((document.querySelector('a[href^="/direct/inbox"] span') || {}).textContent),
+      'x.com': () => zahl((document.querySelector('[data-testid=AppTabBar_Notifications_Link] div div div') || {}).textContent)
+        + zahl((document.querySelector('[data-testid=AppTabBar_DirectMessage_Link] div div div') || {}).textContent),
+      'www.xing.com': () => zahl((document.querySelector('#unread-conversations') || {}).textContent),
+    };
+    const rezept = window === window.top && REZEPTE[location.host];
+    if (rezept) {
+      let zuletzt = -1;
+      setInterval(() => {
+        let n = 0;
+        try { n = Math.min(999, Math.max(0, rezept() || 0)); } catch (e) {}
+        if (n !== zuletzt) { zuletzt = n; signal('domcount', n); }
+      }, 2000);
+    }
+  } catch (e) {}
 })();`;
 
 // Beide Skripte laufen per webFrame.executeJavaScript in der Seiten-Welt: das
@@ -295,6 +357,7 @@ ipcRenderer.on('verti-note-click', (e, id) => {
   } catch (err) {}
 });
 document.addEventListener('verti-badge', () => ipcRenderer.send('verti-app-badge', readValue('badge')));
+document.addEventListener('verti-domcount', () => ipcRenderer.send('verti-app-domcount', readValue('domcount')));
 // Stumm-Status live aus main.js (Einstellungen umgeschaltet)
 ipcRenderer.on('verti-muted', (e, on) => {
   try { document.documentElement.setAttribute('data-verti-muted', on ? '1' : '0'); } catch (e) {}

@@ -882,6 +882,7 @@ const TITLE_BADGE_APPS = new Set(['whatsapp', 'gmail', 'telegram', 'messenger', 
 const titleCounts = {};
 const notifCounts = {};
 const pageCounts = {};
+const domCounts = {}; // aus der Seite gelesene Zaehler (Rezepte in view-preload.js, Abschnitt 6)
 const badges = {};
 // Welche App gerade hörbar Ton ausgibt (Spotify/YouTube im Hintergrund).
 // Die Sidebar zeigt daran ein kleines „spielt gerade"-Zeichen.
@@ -904,9 +905,15 @@ function effectiveBadge(id) {
     // Hintergrund (oder wenn das Fenster versteckt ist) zeigt der Titel-Zähler
     // das Badge – so verschwindet es nicht dauerhaft beim Öffnen.
     if (id === activeId && win && !win.isDestroyed() && win.isVisible() && !win.isMinimized()) return 0;
-    return titleCounts[id] || 0;
+    // Telegram meldet ueber die Badging-API statt den Titel; manche Apps
+    // setzen sie nur einmal beim Start auf 0 -> die groessere Zahl gewinnt
+    return Math.max(titleCounts[id] || 0, pageCounts[id] || 0, domCounts[id] || 0);
   }
-  if (pageCounts[id] !== undefined) return pageCounts[id];
+  if (domCounts[id] !== undefined || pageCounts[id] !== undefined) {
+    // Gelesene Zaehler sind exakt; offen und sichtbar = gesehen, wie bei WhatsApp
+    if (domCounts[id] !== undefined && id === activeId && win && !win.isDestroyed() && win.isVisible() && !win.isMinimized()) return pageCounts[id] || 0;
+    return Math.max(pageCounts[id] || 0, domCounts[id] || 0);
+  }
   return notifCounts[id] || 0;
 }
 
@@ -950,6 +957,7 @@ function clearBadge(id) {
 // App entfernt → auch die gemeldete Zahl vergessen
 function forgetBadge(id) {
   delete pageCounts[id];
+  delete domCounts[id];
   clearBadge(id);
 }
 
@@ -987,6 +995,12 @@ function appIdOf(sender) {
 ipcMain.on('verti-app-notify', (e) => {
   const id = appIdOf(e.sender);
   if (id) addNotif(id);
+});
+ipcMain.on('verti-app-domcount', (e, count) => {
+  const id = appIdOf(e.sender);
+  if (!id) return;
+  domCounts[id] = Math.min(999, Math.max(0, Math.round(Number(count) || 0)));
+  recomputeBadge(id);
 });
 ipcMain.on('verti-app-badge', (e, count) => {
   const id = appIdOf(e.sender);

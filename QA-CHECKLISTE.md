@@ -89,6 +89,7 @@ ausgeliefert wird.
 - [ ] **Drive frisch anmelden:** mit leerem Profil Google Drive hinzufügen, auf der Werbeseite „Anmelden“ klicken → Anmeldung läuft IN Verti, Chrome geht nicht auf
 - [ ] **Google-Login** (fragil!): bei einer Google-App anmelden → kommt durch (Firefox-Tarnung), auch das Login-Popup. Keine „Browser nicht sicher"-Ablehnung
 - [ ] **Spotify** (nur in der gebauten App): spielt durch, springt nicht nach ~2 s zum nächsten Song. Im Dev ist das erwartet kaputt (kein Bug)
+- [ ] **Zahl bei allen Messengern:** Telegram, Slack, Teams, Discord (was eingerichtet ist): sich eine Nachricht schicken lassen, andere App vorne → Zahl am Icon, sinkt nach dem Lesen
 - [ ] **Ungelesen-Badges:** WhatsApp/Telegram (Zahl im Titel) und Stackfield (Zahl im Favicon) erzeugen ein Badge; Gesamtzahl am Dock (Mac) bzw. Taskleisten-Overlay (Windows); sinkt beim Lesen; **keine Phantom-1** bei Stackfield ohne Ungelesenes
 - [ ] **Benachrichtigungen:** native Meldung erscheint, unter dem Titel steht der App-Name (z.B. „WhatsApp"); Klick darauf → Verti kommt nach vorn und schaltet zur richtigen App
 - [ ] **Maus-Navigation zurück/vorwärts:** echte Seitentasten; am Mac Logi-Options+/Trackpad-Wisch links/rechts; unter Windows die App-Command-Tasten. Kein Doppelsprung
