@@ -51,6 +51,8 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- **Stumm heißt still, jetzt endgültig (Cindy, zweites Mal gemeldet 11.11.2026).** Der Fix aus 1.1.23 hielt nur einzelne Abspielwege an, WhatsApp kam über einen zweiten Web-Audio-Weg trotzdem durch (in Electron nachgewiesen). Jetzt schaltet Verti bei stummen Apps den kompletten Ton der App ab, wie das Lautsprecher-Symbol am Browser-Tab, das erfasst jeden Weg. Ton gibt es nur nach eigenem Klick oder Tastendruck in der App (Sprachnachricht, Video), solange etwas läuft, danach wieder still. Mit Test-Apps geprüft: Hintergrund still, vorne ohne Klick still, nach Klick hörbar, danach wieder still, laute App unverändert. Am echten WhatsApp noch ungeprüft (11.11.2026)
+
 ## Blockiert
 
 - (nichts)

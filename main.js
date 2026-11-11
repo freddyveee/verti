@@ -1528,9 +1528,10 @@ function createView(appDef) {
   });
   attachMouseNav(view.webContents);
   attachContextMenu(view.webContents);
+  tonUeberwachen(appDef.id, view.webContents);
   view.webContents.on('audio-state-changed', (e) => {
     const on = typeof e.audible === 'boolean' ? e.audible : view.webContents.isCurrentlyAudible();
-    setAudio(appDef.id, on);
+    setAudio(appDef.id, on && !view.webContents.isAudioMuted()); // abgeschalteter Ton zeigt keinen Lautsprecher
   });
   view.webContents.on('did-finish-load', () => applyZoom(appDef.id));
   // Selbstheilung: stuerzt der Renderer ab oder scheitert das Laden, blieb die
@@ -1847,6 +1848,47 @@ function pushMuted(id) {
   const v = views[id];
   if (v && v.webContents && !v.webContents.isDestroyed()) v.webContents.send('verti-muted', isMuted(id));
 }
+// Stumm heisst still - endgueltig (Cindy, zweimal gemeldet: 22.10. und 11.11.2026).
+// 1.1.23 hielt nur einzelne Abspielwege der Seite an (audio.play,
+// AudioScheduledSourceNode.start). Web Audio hat aber weitere Wege, z.B.
+// AudioBufferSourceNode mit eigenem start(), und genau so kam der WhatsApp-Ton
+// weiter durch. Jetzt wird der Ton der ganzen App abgeschaltet
+// (webContents.setAudioMuted, wie das Lautsprecher-Symbol am Browser-Tab) - das
+// erfasst jeden Weg, auch iframes und Worker. Freigegeben wird er nur, wenn
+// man selbst in der App klickt oder tippt (Sprachnachricht anhoeren, Video
+// starten), und bleibt an, solange dabei etwas hoerbar laeuft. Danach wieder still.
+const tonFrei = {}; // id -> Timer bis zum erneuten Stummschalten
+function tonStumm(id, an) {
+  const wc = views[id] && views[id].webContents;
+  if (wc && !wc.isDestroyed() && wc.isAudioMuted() !== an) {
+    wc.setAudioMuted(an);
+    setAudio(id, !an && wc.isCurrentlyAudible());
+  }
+}
+function tonWiederStumm(id, nach) {
+  clearTimeout(tonFrei[id]);
+  tonFrei[id] = setTimeout(() => {
+    delete tonFrei[id];
+    if (!isMuted(id)) return;
+    const wc = views[id] && views[id].webContents;
+    if (wc && !wc.isDestroyed() && wc.isCurrentlyAudible()) return; // laeuft noch, audio-state-changed meldet das Ende
+    tonStumm(id, true);
+  }, nach);
+}
+function tonFreigeben(id) {
+  if (!isMuted(id)) return;
+  tonStumm(id, false);
+  tonWiederStumm(id, 8000); // 8 s Zeit, bis das Angeklickte hoerbar startet
+}
+function tonUeberwachen(id, wc) {
+  if (isMuted(id)) wc.setAudioMuted(true);
+  wc.on('before-mouse-event', (e, m) => { if (m.type === 'mouseDown') tonFreigeben(id); });
+  wc.on('before-input-event', (e, i) => { if (i.type === 'keyDown') tonFreigeben(id); });
+  wc.on('audio-state-changed', (e) => {
+    const hoerbar = typeof e.audible === 'boolean' ? e.audible : wc.isCurrentlyAudible();
+    if (!hoerbar && isMuted(id) && !wc.isAudioMuted() && !tonFrei[id]) tonWiederStumm(id, 2000);
+  });
+}
 ipcMain.on('set-app-muted', (e, id, muted) => {
   if (!state || !id) return;
   const set = new Set(Array.isArray(state.mutedApps) ? state.mutedApps : []);
@@ -1855,6 +1897,8 @@ ipcMain.on('set-app-muted', (e, id, muted) => {
   saveState();
   recomputeBadge(id); // Badge sofort ein-/ausblenden
   pushMuted(id);
+  clearTimeout(tonFrei[id]); delete tonFrei[id];
+  tonStumm(id, !!muted);
 });
 // Einstellungen: manuell nach Updates suchen (Ergebnis inline in der Seite)
 ipcMain.handle('settings:check-updates', async () => {

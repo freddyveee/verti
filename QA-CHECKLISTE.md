@@ -76,7 +76,7 @@ ausgeliefert wird.
 
 ### Kernfunktionen
 
-- [ ] **Stumm heißt still.** In Einstellungen → Benachrichtigungen pro App WhatsApp aus, andere App öffnen, sich eine WhatsApp-Nachricht schicken lassen: keine Zahl, KEIN Ton. WhatsApp öffnen, Sprachnachricht anhören: spielt normal
+- [ ] **Stumm heißt still.** In Einstellungen → Benachrichtigungen pro App WhatsApp aus. Sich eine WhatsApp-Nachricht schicken lassen, einmal mit anderer App vorne und einmal mit WhatsApp vorne (ohne hineinzuklicken): keine Zahl, KEIN Ton, kein Lautsprecher-Symbol. In WhatsApp eine Sprachnachricht anklicken: spielt normal
 
 - [ ] **Download-Meldung und -Ton.** PDF aus Stackfield laden: Ton „Submarine", oben in der Kopfzeile „Datei · Im Finder zeigen" (Klick zeigt die Datei), dazu die macOS-Mitteilung. In Einstellungen → Downloads pro App für eine App Meldung/Ton aus: dann still. Auch bei ausgeschalteten macOS-Mitteilungen für Verti kommen Ton und Kopfzeilen-Hinweis
 

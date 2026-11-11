@@ -168,8 +168,12 @@ const bridge = `(() => {
       if (stillHalten() && !this.muted && this.volume > 0) return Promise.resolve();
       return mPlay.apply(this, arguments);
     };
-    const SP = window.AudioScheduledSourceNode && AudioScheduledSourceNode.prototype;
-    if (SP && SP.start) {
+    // AudioBufferSourceNode hat ein EIGENES start() und lief an der Basisklasse
+    // vorbei (so kam Cindys WhatsApp-Ton durch, 11.11.2026). Die eigentliche
+    // Sperre sitzt seitdem in main.js (setAudioMuted), das hier ist nur Zusatz.
+    for (const K of [window.AudioScheduledSourceNode, window.AudioBufferSourceNode]) {
+      const SP = K && K.prototype;
+      if (!SP || !Object.prototype.hasOwnProperty.call(SP, 'start')) continue;
       const sStart = SP.start;
       SP.start = function () { if (stillHalten()) return; return sStart.apply(this, arguments); };
     }
