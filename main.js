@@ -358,6 +358,12 @@ function loadState() {
     themeColor: FARBWELTEN.includes(s.themeColor) ? s.themeColor : 'graphit', // Farbwelt der Oberflaeche
     downloads: s.downloads && typeof s.downloads === 'object' ? s.downloads : {}, // je App { meldung, ton }, nur Abweichungen vom Standard (beides an)
     mutedApps: Array.isArray(s.mutedApps) ? s.mutedApps.filter((x) => typeof x === 'string') : [], // pro App stummgeschaltet (kein Badge, keine Meldung)
+    // pro App ohne Ton (Meldung und Zahl bleiben). Bis 1.1.26 gab es nur den
+    // Ton-Schalter bei den Downloads, den Freddy fuer WhatsApp ausgeschaltet
+    // hatte, weil er ihn fuer den Mitteilungston hielt (18.11.2026). Deshalb
+    // beim ersten Start uebernehmen: wer dort den Ton aus hat, meint ihn auch hier.
+    tonAus: Array.isArray(s.tonAus) ? s.tonAus.filter((x) => typeof x === 'string')
+      : Object.entries((s.downloads && typeof s.downloads === 'object') ? s.downloads : {}).filter(([, d]) => d && d.ton === false).map(([id]) => id),
     onboarded: s.onboarded === true, // Ersteinrichtung schon durchlaufen?
   };
 }
@@ -946,6 +952,8 @@ function parseUnread(id, title) {
 }
 
 function isMuted(id) { return !!(state && Array.isArray(state.mutedApps) && state.mutedApps.includes(id)); }
+// Still = kein Ton aus der App: ganz stumm ODER nur der Ton aus
+function istStill(id) { return isMuted(id) || !!(state && Array.isArray(state.tonAus) && state.tonAus.includes(id)); }
 function effectiveBadge(id) {
   if (isMuted(id)) return 0; // stumm: kein Badge
   // Titel-fähige Apps zählen NUR über den Titel (sonst Doppelzählung), alle
@@ -1096,8 +1104,9 @@ ipcMain.on('verti-app-shownote', async (e, d) => {
   const id = appIdOf(sender);
   const appDef = id && state ? state.apps.find((a) => a.id === id) : null;
   const icon = await appLogo(appDef);
-  const opts = { title: String(d.title || appDef?.name || 'Verti').slice(0, 200), body: String(d.body || '').slice(0, 1000), silent: !!d.silent };
+  const opts = { title: String(d.title || appDef?.name || 'Verti').slice(0, 200), body: String(d.body || '').slice(0, 1000), silent: !!d.silent || istStill(id) };
   if (appDef) opts.subtitle = appDef.name;
+  if (!app.isPackaged) console.log('[meldung]', id, 'silent=' + opts.silent);
   if (icon) opts.icon = icon;
   const n = new Notification(opts);
   const schluessel = sender.id + ':' + d.id;
@@ -1899,7 +1908,7 @@ function broadcastTheme() {
   if (win && !win.isDestroyed()) { try { win.setBackgroundColor(themeBg()); } catch {} win.webContents.send('theme', state.theme, state.themeColor); }
   if (views[BROWSER_ID] && !views[BROWSER_ID].webContents.isDestroyed()) views[BROWSER_ID].webContents.send('theme', state.theme, state.themeColor);
 }
-ipcMain.handle('get-settings', () => ({ theme: (state && state.theme) || 'dark', themeColor: (state && state.themeColor) || 'graphit', farbwelten: FARBWELTEN, externalLinks: (state && state.externalLinks) || 'verti', browserAktiv: BROWSER_AKTIV, downloads: (state && state.downloads) || {}, mutedApps: (state && state.mutedApps) || [] }));
+ipcMain.handle('get-settings', () => ({ theme: (state && state.theme) || 'dark', themeColor: (state && state.themeColor) || 'graphit', farbwelten: FARBWELTEN, externalLinks: (state && state.externalLinks) || 'verti', browserAktiv: BROWSER_AKTIV, downloads: (state && state.downloads) || {}, mutedApps: (state && state.mutedApps) || [], tonAus: (state && state.tonAus) || [] }));
 ipcMain.on('set-theme', (e, t) => { if (!state) return; state.theme = t === 'light' ? 'light' : 'dark'; saveState(); broadcastTheme(); });
 ipcMain.on('set-theme-color', (e, f) => {
   if (!state || !FARBWELTEN.includes(f)) return;
@@ -1934,24 +1943,25 @@ function tonWiederStumm(id, nach) {
   clearTimeout(tonFrei[id]);
   tonFrei[id] = setTimeout(() => {
     delete tonFrei[id];
-    if (!isMuted(id)) return;
+    if (!istStill(id)) return;
     const wc = views[id] && views[id].webContents;
     if (wc && !wc.isDestroyed() && wc.isCurrentlyAudible()) return; // laeuft noch, audio-state-changed meldet das Ende
     tonStumm(id, true);
   }, nach);
 }
 function tonFreigeben(id) {
-  if (!isMuted(id)) return;
+  if (!istStill(id)) return;
   tonStumm(id, false);
   tonWiederStumm(id, 8000); // 8 s Zeit, bis das Angeklickte hoerbar startet
 }
 function tonUeberwachen(id, wc) {
-  if (isMuted(id)) wc.setAudioMuted(true);
+  if (istStill(id)) wc.setAudioMuted(true);
+  // Nur ein Klick gibt den Ton frei (Sprachnachricht, Video). Tippen NICHT:
+  // wer in WhatsApp schreibt, haette sonst bei jeder Antwort den Ton gehoert.
   wc.on('before-mouse-event', (e, m) => { if (m.type === 'mouseDown') tonFreigeben(id); });
-  wc.on('before-input-event', (e, i) => { if (i.type === 'keyDown') tonFreigeben(id); });
   wc.on('audio-state-changed', (e) => {
     const hoerbar = typeof e.audible === 'boolean' ? e.audible : wc.isCurrentlyAudible();
-    if (!hoerbar && isMuted(id) && !wc.isAudioMuted() && !tonFrei[id]) tonWiederStumm(id, 2000);
+    if (!hoerbar && istStill(id) && !wc.isAudioMuted() && !tonFrei[id]) tonWiederStumm(id, 2000);
   });
 }
 ipcMain.on('set-app-muted', (e, id, muted) => {
@@ -1963,7 +1973,18 @@ ipcMain.on('set-app-muted', (e, id, muted) => {
   recomputeBadge(id); // Badge sofort ein-/ausblenden
   pushMuted(id);
   clearTimeout(tonFrei[id]); delete tonFrei[id];
-  tonStumm(id, !!muted);
+  tonStumm(id, istStill(id));
+});
+// Ton pro App: aus = Meldungen kommen lautlos, die App selbst bleibt still
+// (ausser nach eigenem Klick), Zahl und Meldung bleiben
+ipcMain.on('set-app-ton', (e, id, an) => {
+  if (!state || typeof id !== 'string') return;
+  const set = new Set(Array.isArray(state.tonAus) ? state.tonAus : []);
+  if (an) set.delete(id); else set.add(id);
+  state.tonAus = [...set];
+  saveState();
+  clearTimeout(tonFrei[id]); delete tonFrei[id];
+  tonStumm(id, istStill(id));
 });
 // Einstellungen: manuell nach Updates suchen (Ergebnis inline in der Seite)
 ipcMain.handle('settings:check-updates', async () => {

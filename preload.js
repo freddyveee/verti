@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld('verti', {
   setThemeColor: (f) => ipcRenderer.send('set-theme-color', f),
   setExternalLinks: (m) => ipcRenderer.send('set-external-links', m),
   setAppMuted: (id, muted) => ipcRenderer.send('set-app-muted', id, muted),
+  setAppTon: (id, an) => ipcRenderer.send('set-app-ton', id, an),
   setDownloadOption: (id, key, wert) => ipcRenderer.send('set-download-option', id, key, wert),
   onDownloadFertig: (cb) => ipcRenderer.on('download-fertig', (e, d) => cb(d)),
   downloadZeigen: (pfad) => ipcRenderer.send('download-zeigen', pfad),

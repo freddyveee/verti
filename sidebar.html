@@ -591,6 +591,7 @@
     </div>
     <div id="extList"></div>
     <div class="setsection-title">Benachrichtigungen pro App</div>
+    <div class="dlhead"><span>Meldung</span><span>Ton</span></div>
     <div id="notifList"></div>
     <div class="setsection-title">Downloads pro App</div>
     <div class="dlhead"><span>Meldung</span><span>Ton</span></div>
@@ -1306,20 +1307,42 @@
       function markSeg(segId, val) {
         document.querySelectorAll('#' + segId + ' button').forEach((b) => b.classList.toggle('on', b.dataset.v === val));
       }
-      function renderNotifList(muted) {
+      // Pro App zwei Schalter (18.11.2026): „Meldung" aus = ganz stumm (keine
+      // Zahl, keine Meldung, kein Ton), „Ton" aus = Meldung und Zahl bleiben,
+      // aber lautlos. Vorher gab es nur den ersten Schalter, den Ton-Schalter
+      // nur bei den Downloads, und genau den hielt man fuer den Mitteilungston.
+      function renderNotifList(muted, tonAus) {
         const list = document.getElementById('notifList');
         list.innerHTML = '';
         const mutedSet = new Set(muted || []);
-        for (const app of apps.filter((a) => a.id !== 'browser')) {
-          const row = document.createElement('div'); row.className = 'notifrow';
-          const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = app.name;
+        const tonAusSet = new Set(tonAus || []);
+        const schalter = (an, onChange) => {
           const sw = document.createElement('label'); sw.className = 'switch';
-          const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !mutedSet.has(app.id);
+          const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = an;
           const track = document.createElement('span'); track.className = 'track';
           const knob = document.createElement('span'); knob.className = 'knob';
-          cb.addEventListener('change', () => window.verti.setAppMuted(app.id, !cb.checked));
-          sw.append(cb, track, knob);
-          row.append(nm, sw); list.appendChild(row);
+          cb.addEventListener('change', () => onChange(cb.checked));
+          sw.append(cb, track, knob); return { sw, cb };
+        };
+        for (const app of apps.filter((a) => a.id !== 'browser')) {
+          const row = document.createElement('div'); row.className = 'notifrow dlrow';
+          const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = app.name;
+          const sws = document.createElement('div'); sws.className = 'sws';
+          const ton = schalter(!mutedSet.has(app.id) && !tonAusSet.has(app.id), (v) => {
+            if (v) tonAusSet.delete(app.id); else tonAusSet.add(app.id);
+            window.verti.setAppTon(app.id, v);
+          });
+          const meldung = schalter(!mutedSet.has(app.id), (v) => {
+            window.verti.setAppMuted(app.id, !v);
+            // ganz stumm heisst auch ohne Ton; wieder an zeigt den eigenen Ton-Schalter
+            ton.cb.disabled = !v;
+            ton.cb.checked = v && !tonAusSet.has(app.id);
+            ton.sw.style.opacity = v ? '' : '0.4';
+          });
+          ton.cb.disabled = mutedSet.has(app.id);
+          if (mutedSet.has(app.id)) ton.sw.style.opacity = '0.4';
+          sws.append(meldung.sw, ton.sw);
+          row.append(nm, sws); list.appendChild(row);
         }
       }
       // Download-Meldung und -Ton je App (19.10.2026). Standard: beides an.
@@ -1353,7 +1376,7 @@
         // Ohne Verti-Browser gibt es nichts zu waehlen: Links gehen immer in den Systembrowser
         document.getElementById('linksRow').style.display = cur.browserAktiv === false ? 'none' : '';
         baueFarbwahl(document.getElementById('farbWahl'), cur.themeColor, cur.farbwelten);
-        renderNotifList(cur.mutedApps);
+        renderNotifList(cur.mutedApps, cur.tonAus);
         library.classList.remove('open');
         settingsEl.classList.add('open');
         resetUpd();

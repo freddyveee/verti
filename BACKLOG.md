@@ -51,6 +51,8 @@ Sortiert nach Verkaufswert (06.10.2026, mit Freddy abgestimmt: Verti verkauft di
 
 ## Umgesetzt, noch nicht veröffentlicht
 
+- **Ton-Schalter pro App für Mitteilungen (Freddy, 18.11.2026, drittes Mal Ton-Ärger).** Ursache gefunden: Freddy hatte bei WhatsApp den Ton-Schalter unter „Downloads pro App“ ausgeschaltet, der gilt nur für Downloads. Für Mitteilungen gab es nur „ganz aus“. Jetzt hat „Benachrichtigungen pro App“ zwei Schalter: Meldung (aus = ganz stumm, keine Zahl) und Ton (aus = Meldung und Zahl bleiben, aber lautlos, und die App selbst gibt keinen Ton aus, außer nach eigenem Klick wie bei Sprachnachrichten). Wer beim Download-Ton schon „aus“ hatte, bekommt das einmalig auch für Mitteilungen übernommen. Tippen gibt den Ton nicht mehr frei, nur noch Klicks. In Verti mit Test-App geprüft (lautlose Meldung, stumme App, Schalter wieder an = Ton zurück, Bildschirmfoto) (18.11.2026)
+
 ## Blockiert
 
 - (nichts)
